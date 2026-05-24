@@ -18,33 +18,42 @@ export class TattooManager {
         if (this.textureCache.has(key)) return this.textureCache.get(key)!;
 
         const canvas = document.createElement('canvas');
-        canvas.width = 128;
-        canvas.height = 128;
+        const textureSize = 512;
+        canvas.width = textureSize;
+        canvas.height = textureSize;
 
         const fallbackCtx = canvas.getContext('2d');
         if (fallbackCtx) {
             fallbackCtx.clearRect(0, 0, canvas.width, canvas.height);
             fallbackCtx.fillStyle = color;
             fallbackCtx.beginPath();
-            fallbackCtx.arc(64, 64, 46, 0, Math.PI * 2);
+            fallbackCtx.arc(textureSize / 2, textureSize / 2, textureSize * 0.36, 0, Math.PI * 2);
             fallbackCtx.fill();
         }
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.colorSpace = THREE.SRGBColorSpace;
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         this.textureCache.set(key, texture);
 
         const image = new Image();
         image.crossOrigin = 'anonymous';
         image.onload = () => {
-            canvas.width = image.naturalWidth || image.width;
-            canvas.height = image.naturalHeight || image.height;
-
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            const imageWidth = image.naturalWidth || image.width;
+            const imageHeight = image.naturalHeight || image.height;
+            const scale = Math.min(canvas.width / imageWidth, canvas.height / imageHeight);
+            const width = imageWidth * scale;
+            const height = imageHeight * scale;
+            const x = (canvas.width - width) / 2;
+            const y = (canvas.height - height) / 2;
+
+            ctx.drawImage(image, x, y, width, height);
             ctx.globalCompositeOperation = 'source-in';
             ctx.fillStyle = color;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
