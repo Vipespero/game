@@ -354,7 +354,10 @@ img {
 
 .ts-panel {
     z-index: 35;
-    flex-shrink: 0;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
     max-height: 45dvh;
     overflow-y: auto;
     border-top: 1px solid var(--ts-line);
@@ -686,9 +689,9 @@ img {
     }
 
     .ts-panel {
-        position: absolute;
         right: 18px;
         bottom: 18px;
+        left: auto;
         width: min(420px, calc(100vw - 36px));
         max-height: min(520px, calc(100dvh - 150px));
         border: 1px solid var(--ts-line);
