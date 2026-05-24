@@ -12,6 +12,13 @@ let charLoader:    CharacterLoader | null = null;
 let tattooManager: TattooManager   | null = null;
 let touchHandler:  TouchHandler    | null = null;
 
+function getShowcaseObjects(): THREE.Object3D[] {
+    return [
+        ...(charLoader?.getCurrentModel() ? [charLoader.getCurrentModel()!] : []),
+        ...(tattooManager?.getDecalMeshes() ?? []),
+    ];
+}
+
 interface Options {
     activeCharacter:    Character | null;
     activeDesign:       TattooDesign | null;
@@ -41,7 +48,7 @@ export function useThreeScene(
     const showcaseModeRef = useRef(opts.showcaseMode);
     useEffect(() => {
         showcaseModeRef.current = opts.showcaseMode;
-        sceneManager?.setShowcaseMode(opts.showcaseMode);
+        sceneManager?.setShowcaseMode(opts.showcaseMode, getShowcaseObjects());
     }, [opts.showcaseMode]);
 
     const loadRequestRef = useRef(0);
@@ -133,7 +140,7 @@ export function useThreeScene(
                 })
                 .finally(() => {
                     if (requestId === loadRequestRef.current) {
-                        sceneManager?.setShowcaseMode(showcaseModeRef.current);
+                        sceneManager?.setShowcaseMode(showcaseModeRef.current, getShowcaseObjects());
                         opts.onLoadEnd();
                     }
                 });
@@ -175,12 +182,16 @@ export function useThreeScene(
             if (!target) return;
             tattooManager!.applyDecal(decal, target);
         });
+
+        if (showcaseModeRef.current) {
+            sceneManager?.setShowcaseMode(true, getShowcaseObjects());
+        }
     }, [opts.decals]);
 
     return {
         clearPreview:         () => tattooManager?.clearPreview(),
         clearDecalsFromScene: () => tattooManager?.clearAll(),
         removeDecalFromScene: (id: string) => tattooManager?.removeDecalMesh(id),
-        setShowcaseMode:      (enabled: boolean) => sceneManager?.setShowcaseMode(enabled),
+        setShowcaseMode:      (enabled: boolean) => sceneManager?.setShowcaseMode(enabled, getShowcaseObjects()),
     };
 }

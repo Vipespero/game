@@ -152,6 +152,10 @@ export class TattooManager {
         return this.meshMap.get(id);
     }
 
+    getDecalMeshes(): THREE.Mesh[] {
+        return [...this.meshMap.values()];
+    }
+
     clearAll() {
         this.clearPreview();
         [...this.meshMap.keys()].forEach((id) => this.removeDecalMesh(id));
