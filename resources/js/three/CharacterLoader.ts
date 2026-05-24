@@ -25,6 +25,24 @@ export class CharacterLoader {
         return this.currentModel;
     }
 
+    getModelMetrics(): { center: THREE.Vector3; size: THREE.Vector3; maxDim: number } | null {
+        if (!this.currentModel) return null;
+
+        const box = new THREE.Box3().setFromObject(this.currentModel);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+
+        return { center, size, maxDim };
+    }
+
+    getSuggestedTattooSize(): number {
+        const metrics = this.getModelMetrics();
+        if (!metrics) return 0.5;
+
+        return THREE.MathUtils.clamp(metrics.maxDim * 0.16, 0.28, 2.2);
+    }
+
     load(glbUrl: string, onProgress: (pct: number) => void): Promise<THREE.Object3D> {
         const requestId = ++this.loadRequestId;
 

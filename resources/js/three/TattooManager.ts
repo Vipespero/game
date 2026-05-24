@@ -66,7 +66,7 @@ export class TattooManager {
     }
 
     private buildMesh(
-        targetMesh: THREE.Mesh,
+        targetMesh: THREE.Mesh | null,
         point: THREE.Vector3,
         normal: THREE.Vector3,
         size: number,
@@ -74,7 +74,12 @@ export class TattooManager {
         imageUrl: string,
         color: string,
         opacity = 1.0,
+        fallbackOnly = false,
     ): THREE.Mesh | null {
+        if (fallbackOnly || !targetMesh) {
+            return this.buildFallbackSticker(point, normal, size, rotation, imageUrl, color, opacity);
+        }
+
         try {
             const n = normal.clone().add(point);
             const m = new THREE.Matrix4();
@@ -135,16 +140,17 @@ export class TattooManager {
 
     // ── Preview ──
     showPreview(
-        targetMesh: THREE.Mesh,
+        targetMesh: THREE.Mesh | null,
         point: THREE.Vector3,
         normal: THREE.Vector3,
         size: number,
         rotation: number,
         imageUrl: string,
         color: string,
+        fallbackOnly = false,
     ) {
         this.clearPreview();
-        const mesh = this.buildMesh(targetMesh, point, normal, size, rotation, imageUrl, color, 0.8);
+        const mesh = this.buildMesh(targetMesh, point, normal, size, rotation, imageUrl, color, 0.8, fallbackOnly);
         if (!mesh) return;
         this.previewMesh = mesh;
         this.sceneManager.scene.add(mesh);
@@ -160,11 +166,11 @@ export class TattooManager {
     }
 
     // ── Confirmed decals ──
-    applyDecal(decal: DecalState, targetMesh: THREE.Mesh) {
+    applyDecal(decal: DecalState, targetMesh: THREE.Mesh | null) {
         this.removeDecalMesh(decal.id);
         const point  = new THREE.Vector3(decal.intersectionPoint.x,  decal.intersectionPoint.y,  decal.intersectionPoint.z);
         const normal = new THREE.Vector3(decal.intersectionNormal.x, decal.intersectionNormal.y, decal.intersectionNormal.z);
-        const mesh   = this.buildMesh(targetMesh, point, normal, decal.size, decal.rotation, decal.imageUrl, decal.color);
+        const mesh   = this.buildMesh(targetMesh, point, normal, decal.size, decal.rotation, decal.imageUrl, decal.color, 1.0, decal.fallbackOnly);
         if (!mesh) return;
         this.meshMap.set(decal.id, mesh);
         this.sceneManager.scene.add(mesh);

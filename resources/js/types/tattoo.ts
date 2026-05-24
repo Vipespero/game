@@ -30,6 +30,7 @@ export interface DecalState {
   intersectionNormal: { x: number; y: number; z: number };
   meshName: string;
   meshUuid?: string;
+  fallbackOnly?: boolean;
 }
 
 // Tatuaje en previsualización (antes de confirmar)
@@ -43,4 +44,5 @@ export interface PendingTattoo {
   intersectionNormal: { x: number; y: number; z: number };
   meshName: string;
   meshUuid?: string;
+  fallbackOnly?: boolean;
 }

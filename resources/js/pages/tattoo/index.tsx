@@ -124,6 +124,7 @@ export default function TattooPage() {
             intersectionNormal: pending.intersectionNormal,
             meshName: pending.meshName,
             meshUuid: pending.meshUuid,
+            fallbackOnly: pending.fallbackOnly,
         };
 
         addDecal(decal);

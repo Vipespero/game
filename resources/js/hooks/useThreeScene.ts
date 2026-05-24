@@ -19,6 +19,18 @@ function getShowcaseObjects(): THREE.Object3D[] {
     ];
 }
 
+function getFallbackPlacement(camera: THREE.Camera) {
+    const metrics = charLoader?.getModelMetrics();
+    if (!metrics) return null;
+
+    const normal = camera.position.clone().sub(metrics.center).normalize();
+    const point = metrics.center
+        .clone()
+        .add(normal.clone().multiplyScalar(metrics.maxDim * 0.28));
+
+    return { point, normal };
+}
+
 interface Options {
     activeCharacter:    Character | null;
     activeDesign:       TattooDesign | null;
@@ -74,36 +86,43 @@ export function useThreeScene(
             raycaster.setFromCamera(ndc, sceneManager.camera);
 
             const hits = raycaster.intersectObjects(meshes, true);
-            if (hits.length === 0) return;
-
             const hit = hits[0];
-            const hitMesh = hit.object as THREE.Mesh;
-            const worldNormal = hit.face
-                ? hit.face.normal.clone().transformDirection(hitMesh.matrixWorld)
-                : sceneManager.camera.position.clone().sub(hit.point).normalize();
+            const fallback = !hit ? getFallbackPlacement(sceneManager.camera) : null;
+            if (!hit && !fallback) return;
+
+            const hitMesh = hit ? hit.object as THREE.Mesh : null;
+            const point = hit?.point ?? fallback!.point;
+            const worldNormal = hit
+                ? hit.face
+                    ? hit.face.normal.clone().transformDirection((hit.object as THREE.Mesh).matrixWorld)
+                    : sceneManager.camera.position.clone().sub(hit.point).normalize()
+                : fallback!.normal;
+            const size = charLoader.getSuggestedTattooSize();
 
             const pending: PendingTattoo = {
                 designId:           design.id,
                 imageUrl:           design.image_url,
                 color:              selectedColorRef.current,
-                size:               0.5,
+                size,
                 rotation:           0,
-                intersectionPoint:  { x: hit.point.x,    y: hit.point.y,    z: hit.point.z },
+                intersectionPoint:  { x: point.x,        y: point.y,        z: point.z },
                 intersectionNormal: { x: worldNormal.x,  y: worldNormal.y,  z: worldNormal.z },
-                meshName:           hitMesh.name,
-                meshUuid:           hitMesh.uuid,
+                meshName:           hitMesh?.name ?? '',
+                meshUuid:           hitMesh?.uuid,
+                fallbackOnly:       !hit,
             };
 
             onTapRef.current(pending);
 
             tattooManager.showPreview(
                 hitMesh,
-                hit.point,
+                point,
                 worldNormal,
                 pending.size,
                 pending.rotation,
                 pending.imageUrl,
                 pending.color,
+                pending.fallbackOnly,
             );
         });
 
@@ -163,16 +182,17 @@ export function useThreeScene(
         const target = meshes.find((m) => m.uuid === p.meshUuid)
             ?? meshes.find((m) => m.name === p.meshName)
             ?? meshes[0];
-        if (!target) return;
+        if (!target && !p.fallbackOnly) return;
 
         tattooManager.showPreview(
-            target,
+            target ?? null,
             new THREE.Vector3(p.intersectionPoint.x,  p.intersectionPoint.y,  p.intersectionPoint.z),
             new THREE.Vector3(p.intersectionNormal.x, p.intersectionNormal.y, p.intersectionNormal.z),
             p.size,
             p.rotation,
             p.imageUrl,
             p.color,
+            p.fallbackOnly,
         );
     }, [opts.pending]);
 
@@ -185,8 +205,8 @@ export function useThreeScene(
             const target = meshes.find((m) => m.uuid === decal.meshUuid)
                 ?? meshes.find((m) => m.name === decal.meshName)
                 ?? meshes[0];
-            if (!target) return;
-            tattooManager!.applyDecal(decal, target);
+            if (!target && !decal.fallbackOnly) return;
+            tattooManager!.applyDecal(decal, target ?? null);
         });
 
         if (showcaseModeRef.current) {
