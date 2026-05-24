@@ -12,13 +12,6 @@ let charLoader:    CharacterLoader | null = null;
 let tattooManager: TattooManager   | null = null;
 let touchHandler:  TouchHandler    | null = null;
 
-function getShowcaseObjects(): THREE.Object3D[] {
-    return [
-        ...(charLoader?.getCurrentModel() ? [charLoader.getCurrentModel()!] : []),
-        ...(tattooManager?.getDecalMeshes() ?? []),
-    ];
-}
-
 function getFallbackPlacement(camera: THREE.Camera) {
     const metrics = charLoader?.getModelMetrics();
     if (!metrics) return null;
@@ -60,7 +53,7 @@ export function useThreeScene(
     const showcaseModeRef = useRef(opts.showcaseMode);
     useEffect(() => {
         showcaseModeRef.current = opts.showcaseMode;
-        sceneManager?.setShowcaseMode(opts.showcaseMode, getShowcaseObjects());
+        sceneManager?.setShowcaseMode(opts.showcaseMode);
     }, [opts.showcaseMode]);
 
     const loadRequestRef = useRef(0);
@@ -161,7 +154,7 @@ export function useThreeScene(
                 })
                 .finally(() => {
                     if (requestId === loadRequestRef.current) {
-                        sceneManager?.setShowcaseMode(showcaseModeRef.current, getShowcaseObjects());
+                        sceneManager?.setShowcaseMode(showcaseModeRef.current);
                         opts.onLoadEnd();
                     }
                 });
@@ -210,7 +203,7 @@ export function useThreeScene(
         });
 
         if (showcaseModeRef.current) {
-            sceneManager?.setShowcaseMode(true, getShowcaseObjects());
+            sceneManager?.setShowcaseMode(true);
         }
     }, [opts.decals]);
 
@@ -218,6 +211,6 @@ export function useThreeScene(
         clearPreview:         () => tattooManager?.clearPreview(),
         clearDecalsFromScene: () => tattooManager?.clearAll(),
         removeDecalFromScene: (id: string) => tattooManager?.removeDecalMesh(id),
-        setShowcaseMode:      (enabled: boolean) => sceneManager?.setShowcaseMode(enabled, getShowcaseObjects()),
+        setShowcaseMode:      (enabled: boolean) => sceneManager?.setShowcaseMode(enabled),
     };
 }

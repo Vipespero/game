@@ -16,11 +16,6 @@ export class SceneManager {
     private baseFov = 45;
     private showcaseEnabled = false;
     private showcaseStartedAt = 0;
-    private showcaseObjects: THREE.Object3D[] = [];
-    private objectBases = new Map<string, {
-        position: THREE.Vector3;
-        rotation: THREE.Euler;
-    }>();
 
     constructor(container: HTMLDivElement) {
         this.container = container;
@@ -89,11 +84,7 @@ export class SceneManager {
         loop();
     }
 
-    setShowcaseMode(enabled: boolean, objects: THREE.Object3D[] = []) {
-        if (this.showcaseEnabled && !enabled) {
-            this.restoreShowcaseObjects();
-        }
-
+    setShowcaseMode(enabled: boolean) {
         this.showcaseEnabled = enabled;
         this.controls.autoRotate = enabled;
         this.controls.autoRotateSpeed = 0.85;
@@ -103,7 +94,6 @@ export class SceneManager {
             this.showcaseStartedAt = performance.now();
             this.baseTarget.copy(this.controls.target);
             this.baseFov = this.camera.fov;
-            this.captureShowcaseObjects(objects);
             return;
         }
 
@@ -123,9 +113,6 @@ export class SceneManager {
         const t = (performance.now() - this.showcaseStartedAt) / 1000;
         const slowPulse = Math.sin(t * 1.2);
         const fastPulse = Math.sin(t * 2.4);
-        const walkStep = Math.sin(t * 6.2);
-        const walkSway = Math.sin(t * 3.1);
-
         this.controls.target.copy(this.baseTarget);
         this.controls.target.y += slowPulse * 0.08;
 
@@ -144,44 +131,6 @@ export class SceneManager {
 
         const warmth = 0.04 + (slowPulse + 1) * 0.012;
         this.scene.background = new THREE.Color(warmth, 0.035, 0.045);
-
-        this.showcaseObjects.forEach((object) => {
-            const base = this.objectBases.get(object.uuid);
-            if (!base) return;
-
-            object.position.copy(base.position);
-            object.position.y += Math.abs(walkStep) * 0.035;
-            object.rotation.copy(base.rotation);
-
-            if (!(object as THREE.Mesh).isMesh) {
-                object.rotation.z += walkSway * 0.018;
-            }
-        });
-    }
-
-    private captureShowcaseObjects(objects: THREE.Object3D[]) {
-        this.restoreShowcaseObjects();
-        this.showcaseObjects = objects;
-
-        this.showcaseObjects.forEach((object) => {
-            this.objectBases.set(object.uuid, {
-                position: object.position.clone(),
-                rotation: object.rotation.clone(),
-            });
-        });
-    }
-
-    private restoreShowcaseObjects() {
-        this.showcaseObjects.forEach((object) => {
-            const base = this.objectBases.get(object.uuid);
-            if (!base) return;
-
-            object.position.copy(base.position);
-            object.rotation.copy(base.rotation);
-        });
-
-        this.showcaseObjects = [];
-        this.objectBases.clear();
     }
 
     stopLoop() {

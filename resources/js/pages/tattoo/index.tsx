@@ -39,7 +39,7 @@ export default function TattooPage() {
             return {
                 eyebrow: 'Finalizado',
                 title: 'Show de tattoos',
-                body: 'Camara, luces y caminata estilizada para presentar tu diseno.',
+                body: 'Camara y luces en movimiento para presentar tu diseno.',
                 action: 'Cambiar tattoo',
                 progress: 100,
             };
