@@ -33,6 +33,8 @@ export function useThreeScene(
     const onTapRef = useRef(opts.onTap);
     useEffect(() => { onTapRef.current = opts.onTap; }, [opts.onTap]);
 
+    const loadRequestRef = useRef(0);
+
     // ── Init Three.js once on mount ──
     useEffect(() => {
         if (!containerRef.current) return;
@@ -87,6 +89,8 @@ export function useThreeScene(
 
         return () => {
             touchHandler?.dispose();
+            tattooManager?.dispose();
+            charLoader?.dispose();
             sceneManager?.dispose();
             sceneManager  = null;
             charLoader    = null;
@@ -99,15 +103,24 @@ export function useThreeScene(
     useEffect(() => {
         if (!opts.activeCharacter) return;
         const char = opts.activeCharacter;
+        const requestId = ++loadRequestRef.current;
 
         const doLoad = () => {
             if (!charLoader || !tattooManager) return;
             opts.onLoadStart();
             tattooManager.clearAll();
             charLoader
-                .load(char.glb_url, (pct) => console.log(`${char.name}: ${pct}%`))
-                .then(() => opts.onLoadEnd())
-                .catch((err) => { console.error('Error GLB:', err); opts.onLoadEnd(); });
+                .load(char.glb_url, (pct) => {
+                    if (import.meta.env.DEV) console.debug(`${char.name}: ${pct}%`);
+                })
+                .catch((err) => {
+                    if (requestId === loadRequestRef.current) {
+                        console.error('Error GLB:', err);
+                    }
+                })
+                .finally(() => {
+                    if (requestId === loadRequestRef.current) opts.onLoadEnd();
+                });
         };
 
         if (!charLoader) {

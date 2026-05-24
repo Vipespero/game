@@ -6,6 +6,7 @@ export class CharacterLoader {
     private loader = new GLTFLoader();
     private currentModel: THREE.Object3D | null = null;
     private sceneManager: SceneManager;
+    private loadRequestId = 0;
 
     constructor(sceneManager: SceneManager) {
         this.sceneManager = sceneManager;
@@ -21,16 +22,23 @@ export class CharacterLoader {
     }
 
     load(glbUrl: string, onProgress: (pct: number) => void): Promise<THREE.Object3D> {
+        const requestId = ++this.loadRequestId;
+
         return new Promise((resolve, reject) => {
             if (this.currentModel) {
-                this.sceneManager.scene.remove(this.currentModel);
-                this.currentModel = null;
+                this.removeCurrentModel();
             }
 
             this.loader.load(
                 glbUrl,
                 (gltf) => {
                     const model = gltf.scene;
+
+                    if (requestId !== this.loadRequestId) {
+                        this.disposeObject(model);
+                        reject(new Error('Stale character load'));
+                        return;
+                    }
 
                     // Centrar modelo
                     const box    = new THREE.Box3().setFromObject(model);
@@ -49,6 +57,33 @@ export class CharacterLoader {
                 },
                 reject,
             );
+        });
+    }
+
+    dispose() {
+        this.loadRequestId++;
+        this.removeCurrentModel();
+    }
+
+    private removeCurrentModel() {
+        if (!this.currentModel) return;
+        this.sceneManager.scene.remove(this.currentModel);
+        this.disposeObject(this.currentModel);
+        this.currentModel = null;
+    }
+
+    private disposeObject(object: THREE.Object3D) {
+        object.traverse((child) => {
+            if (!(child as THREE.Mesh).isMesh) return;
+
+            const mesh = child as THREE.Mesh;
+            mesh.geometry?.dispose();
+
+            const materials = Array.isArray(mesh.material)
+                ? mesh.material
+                : [mesh.material];
+
+            materials.forEach((material) => material.dispose());
         });
     }
 }

@@ -16,6 +16,8 @@ class CharacterController extends Controller
 
     public function show(Character $character)
     {
+        abort_unless($character->is_active, 404);
+
         return new CharacterResource($character);
     }
 }

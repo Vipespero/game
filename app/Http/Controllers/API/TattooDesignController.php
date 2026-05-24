@@ -16,6 +16,8 @@ class TattooDesignController extends Controller
 
     public function show(TattooDesign $design)
     {
+        abort_unless($design->is_active, 404);
+
         return new TattooDesignResource($design);
     }
 }

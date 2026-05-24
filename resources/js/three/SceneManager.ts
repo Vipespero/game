@@ -84,7 +84,21 @@ export class SceneManager {
 
     dispose() {
         this.stopLoop();
+        this.controls.dispose();
+        this.scene.traverse((object) => {
+            if (!(object as THREE.Mesh).isMesh) return;
+
+            const mesh = object as THREE.Mesh;
+            mesh.geometry?.dispose();
+
+            const materials = Array.isArray(mesh.material)
+                ? mesh.material
+                : [mesh.material];
+
+            materials.forEach((material) => material.dispose());
+        });
         this.renderer.dispose();
+        this.renderer.domElement.remove();
         window.removeEventListener('resize', this.onResize);
     }
 }

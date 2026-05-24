@@ -109,4 +109,10 @@ export class TattooManager {
         this.clearPreview();
         [...this.meshMap.keys()].forEach((id) => this.removeDecalMesh(id));
     }
+
+    dispose() {
+        this.clearAll();
+        this.textureCache.forEach((texture) => texture.dispose());
+        this.textureCache.clear();
+    }
 }
