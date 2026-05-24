@@ -33,6 +33,7 @@ interface TattooStore {
     // ── Acciones: decals ──
     addDecal:           (decal: DecalState) => void;
     removeDecal:        (id: string) => void;
+    clearDecals:        () => void;
 
     // ── Acciones: pending ──
     setPending:         (pending: PendingTattoo | null) => void;
@@ -70,6 +71,8 @@ export const useTattooStore = create<TattooStore>((set) => ({
 
     removeDecal: (id) =>
         set((s) => ({ decals: s.decals.filter((d) => d.id !== id) })),
+
+    clearDecals: () => set({ decals: [] }),
 
     setPending:   (pending) => set({ pending }),
 

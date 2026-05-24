@@ -1,4 +1,5 @@
 import type { TattooDesign } from '@/types/tattoo';
+import { Check } from 'lucide-react';
 
 interface Props {
     designs:       TattooDesign[];
@@ -12,7 +13,7 @@ export function DesignSheet({ designs, activeDesign, onSelect, onClose }: Props)
         <div className="ts-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className="ts-sheet">
                 <div className="ts-sheet__handle" />
-                <p className="ts-sheet__title">SELECCIONA DISEÑO</p>
+                <p className="ts-sheet__title">Elige el tattoo</p>
                 <ul className="ts-sheet__list ts-sheet__list--designs">
                     {designs.map((d) => (
                         <li
@@ -28,7 +29,9 @@ export function DesignSheet({ designs, activeDesign, onSelect, onClose }: Props)
                                 <p className="ts-design-item__cat">{d.category.toUpperCase()}</p>
                             </div>
                             {d.id === activeDesign?.id && (
-                                <span className="ts-badge ts-badge--gold">✓</span>
+                                <span className="ts-badge ts-badge--gold">
+                                    <Check size={14} aria-hidden />
+                                </span>
                             )}
                         </li>
                     ))}

@@ -12,7 +12,7 @@ export function CharacterSheet({ characters, activeCharacter, onSelect, onClose 
         <div className="ts-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className="ts-sheet">
                 <div className="ts-sheet__handle" />
-                <p className="ts-sheet__title">SELECCIONA PERSONAJE</p>
+                <p className="ts-sheet__title">Elige el lienzo</p>
                 <ul className="ts-sheet__list">
                     {characters.map((char) => (
                         <li

@@ -162,6 +162,7 @@ export function useThreeScene(
 
     return {
         clearPreview:         () => tattooManager?.clearPreview(),
+        clearDecalsFromScene: () => tattooManager?.clearAll(),
         removeDecalFromScene: (id: string) => tattooManager?.removeDecalMesh(id),
     };
 }
