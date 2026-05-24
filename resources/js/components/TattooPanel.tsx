@@ -1,7 +1,7 @@
 import type { DecalState, PendingTattoo } from '@/types/tattoo';
 import { Check, Flag, RotateCcw, Ruler, Trash2, X } from 'lucide-react';
 
-const COLOR_OPTIONS = ['#111111', '#d8b36a', '#48c7b8', '#ee716d', '#ffffff', '#8f7cff'];
+const COLOR_OPTIONS = ['#d8b36a', '#48c7b8', '#ee716d', '#ffffff', '#8f7cff', '#111111'];
 
 interface Props {
     pending:   PendingTattoo | null;

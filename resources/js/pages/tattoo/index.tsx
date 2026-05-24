@@ -13,7 +13,7 @@ import type { DecalState, PendingTattoo, TattooDesign } from '@/types/tattoo';
 
 export default function TattooPage() {
     const tattooGoal = 3;
-    const [selectedColor, setSelectedColor] = useState('#111111');
+    const [selectedColor, setSelectedColor] = useState('#d8b36a');
     const [showcaseMode, setShowcaseModeState] = useState(false);
 
     useAppData();

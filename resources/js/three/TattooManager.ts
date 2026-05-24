@@ -18,8 +18,17 @@ export class TattooManager {
         if (this.textureCache.has(key)) return this.textureCache.get(key)!;
 
         const canvas = document.createElement('canvas');
-        canvas.width = 2;
-        canvas.height = 2;
+        canvas.width = 128;
+        canvas.height = 128;
+
+        const fallbackCtx = canvas.getContext('2d');
+        if (fallbackCtx) {
+            fallbackCtx.clearRect(0, 0, canvas.width, canvas.height);
+            fallbackCtx.fillStyle = color;
+            fallbackCtx.beginPath();
+            fallbackCtx.arc(64, 64, 46, 0, Math.PI * 2);
+            fallbackCtx.fill();
+        }
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -71,6 +80,7 @@ export class TattooManager {
                 map:                 this.getTintedTexture(imageUrl, color),
                 transparent:         true,
                 blending:            THREE.NormalBlending,
+                alphaTest:           0.03,
                 depthTest:           true,
                 depthWrite:          false,
                 polygonOffset:       true,
