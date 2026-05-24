@@ -67,6 +67,12 @@ export class SceneManager {
         loop();
     }
 
+    setShowcaseMode(enabled: boolean) {
+        this.controls.autoRotate = enabled;
+        this.controls.autoRotateSpeed = 1.2;
+        this.controls.enablePan = !enabled;
+    }
+
     stopLoop() {
         if (this.animFrameId !== null) {
             cancelAnimationFrame(this.animFrameId);

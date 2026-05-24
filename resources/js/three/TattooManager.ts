@@ -7,18 +7,44 @@ export class TattooManager {
     private sceneManager: SceneManager;
     private meshMap      = new Map<string, THREE.Mesh>();
     private textureCache = new Map<string, THREE.Texture>();
-    private texLoader    = new THREE.TextureLoader();
     private previewMesh: THREE.Mesh | null = null;
 
     constructor(sceneManager: SceneManager) {
         this.sceneManager = sceneManager;
     }
 
-    private getTexture(url: string): THREE.Texture {
-        if (this.textureCache.has(url)) return this.textureCache.get(url)!;
-        const tex = this.texLoader.load(url);
-        this.textureCache.set(url, tex);
-        return tex;
+    private getTintedTexture(url: string, color: string): THREE.Texture {
+        const key = `${url}:${color}`;
+        if (this.textureCache.has(key)) return this.textureCache.get(key)!;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 2;
+        canvas.height = 2;
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        this.textureCache.set(key, texture);
+
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () => {
+            canvas.width = image.naturalWidth || image.width;
+            canvas.height = image.naturalHeight || image.height;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-in';
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+            texture.needsUpdate = true;
+        };
+        image.src = url;
+
+        return texture;
     }
 
     private buildMesh(
@@ -28,6 +54,7 @@ export class TattooManager {
         size: number,
         rotation: number,
         imageUrl: string,
+        color: string,
         opacity = 1.0,
     ): THREE.Mesh | null {
         try {
@@ -41,9 +68,9 @@ export class TattooManager {
                 targetMesh, point, euler, new THREE.Vector3(size, size, size),
             );
             const mat = new THREE.MeshBasicMaterial({
-                map:                 this.getTexture(imageUrl),
+                map:                 this.getTintedTexture(imageUrl, color),
                 transparent:         true,
-                blending:            THREE.AdditiveBlending,
+                blending:            THREE.NormalBlending,
                 depthTest:           true,
                 depthWrite:          false,
                 polygonOffset:       true,
@@ -64,9 +91,10 @@ export class TattooManager {
         size: number,
         rotation: number,
         imageUrl: string,
+        color: string,
     ) {
         this.clearPreview();
-        const mesh = this.buildMesh(targetMesh, point, normal, size, rotation, imageUrl, 0.8);
+        const mesh = this.buildMesh(targetMesh, point, normal, size, rotation, imageUrl, color, 0.8);
         if (!mesh) return;
         this.previewMesh = mesh;
         this.sceneManager.scene.add(mesh);
@@ -86,7 +114,7 @@ export class TattooManager {
         this.removeDecalMesh(decal.id);
         const point  = new THREE.Vector3(decal.intersectionPoint.x,  decal.intersectionPoint.y,  decal.intersectionPoint.z);
         const normal = new THREE.Vector3(decal.intersectionNormal.x, decal.intersectionNormal.y, decal.intersectionNormal.z);
-        const mesh   = this.buildMesh(targetMesh, point, normal, decal.size, decal.rotation, decal.imageUrl);
+        const mesh   = this.buildMesh(targetMesh, point, normal, decal.size, decal.rotation, decal.imageUrl, decal.color);
         if (!mesh) return;
         this.meshMap.set(decal.id, mesh);
         this.sceneManager.scene.add(mesh);

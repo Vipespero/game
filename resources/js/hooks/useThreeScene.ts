@@ -17,6 +17,8 @@ interface Options {
     activeDesign:       TattooDesign | null;
     decals:             DecalState[];
     pending:            PendingTattoo | null;
+    selectedColor:      string;
+    showcaseMode:       boolean;
     onTap:              (pending: PendingTattoo) => void;
     onLoadStart:        () => void;
     onLoadEnd:          () => void;
@@ -33,6 +35,15 @@ export function useThreeScene(
     const onTapRef = useRef(opts.onTap);
     useEffect(() => { onTapRef.current = opts.onTap; }, [opts.onTap]);
 
+    const selectedColorRef = useRef(opts.selectedColor);
+    useEffect(() => { selectedColorRef.current = opts.selectedColor; }, [opts.selectedColor]);
+
+    const showcaseModeRef = useRef(opts.showcaseMode);
+    useEffect(() => {
+        showcaseModeRef.current = opts.showcaseMode;
+        sceneManager?.setShowcaseMode(opts.showcaseMode);
+    }, [opts.showcaseMode]);
+
     const loadRequestRef = useRef(0);
 
     // ── Init Three.js once on mount ──
@@ -46,7 +57,7 @@ export function useThreeScene(
 
         touchHandler = new TouchHandler(container, ({ clientX, clientY }) => {
             const design = activeDesignRef.current;
-            if (!charLoader || !tattooManager || !sceneManager || !design) return;
+            if (showcaseModeRef.current || !charLoader || !tattooManager || !sceneManager || !design) return;
 
             const meshes = charLoader.getMeshes();
             if (meshes.length === 0) return;
@@ -66,6 +77,7 @@ export function useThreeScene(
             const pending: PendingTattoo = {
                 designId:           design.id,
                 imageUrl:           design.image_url,
+                color:              selectedColorRef.current,
                 size:               0.5,
                 rotation:           0,
                 intersectionPoint:  { x: hit.point.x,    y: hit.point.y,    z: hit.point.z },
@@ -82,6 +94,7 @@ export function useThreeScene(
                 pending.size,
                 pending.rotation,
                 pending.imageUrl,
+                pending.color,
             );
         });
 
@@ -119,7 +132,10 @@ export function useThreeScene(
                     }
                 })
                 .finally(() => {
-                    if (requestId === loadRequestRef.current) opts.onLoadEnd();
+                    if (requestId === loadRequestRef.current) {
+                        sceneManager?.setShowcaseMode(showcaseModeRef.current);
+                        opts.onLoadEnd();
+                    }
                 });
         };
 
@@ -145,6 +161,7 @@ export function useThreeScene(
             p.size,
             p.rotation,
             p.imageUrl,
+            p.color,
         );
     }, [opts.pending]);
 
@@ -164,5 +181,6 @@ export function useThreeScene(
         clearPreview:         () => tattooManager?.clearPreview(),
         clearDecalsFromScene: () => tattooManager?.clearAll(),
         removeDecalFromScene: (id: string) => tattooManager?.removeDecalMesh(id),
+        setShowcaseMode:      (enabled: boolean) => sceneManager?.setShowcaseMode(enabled),
     };
 }

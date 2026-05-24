@@ -23,6 +23,7 @@ export interface DecalState {
   designId: number;
   designName: string;
   imageUrl: string;
+  color: string;
   size: number;
   rotation: number;
   intersectionPoint:  { x: number; y: number; z: number };
@@ -34,6 +35,7 @@ export interface DecalState {
 export interface PendingTattoo {
   designId: number;
   imageUrl: string;
+  color: string;
   size: number;
   rotation: number;
   intersectionPoint:  { x: number; y: number; z: number };

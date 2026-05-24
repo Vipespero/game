@@ -104,6 +104,30 @@ img {
     padding: 0 10px;
 }
 
+.ts-random-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 118px;
+    min-height: 40px;
+    gap: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(72, 199, 184, 0.35);
+    border-radius: 8px;
+    background: rgba(72, 199, 184, 0.1);
+    color: var(--ts-teal);
+    font-size: 11px;
+    line-height: 1;
+    padding: 0 10px;
+}
+
+.ts-random-chip span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .ts-pill-btn span {
     min-width: 0;
     overflow: hidden;
@@ -397,6 +421,43 @@ img {
     min-height: 48px;
 }
 
+.ts-color-row {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+}
+
+.ts-color-options {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.ts-color-swatch {
+    position: relative;
+    width: 100%;
+    min-width: 34px;
+    height: 34px;
+    border: 2px solid rgba(255, 255, 255, 0.26);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.ts-color-swatch--active {
+    border-color: var(--ts-gold);
+    box-shadow: 0 0 0 2px rgba(216, 179, 106, 0.22);
+}
+
+.ts-color-swatch--active::after {
+    position: absolute;
+    inset: 8px;
+    border: 2px solid rgba(0, 0, 0, 0.55);
+    border-radius: 50%;
+    content: '';
+}
+
 .ts-ctrl-label {
     display: inline-flex;
     align-items: center;
@@ -474,6 +535,28 @@ img {
     margin-top: 12px;
     border-top: 1px solid var(--ts-line);
     padding-top: 10px;
+}
+
+.ts-finish-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 50px;
+    gap: 8px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(119, 209, 139, 0.72);
+    border-radius: 8px;
+    background: rgba(119, 209, 139, 0.16);
+    color: var(--ts-green);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.ts-finish-btn:active {
+    background: var(--ts-green);
+    color: #09100b;
 }
 
 .ts-decal-list__title {
@@ -714,6 +797,11 @@ img {
     }
 
     .ts-pill-btn {
+        max-width: 94px;
+        padding: 0 8px;
+    }
+
+    .ts-random-chip {
         max-width: 94px;
         padding: 0 8px;
     }

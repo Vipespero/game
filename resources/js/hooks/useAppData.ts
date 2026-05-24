@@ -13,7 +13,10 @@ export function useAppData() {
         getCharacters()
             .then((chars) => {
                 setCharacters(chars);
-                if (chars.length > 0) setActiveCharacter(chars[0]);
+                if (chars.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * chars.length);
+                    setActiveCharacter(chars[randomIndex]);
+                }
             })
             .catch((err) => console.error('Error cargando personajes:', err));
 

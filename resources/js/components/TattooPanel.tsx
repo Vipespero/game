@@ -1,5 +1,7 @@
 import type { DecalState, PendingTattoo } from '@/types/tattoo';
-import { Check, RotateCcw, Ruler, Trash2, X } from 'lucide-react';
+import { Check, Flag, RotateCcw, Ruler, Trash2, X } from 'lucide-react';
+
+const COLOR_OPTIONS = ['#111111', '#d8b36a', '#48c7b8', '#ee716d', '#ffffff', '#8f7cff'];
 
 interface Props {
     pending:   PendingTattoo | null;
@@ -8,9 +10,10 @@ interface Props {
     onApply:   () => void;
     onCancel:  () => void;
     onRemove:  (id: string) => void;
+    onFinish:  () => void;
 }
 
-export function TattooPanel({ pending, decals, onChange, onApply, onCancel, onRemove }: Props) {
+export function TattooPanel({ pending, decals, onChange, onApply, onCancel, onRemove, onFinish }: Props) {
     if (!pending && decals.length === 0) return null;
 
     return (
@@ -47,7 +50,23 @@ export function TattooPanel({ pending, decals, onChange, onApply, onCancel, onRe
                             value={pending.rotation}
                             onChange={(e) => onChange({ rotation: parseFloat(e.target.value) })}
                         />
-                        <span className="ts-ctrl-value">{Math.round(pending.rotation)}°</span>
+                        <span className="ts-ctrl-value">{Math.round(pending.rotation)}&deg;</span>
+                    </div>
+
+                    <div className="ts-color-row">
+                        <span className="ts-ctrl-label">Color</span>
+                        <div className="ts-color-options" aria-label="Color del tattoo">
+                            {COLOR_OPTIONS.map((color) => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    className={`ts-color-swatch ${pending.color === color ? 'ts-color-swatch--active' : ''}`}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() => onChange({ color })}
+                                    aria-label={`Usar color ${color}`}
+                                />
+                            ))}
+                        </div>
                     </div>
 
                     <div className="ts-panel__actions">
@@ -65,13 +84,19 @@ export function TattooPanel({ pending, decals, onChange, onApply, onCancel, onRe
 
             {decals.length > 0 && (
                 <div className="ts-decal-list">
+                    {!pending && (
+                        <button className="ts-finish-btn" onClick={onFinish}>
+                            <Flag size={18} aria-hidden />
+                            Finalizado
+                        </button>
+                    )}
                     <p className="ts-decal-list__title">
                         Tattoos aplicados ({decals.length})
                     </p>
                     {decals.map((d, i) => (
                         <div key={d.id} className="ts-decal-row">
                             <div className="ts-decal-row__thumb">
-                                <img src={d.imageUrl} alt={d.designName} />
+                                <img src={d.imageUrl} alt={d.designName} style={{ backgroundColor: d.color }} />
                             </div>
                             <span className="ts-decal-row__name">{d.designName} #{i + 1}</span>
                             <button

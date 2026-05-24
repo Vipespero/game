@@ -21,6 +21,10 @@ export class CharacterLoader {
         return meshes;
     }
 
+    getCurrentModel(): THREE.Object3D | null {
+        return this.currentModel;
+    }
+
     load(glbUrl: string, onProgress: (pct: number) => void): Promise<THREE.Object3D> {
         const requestId = ++this.loadRequestId;
 
