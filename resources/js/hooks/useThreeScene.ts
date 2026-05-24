@@ -1,0 +1,154 @@
+import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { SceneManager }    from '@/three/SceneManager';
+import { CharacterLoader } from '@/three/CharacterLoader';
+import { TattooManager }   from '@/three/TattooManager';
+import { TouchHandler }    from '@/three/TouchHandler';
+import type { Character, TattooDesign, DecalState, PendingTattoo } from '@/types/tattoo';
+
+// Module-level singletons so they survive React re-renders
+let sceneManager:  SceneManager    | null = null;
+let charLoader:    CharacterLoader | null = null;
+let tattooManager: TattooManager   | null = null;
+let touchHandler:  TouchHandler    | null = null;
+
+interface Options {
+    activeCharacter:    Character | null;
+    activeDesign:       TattooDesign | null;
+    decals:             DecalState[];
+    pending:            PendingTattoo | null;
+    onTap:              (pending: PendingTattoo) => void;
+    onLoadStart:        () => void;
+    onLoadEnd:          () => void;
+}
+
+export function useThreeScene(
+    containerRef: React.RefObject<HTMLDivElement | null>,
+    opts: Options,
+) {
+    // Always-fresh refs so closures see latest values
+    const activeDesignRef = useRef(opts.activeDesign);
+    useEffect(() => { activeDesignRef.current = opts.activeDesign; }, [opts.activeDesign]);
+
+    const onTapRef = useRef(opts.onTap);
+    useEffect(() => { onTapRef.current = opts.onTap; }, [opts.onTap]);
+
+    // ── Init Three.js once on mount ──
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const container = containerRef.current;
+
+        sceneManager  = new SceneManager(container);
+        charLoader    = new CharacterLoader(sceneManager);
+        tattooManager = new TattooManager(sceneManager);
+
+        touchHandler = new TouchHandler(container, ({ clientX, clientY }) => {
+            const design = activeDesignRef.current;
+            if (!charLoader || !tattooManager || !sceneManager || !design) return;
+
+            const meshes = charLoader.getMeshes();
+            if (meshes.length === 0) return;
+
+            const ndc      = TouchHandler.toNDC(clientX, clientY, container);
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(ndc, sceneManager.camera);
+
+            const hits = raycaster.intersectObjects(meshes, false);
+            if (hits.length === 0) return;
+
+            const hit         = hits[0];
+            const worldNormal = hit.face!.normal
+                .clone()
+                .transformDirection((hit.object as THREE.Mesh).matrixWorld);
+
+            const pending: PendingTattoo = {
+                designId:           design.id,
+                imageUrl:           design.image_url,
+                size:               0.5,
+                rotation:           0,
+                intersectionPoint:  { x: hit.point.x,    y: hit.point.y,    z: hit.point.z },
+                intersectionNormal: { x: worldNormal.x,  y: worldNormal.y,  z: worldNormal.z },
+                meshName:           hit.object.name,
+            };
+
+            onTapRef.current(pending);
+
+            tattooManager.showPreview(
+                hit.object as THREE.Mesh,
+                hit.point,
+                worldNormal,
+                pending.size,
+                pending.rotation,
+                pending.imageUrl,
+            );
+        });
+
+        sceneManager.startLoop();
+
+        return () => {
+            touchHandler?.dispose();
+            sceneManager?.dispose();
+            sceneManager  = null;
+            charLoader    = null;
+            tattooManager = null;
+            touchHandler  = null;
+        };
+    }, []); // mount once
+
+    // ── Load character when it changes ──
+    useEffect(() => {
+        if (!opts.activeCharacter) return;
+        const char = opts.activeCharacter;
+
+        const doLoad = () => {
+            if (!charLoader || !tattooManager) return;
+            opts.onLoadStart();
+            tattooManager.clearAll();
+            charLoader
+                .load(char.glb_url, (pct) => console.log(`${char.name}: ${pct}%`))
+                .then(() => opts.onLoadEnd())
+                .catch((err) => { console.error('Error GLB:', err); opts.onLoadEnd(); });
+        };
+
+        if (!charLoader) {
+            const id = setTimeout(doLoad, 150);
+            return () => clearTimeout(id);
+        }
+        doLoad();
+    }, [opts.activeCharacter?.id]);
+
+    // ── Update preview when sliders change ──
+    useEffect(() => {
+        if (!tattooManager || !opts.pending || !charLoader) return;
+        const p      = opts.pending;
+        const meshes = charLoader.getMeshes();
+        const target = meshes.find((m) => m.name === p.meshName) ?? meshes[0];
+        if (!target) return;
+
+        tattooManager.showPreview(
+            target,
+            new THREE.Vector3(p.intersectionPoint.x,  p.intersectionPoint.y,  p.intersectionPoint.z),
+            new THREE.Vector3(p.intersectionNormal.x, p.intersectionNormal.y, p.intersectionNormal.z),
+            p.size,
+            p.rotation,
+            p.imageUrl,
+        );
+    }, [opts.pending]);
+
+    // ── Sync confirmed decals → scene ──
+    useEffect(() => {
+        if (!tattooManager || !charLoader) return;
+        const meshes = charLoader.getMeshes();
+        opts.decals.forEach((decal) => {
+            if (tattooManager!.getMeshForDecal(decal.id)) return;
+            const target = meshes.find((m) => m.name === decal.meshName) ?? meshes[0];
+            if (!target) return;
+            tattooManager!.applyDecal(decal, target);
+        });
+    }, [opts.decals]);
+
+    return {
+        clearPreview:         () => tattooManager?.clearPreview(),
+        removeDecalFromScene: (id: string) => tattooManager?.removeDecalMesh(id),
+    };
+}
