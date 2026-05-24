@@ -8,6 +8,14 @@ export class SceneManager {
     controls: OrbitControls;
     private animFrameId: number | null = null;
     private container: HTMLDivElement;
+    private ambientLight: THREE.AmbientLight;
+    private keyLight: THREE.DirectionalLight;
+    private rimLight: THREE.DirectionalLight;
+    private accentLight: THREE.PointLight;
+    private baseTarget = new THREE.Vector3();
+    private baseFov = 45;
+    private showcaseEnabled = false;
+    private showcaseStartedAt = 0;
 
     constructor(container: HTMLDivElement) {
         this.container = container;
@@ -31,13 +39,20 @@ export class SceneManager {
         this.camera.position.set(0, 2, 5);
 
         // Luces
-        this.scene.add(new THREE.AmbientLight(0xffeedd, 0.8));
-        const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-        dir.position.set(5, 10, 7);
-        this.scene.add(dir);
-        const rim = new THREE.DirectionalLight(0xc9a96e, 0.3);
-        rim.position.set(-5, 2, -5);
-        this.scene.add(rim);
+        this.ambientLight = new THREE.AmbientLight(0xffeedd, 0.8);
+        this.scene.add(this.ambientLight);
+
+        this.keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        this.keyLight.position.set(5, 10, 7);
+        this.scene.add(this.keyLight);
+
+        this.rimLight = new THREE.DirectionalLight(0xc9a96e, 0.3);
+        this.rimLight.position.set(-5, 2, -5);
+        this.scene.add(this.rimLight);
+
+        this.accentLight = new THREE.PointLight(0x48c7b8, 0, 8);
+        this.accentLight.position.set(0, 2, 3);
+        this.scene.add(this.accentLight);
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
@@ -55,12 +70,14 @@ export class SceneManager {
         const maxDim = Math.max(size.x, size.y, size.z);
         this.camera.position.set(center.x, center.y + size.y * 0.3, maxDim * 2.2);
         this.controls.target.copy(center);
+        this.baseTarget.copy(center);
         this.controls.update();
     }
 
     startLoop() {
         const loop = () => {
             this.animFrameId = requestAnimationFrame(loop);
+            this.applyShowcaseMotion();
             this.controls.update();
             this.renderer.render(this.scene, this.camera);
         };
@@ -68,9 +85,53 @@ export class SceneManager {
     }
 
     setShowcaseMode(enabled: boolean) {
+        this.showcaseEnabled = enabled;
         this.controls.autoRotate = enabled;
-        this.controls.autoRotateSpeed = 1.2;
+        this.controls.autoRotateSpeed = 0.85;
         this.controls.enablePan = !enabled;
+
+        if (enabled) {
+            this.showcaseStartedAt = performance.now();
+            this.baseTarget.copy(this.controls.target);
+            this.baseFov = this.camera.fov;
+            return;
+        }
+
+        this.controls.target.copy(this.baseTarget);
+        this.camera.fov = this.baseFov;
+        this.camera.updateProjectionMatrix();
+        this.ambientLight.intensity = 0.8;
+        this.keyLight.intensity = 1.0;
+        this.rimLight.intensity = 0.3;
+        this.accentLight.intensity = 0;
+        this.scene.background = new THREE.Color(0x0d0d0d);
+    }
+
+    private applyShowcaseMotion() {
+        if (!this.showcaseEnabled) return;
+
+        const t = (performance.now() - this.showcaseStartedAt) / 1000;
+        const slowPulse = Math.sin(t * 1.2);
+        const fastPulse = Math.sin(t * 2.4);
+
+        this.controls.target.copy(this.baseTarget);
+        this.controls.target.y += slowPulse * 0.08;
+
+        this.camera.fov = this.baseFov + slowPulse * 1.6;
+        this.camera.updateProjectionMatrix();
+
+        this.ambientLight.intensity = 0.72 + fastPulse * 0.06;
+        this.keyLight.intensity = 0.95 + Math.sin(t * 1.6) * 0.12;
+        this.rimLight.intensity = 0.48 + fastPulse * 0.18;
+        this.accentLight.intensity = 0.65 + Math.sin(t * 1.8) * 0.28;
+        this.accentLight.position.set(
+            Math.sin(t * 0.72) * 3.6,
+            this.baseTarget.y + 1.5 + Math.sin(t * 1.4) * 0.35,
+            Math.cos(t * 0.72) * 3.6,
+        );
+
+        const warmth = 0.04 + (slowPulse + 1) * 0.012;
+        this.scene.background = new THREE.Color(warmth, 0.035, 0.045);
     }
 
     stopLoop() {

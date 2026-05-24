@@ -38,8 +38,8 @@ export default function TattooPage() {
         if (showcaseMode) {
             return {
                 eyebrow: 'Finalizado',
-                title: 'Mira tu resultado',
-                body: 'El modelo gira para mostrar los tattoos.',
+                title: 'Show de tattoos',
+                body: 'Camara, luz y movimiento para presentar tu diseno.',
                 action: 'Cambiar tattoo',
                 progress: 100,
             };
@@ -183,7 +183,7 @@ export default function TattooPage() {
                     </div>
                 </header>
 
-                <div className="ts-canvas-wrapper" ref={containerRef}>
+                <div className={`ts-canvas-wrapper ${showcaseMode ? 'ts-canvas-wrapper--showcase' : ''}`} ref={containerRef}>
                     <section className="ts-game-hud" aria-live="polite">
                         <div className="ts-mission">
                             <div className="ts-mission__icon">
