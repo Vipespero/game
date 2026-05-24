@@ -97,9 +97,40 @@ export class TattooManager {
                 opacity,
             });
             return new THREE.Mesh(geo, mat);
-        } catch {
-            return null;
+        } catch (error) {
+            console.warn('DecalGeometry failed, using sticker fallback:', error);
+
+            return this.buildFallbackSticker(point, normal, size, rotation, imageUrl, color, opacity);
         }
+    }
+
+    private buildFallbackSticker(
+        point: THREE.Vector3,
+        normal: THREE.Vector3,
+        size: number,
+        rotation: number,
+        imageUrl: string,
+        color: string,
+        opacity: number,
+    ): THREE.Mesh {
+        const geo = new THREE.PlaneGeometry(size, size);
+        const mat = new THREE.MeshBasicMaterial({
+            map: this.getTintedTexture(imageUrl, color),
+            transparent: true,
+            alphaTest: 0.03,
+            depthTest: true,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -6,
+            opacity,
+            side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        const safeNormal = normal.clone().normalize();
+        mesh.position.copy(point).add(safeNormal.multiplyScalar(0.01));
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal.clone().normalize());
+        mesh.rotateZ(THREE.MathUtils.degToRad(rotation));
+        return mesh;
     }
 
     // ── Preview ──

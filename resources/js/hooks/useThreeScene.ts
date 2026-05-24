@@ -73,13 +73,14 @@ export function useThreeScene(
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(ndc, sceneManager.camera);
 
-            const hits = raycaster.intersectObjects(meshes, false);
+            const hits = raycaster.intersectObjects(meshes, true);
             if (hits.length === 0) return;
 
-            const hit         = hits[0];
-            const worldNormal = hit.face!.normal
-                .clone()
-                .transformDirection((hit.object as THREE.Mesh).matrixWorld);
+            const hit = hits[0];
+            const hitMesh = hit.object as THREE.Mesh;
+            const worldNormal = hit.face
+                ? hit.face.normal.clone().transformDirection(hitMesh.matrixWorld)
+                : sceneManager.camera.position.clone().sub(hit.point).normalize();
 
             const pending: PendingTattoo = {
                 designId:           design.id,
@@ -89,13 +90,14 @@ export function useThreeScene(
                 rotation:           0,
                 intersectionPoint:  { x: hit.point.x,    y: hit.point.y,    z: hit.point.z },
                 intersectionNormal: { x: worldNormal.x,  y: worldNormal.y,  z: worldNormal.z },
-                meshName:           hit.object.name,
+                meshName:           hitMesh.name,
+                meshUuid:           hitMesh.uuid,
             };
 
             onTapRef.current(pending);
 
             tattooManager.showPreview(
-                hit.object as THREE.Mesh,
+                hitMesh,
                 hit.point,
                 worldNormal,
                 pending.size,
@@ -158,7 +160,9 @@ export function useThreeScene(
         if (!tattooManager || !opts.pending || !charLoader) return;
         const p      = opts.pending;
         const meshes = charLoader.getMeshes();
-        const target = meshes.find((m) => m.name === p.meshName) ?? meshes[0];
+        const target = meshes.find((m) => m.uuid === p.meshUuid)
+            ?? meshes.find((m) => m.name === p.meshName)
+            ?? meshes[0];
         if (!target) return;
 
         tattooManager.showPreview(
@@ -178,7 +182,9 @@ export function useThreeScene(
         const meshes = charLoader.getMeshes();
         opts.decals.forEach((decal) => {
             if (tattooManager!.getMeshForDecal(decal.id)) return;
-            const target = meshes.find((m) => m.name === decal.meshName) ?? meshes[0];
+            const target = meshes.find((m) => m.uuid === decal.meshUuid)
+                ?? meshes.find((m) => m.name === decal.meshName)
+                ?? meshes[0];
             if (!target) return;
             tattooManager!.applyDecal(decal, target);
         });

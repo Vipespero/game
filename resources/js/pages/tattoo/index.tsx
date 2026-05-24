@@ -123,6 +123,7 @@ export default function TattooPage() {
             intersectionPoint: pending.intersectionPoint,
             intersectionNormal: pending.intersectionNormal,
             meshName: pending.meshName,
+            meshUuid: pending.meshUuid,
         };
 
         addDecal(decal);
