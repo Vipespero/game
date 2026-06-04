@@ -1,6 +1,7 @@
 import '@/styles.css';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PointerEvent } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     Album,
@@ -111,8 +112,16 @@ export default function MelodyMergePage() {
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>([]);
     const [selectedCell, setSelectedCell] = useState<number | null>(null);
     const [draggedCell, setDraggedCell] = useState<number | null>(null);
+    const [touchDrag, setTouchDrag] = useState<{
+        index: number;
+        x: number;
+        y: number;
+        item: BoardItem;
+    } | null>(null);
     const [activeTab, setActiveTab] = useState<'merge' | 'album' | 'room'>('merge');
     const [message, setMessage] = useState('Fusiona objetos iguales para ganar sobres.');
+    const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(null);
+    const didPointerDragRef = useRef(false);
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -249,6 +258,11 @@ export default function MelodyMergePage() {
     }, [hearts]);
 
     const handleCellClick = useCallback((index: number) => {
+        if (didPointerDragRef.current) {
+            didPointerDragRef.current = false;
+            return;
+        }
+
         const cell = board[index];
 
         if (selectedCell === null) {
@@ -259,6 +273,60 @@ export default function MelodyMergePage() {
         mergeCells(selectedCell, index);
         setSelectedCell(null);
     }, [board, mergeCells, selectedCell]);
+
+    const handlePointerDown = useCallback((index: number, event: PointerEvent<HTMLButtonElement>) => {
+        const item = board[index];
+
+        if (!item) return;
+
+        dragStartRef.current = {
+            index,
+            x: event.clientX,
+            y: event.clientY,
+        };
+        didPointerDragRef.current = false;
+        event.currentTarget.setPointerCapture(event.pointerId);
+    }, [board]);
+
+    const handlePointerMove = useCallback((event: PointerEvent<HTMLButtonElement>) => {
+        const start = dragStartRef.current;
+
+        if (!start) return;
+
+        const item = board[start.index];
+        const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+
+        if (!item || distance < 8) return;
+
+        didPointerDragRef.current = true;
+        setTouchDrag({
+            index: start.index,
+            x: event.clientX,
+            y: event.clientY,
+            item,
+        });
+    }, [board]);
+
+    const handlePointerEnd = useCallback((event: PointerEvent<HTMLButtonElement>) => {
+        const start = dragStartRef.current;
+
+        if (!start) return;
+
+        if (didPointerDragRef.current) {
+            const dropTarget = document
+                .elementFromPoint(event.clientX, event.clientY)
+                ?.closest<HTMLElement>('[data-cell-index]');
+            const targetIndex = dropTarget ? Number(dropTarget.dataset.cellIndex) : NaN;
+
+            if (Number.isInteger(targetIndex)) {
+                mergeCells(start.index, targetIndex);
+                setSelectedCell(null);
+            }
+        }
+
+        dragStartRef.current = null;
+        setTouchDrag(null);
+    }, [mergeCells]);
 
     const missions = [
         { label: 'Fusiona 20 objetos', value: Math.min(mergeCount, 20), goal: 20 },
@@ -330,6 +398,7 @@ export default function MelodyMergePage() {
                                 {board.map((cell, index) => (
                                     <button
                                         className={`mm-cell ${cell ? 'mm-cell--filled' : ''} ${selectedCell === index ? 'is-selected' : ''}`}
+                                        data-cell-index={index}
                                         draggable={Boolean(cell)}
                                         key={index}
                                         onClick={() => handleCellClick(index)}
@@ -341,6 +410,10 @@ export default function MelodyMergePage() {
                                                 setDraggedCell(null);
                                             }
                                         }}
+                                        onPointerCancel={handlePointerEnd}
+                                        onPointerDown={(event) => handlePointerDown(index, event)}
+                                        onPointerMove={handlePointerMove}
+                                        onPointerUp={handlePointerEnd}
                                         type="button"
                                     >
                                         {cell && (
@@ -352,6 +425,21 @@ export default function MelodyMergePage() {
                                     </button>
                                 ))}
                             </div>
+
+                            {touchDrag && (
+                                <div
+                                    className="mm-drag-preview"
+                                    style={{
+                                        left: touchDrag.x,
+                                        top: touchDrag.y,
+                                    }}
+                                >
+                                    <span className={`mm-piece mm-piece--${getLevel(touchDrag.item.level).symbol}`}>
+                                        <span className="mm-piece__shine" />
+                                        <span className="mm-piece__name">{getLevel(touchDrag.item.level).name}</span>
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="mm-actions">
                                 <button className="mm-magic-box" onClick={generateItem} type="button">
