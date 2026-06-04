@@ -110,6 +110,8 @@ export default function MelodyMergePage() {
     const [playerLevel, setPlayerLevel] = useState(1);
     const [mergeCount, setMergeCount] = useState(0);
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>([]);
+    const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
+    const [isPackOpened, setIsPackOpened] = useState(false);
     const [selectedCell, setSelectedCell] = useState<number | null>(null);
     const [draggedCell, setDraggedCell] = useState<number | null>(null);
     const [touchDrag, setTouchDrag] = useState<{
@@ -119,9 +121,13 @@ export default function MelodyMergePage() {
         item: BoardItem;
     } | null>(null);
     const [activeTab, setActiveTab] = useState<'merge' | 'album' | 'room'>('merge');
-    const [message, setMessage] = useState('Fusiona objetos iguales para ganar sobres.');
+    const [toastMessage, setToastMessage] = useState('Fusiona objetos iguales para ganar sobres.');
     const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(null);
     const didPointerDragRef = useRef(false);
+
+    const notify = useCallback((message: string) => {
+        setToastMessage(message);
+    }, []);
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -130,6 +136,13 @@ export default function MelodyMergePage() {
 
         return () => window.clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        if (!toastMessage) return;
+
+        const timer = window.setTimeout(() => setToastMessage(''), 2600);
+        return () => window.clearTimeout(timer);
+    }, [toastMessage]);
 
     const collectedCards = useMemo(() => {
         const unique = new Map<string, MelodyCard>();
@@ -140,6 +153,24 @@ export default function MelodyMergePage() {
     const xpGoal = xpForLevel(playerLevel);
     const albumPercent = Math.round((collectedCards.length / cardPool.length) * 100);
     const freeCells = board.filter((cell) => !cell).length;
+
+    const queuePack = useCallback((label: string) => {
+        setPendingPack({
+            id: nanoid(),
+            label,
+            cards: [chooseCard(), chooseCard(), chooseCard()],
+        });
+        setIsPackOpened(false);
+        notify(`${label}: toca el sobre para abrirlo.`);
+    }, [notify]);
+
+    const revealPendingPack = useCallback(() => {
+        if (!pendingPack || isPackOpened) return;
+
+        setOpenedPacks((packs) => [pendingPack, ...packs]);
+        setIsPackOpened(true);
+        notify('Nuevas cartas agregadas al album.');
+    }, [isPackOpened, notify, pendingPack]);
 
     const addProgress = useCallback((itemLevel: number) => {
         const item = getLevel(itemLevel);
@@ -155,22 +186,15 @@ export default function MelodyMergePage() {
             if (nextXp >= goal) {
                 setPlayerLevel((level) => level + 1);
                 setEnergy((current) => Math.min(maxEnergy, current + 20));
-                setOpenedPacks((packs) => [
-                    {
-                        id: nanoid(),
-                        label: 'Sobre de nivel',
-                        cards: [chooseCard(), chooseCard(), chooseCard()],
-                    },
-                    ...packs,
-                ]);
-                setMessage('Subiste de nivel y ganaste un sobre.');
+                queuePack('Sobre de nivel');
+                notify('Subiste de nivel y ganaste energia.');
                 return nextXp - goal;
             }
 
-            setMessage(`+${gainedXp} XP y +${gainedHearts} corazones.`);
+            notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
             return nextXp;
         });
-    }, [playerLevel]);
+    }, [notify, playerLevel, queuePack]);
 
     const mergeCells = useCallback((from: number, to: number) => {
         if (from === to) return;
@@ -186,12 +210,12 @@ export default function MelodyMergePage() {
             if (!target) {
                 next[to] = origin;
                 next[from] = null;
-                setMessage('Objeto movido.');
+                notify('Objeto movido.');
                 return next;
             }
 
             if (origin.level !== target.level) {
-                setMessage('Solo se fusionan objetos iguales.');
+                notify('Solo se fusionan objetos iguales.');
                 return current;
             }
 
@@ -201,31 +225,23 @@ export default function MelodyMergePage() {
             addProgress(origin.level);
 
             if (newLevel >= 4 && Math.random() > 0.62) {
-                setOpenedPacks((packs) => [
-                    {
-                        id: nanoid(),
-                        label: 'Sobre por fusion',
-                        cards: [chooseCard(), chooseCard(), chooseCard()],
-                    },
-                    ...packs,
-                ]);
-                setMessage('Fusion perfecta: ganaste un sobre.');
+                queuePack('Sobre por fusion');
             }
 
             return next;
         });
-    }, [addProgress]);
+    }, [addProgress, notify, queuePack]);
 
     const generateItem = useCallback(() => {
         if (energy <= 0) {
-            setMessage('La caja magica necesita energia.');
+            notify('La caja magica necesita energia.');
             return;
         }
 
         const firstEmpty = board.findIndex((cell) => !cell);
 
         if (firstEmpty === -1) {
-            setMessage('El tablero esta lleno. Fusiona para abrir espacio.');
+            notify('El tablero esta lleno. Fusiona para abrir espacio.');
             return;
         }
 
@@ -236,26 +252,18 @@ export default function MelodyMergePage() {
             next[firstEmpty] = makeItem(level);
             return next;
         });
-        setMessage('La caja magica dejo un regalo en el tablero.');
-    }, [board, energy]);
+        notify('La caja magica dejo una semilla.');
+    }, [board, energy, notify]);
 
     const buyPack = useCallback(() => {
         if (hearts < 80) {
-            setMessage('Necesitas 80 corazones para comprar un sobre.');
+            notify('Necesitas 80 corazones para comprar un sobre.');
             return;
         }
 
         setHearts((value) => value - 80);
-        setOpenedPacks((packs) => [
-            {
-                id: nanoid(),
-                label: 'Sobre premium',
-                cards: [chooseCard(), chooseCard(), chooseCard()],
-            },
-            ...packs,
-        ]);
-        setMessage('Abriste un sobre premium.');
-    }, [hearts]);
+        queuePack('Sobre premium');
+    }, [hearts, notify, queuePack]);
 
     const handleCellClick = useCallback((index: number) => {
         if (didPointerDragRef.current) {
@@ -377,21 +385,6 @@ export default function MelodyMergePage() {
                         </div>
                     </div>
 
-                    <nav className="mm-tabs" aria-label="Vistas">
-                        <button className={activeTab === 'merge' ? 'is-active' : ''} onClick={() => setActiveTab('merge')} type="button">
-                            <Wand2 size={17} aria-hidden />
-                            <span>Merge</span>
-                        </button>
-                        <button className={activeTab === 'album' ? 'is-active' : ''} onClick={() => setActiveTab('album')} type="button">
-                            <Album size={17} aria-hidden />
-                            <span>Album</span>
-                        </button>
-                        <button className={activeTab === 'room' ? 'is-active' : ''} onClick={() => setActiveTab('room')} type="button">
-                            <Gift size={17} aria-hidden />
-                            <span>Sala</span>
-                        </button>
-                    </nav>
-
                     {activeTab === 'merge' && (
                         <section className="mm-stage">
                             <div className="mm-board" aria-label="Tablero de fusion">
@@ -449,11 +442,6 @@ export default function MelodyMergePage() {
                                     </span>
                                     <strong>Caja magica</strong>
                                 </button>
-
-                                <div className="mm-message">
-                                    <Sparkles size={16} aria-hidden />
-                                    <span>{message}</span>
-                                </div>
                             </div>
                         </section>
                     )}
@@ -523,28 +511,66 @@ export default function MelodyMergePage() {
                         </section>
                     )}
 
-                    {openedPacks[0] && (
-                        <aside className="mm-pack" aria-label="Ultimo sobre abierto">
-                            <div className="mm-section-title">
-                                <PackageOpen size={17} aria-hidden />
-                                <h2>{openedPacks[0].label}</h2>
-                            </div>
-                            <div className="mm-pack__cards">
-                                {openedPacks[0].cards.map((card, index) => (
-                                    <div className={`mm-mini-card rarity-${card.rarity.toLowerCase()}`} key={`${openedPacks[0].id}-${card.id}-${index}`}>
-                                        <span>{card.rarity}</span>
-                                        <strong>{card.name}</strong>
-                                    </div>
-                                ))}
-                            </div>
-                        </aside>
-                    )}
-
                     <footer className="mm-footer">
                         <span>{freeCells} espacios libres</span>
                         <span>{mergeCount} fusiones</span>
                         <span>{collectedCards.length}/{cardPool.length} cartas</span>
                     </footer>
+
+                    <nav className="mm-tabs" aria-label="Vistas">
+                        <button className={activeTab === 'merge' ? 'is-active' : ''} onClick={() => setActiveTab('merge')} type="button">
+                            <Wand2 size={19} aria-hidden />
+                            <span>Merge</span>
+                        </button>
+                        <button className={activeTab === 'album' ? 'is-active' : ''} onClick={() => setActiveTab('album')} type="button">
+                            <Album size={19} aria-hidden />
+                            <span>Album</span>
+                        </button>
+                        <button className={activeTab === 'room' ? 'is-active' : ''} onClick={() => setActiveTab('room')} type="button">
+                            <Gift size={19} aria-hidden />
+                            <span>Sala</span>
+                        </button>
+                    </nav>
+
+                    {toastMessage && (
+                        <div className="mm-toast" role="status">
+                            <Sparkles size={16} aria-hidden />
+                            <span>{toastMessage}</span>
+                        </div>
+                    )}
+
+                    {pendingPack && (
+                        <div className="mm-pack-modal" role="dialog" aria-modal="true" aria-label={pendingPack.label}>
+                            <div className="mm-pack-modal__panel">
+                                <button className={`mm-envelope ${isPackOpened ? 'is-open' : ''}`} onClick={revealPendingPack} type="button">
+                                    <span className="mm-envelope__flap" />
+                                    <span className="mm-envelope__seal">
+                                        <PackageOpen size={24} aria-hidden />
+                                    </span>
+                                    <strong>{isPackOpened ? 'Abierto' : pendingPack.label}</strong>
+                                </button>
+
+                                {isPackOpened ? (
+                                    <>
+                                        <div className="mm-pack-modal__cards">
+                                            {pendingPack.cards.map((card, index) => (
+                                                <div className={`mm-reward-card rarity-${card.rarity.toLowerCase()}`} key={`${pendingPack.id}-${card.id}-${index}`}>
+                                                    <span>{card.rarity}</span>
+                                                    <strong>{card.name}</strong>
+                                                    <small>{card.collection}</small>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
+                                            Guardar
+                                        </button>
+                                    </>
+                                ) : (
+                                    <p>Presiona el sello para cortar el sobre.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </section>
             </main>
         </>
