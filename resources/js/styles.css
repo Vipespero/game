@@ -581,7 +581,8 @@ button {
 .mm-actions {
     display: flex;
     justify-content: center;
-    margin-top: 12px;
+    margin-top: 14px;
+    padding-bottom: 4px;
 }
 
 .mm-magic-box {
@@ -589,8 +590,8 @@ button {
     display: grid;
     justify-items: center;
     gap: 4px;
-    width: min(100%, 190px);
-    min-height: 104px;
+    width: min(100%, 176px);
+    min-height: 96px;
     overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.88);
     border-radius: 22px;
@@ -601,7 +602,7 @@ button {
     font-size: 12px;
     font-weight: 900;
     box-shadow: 0 12px 28px rgba(255, 120, 180, 0.3);
-    padding: 14px 10px;
+    padding: 12px 10px;
 }
 
 .mm-magic-box::before {
@@ -617,7 +618,7 @@ button {
 
 .mm-magic-box::after {
     position: absolute;
-    top: 48px;
+    top: 44px;
     right: 0;
     left: 0;
     height: 14px;
@@ -628,8 +629,8 @@ button {
 .mm-magic-box__lid {
     position: relative;
     z-index: 1;
-    width: 70px;
-    height: 18px;
+    width: 64px;
+    height: 16px;
     border-radius: 12px 12px 6px 6px;
     background: #ffffff;
     transform: rotate(-4deg);
@@ -640,8 +641,8 @@ button {
     z-index: 1;
     display: grid;
     place-items: center;
-    width: 78px;
-    height: 54px;
+    width: 72px;
+    height: 48px;
     border: 3px solid #ffffff;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.14);
@@ -916,22 +917,23 @@ button {
 .mm-toast {
     position: absolute;
     right: 16px;
-    bottom: 98px;
+    top: 124px;
+    bottom: auto;
     left: 16px;
     z-index: 50;
     display: flex;
     align-items: center;
     gap: 9px;
-    min-height: 46px;
+    min-height: 42px;
     border: 1px solid rgba(255, 255, 255, 0.88);
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.92);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
     box-shadow: 0 12px 28px rgba(120, 65, 132, 0.18);
     color: var(--mm-muted);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 900;
     line-height: 1.2;
-    padding: 10px 12px;
+    padding: 8px 12px;
     animation: mm-toast-in 240ms ease both;
 }
 
@@ -943,7 +945,7 @@ button {
 @keyframes mm-toast-in {
     from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(-10px);
     }
 
     to {
@@ -1185,6 +1187,6 @@ button {
     }
 
     .mm-toast {
-        bottom: 92px;
+        top: 108px;
     }
 }
