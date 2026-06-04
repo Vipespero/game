@@ -363,23 +363,15 @@ button {
 }
 
 .mm-piece--seed {
-    background: linear-gradient(145deg, #b8ef9f, #5fbf75);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+        url('/Melody1.png') center 42% / 76% auto no-repeat,
+        linear-gradient(145deg, #ffd8ee, #ff82bd);
 }
 
-.mm-piece--seed::before {
-    width: 22px;
-    height: 28px;
-    border-radius: 50% 50% 48% 48%;
-    background: linear-gradient(145deg, #7ad56b, #3f9f59);
-    transform: rotate(-22deg);
-}
-
+.mm-piece--seed::before,
 .mm-piece--seed::after {
-    width: 18px;
-    height: 22px;
-    border-radius: 90% 8px 90% 8px;
-    background: #d8ffb8;
-    transform: translate(10px, -7px) rotate(34deg);
+    display: none;
 }
 
 .mm-piece--flower {
