@@ -379,27 +379,19 @@ button {
 }
 
 .mm-piece--flower {
-    background: linear-gradient(145deg, #ff98c7, #ff6aa9);
-}
-
-.mm-piece--flower::before {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
     background:
-        radial-gradient(circle, #ffd75f 0 6px, transparent 7px),
-        radial-gradient(circle at 50% 0, #ffffff 0 9px, transparent 10px),
-        radial-gradient(circle at 100% 50%, #ffffff 0 9px, transparent 10px),
-        radial-gradient(circle at 50% 100%, #ffffff 0 9px, transparent 10px),
-        radial-gradient(circle at 0 50%, #ffffff 0 9px, transparent 10px);
+        url('/pompompurin.png') center / 96% auto no-repeat,
+        linear-gradient(145deg, #ffe3a3, #ffba54);
 }
 
+.mm-piece--flower::before,
 .mm-piece--flower::after {
-    width: 4px;
-    height: 18px;
-    border-radius: 999px;
-    background: rgba(82, 166, 98, 0.72);
-    transform: translateY(15px);
+    display: none;
+}
+
+.mm-piece--flower .mm-piece__shine,
+.mm-piece--flower .mm-piece__name {
+    display: none;
 }
 
 .mm-piece--bouquet {
