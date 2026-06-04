@@ -397,7 +397,7 @@ export default function MelodyMergePage() {
                             <div className="mm-board" aria-label="Tablero de fusion">
                                 {board.map((cell, index) => (
                                     <button
-                                        className={`mm-cell ${cell ? 'mm-cell--filled' : ''} ${selectedCell === index ? 'is-selected' : ''}`}
+                                        className={`mm-cell ${cell ? `mm-cell--filled mm-cell--${getLevel(cell.level).symbol}` : ''} ${selectedCell === index ? 'is-selected' : ''}`}
                                         data-cell-index={index}
                                         draggable={Boolean(cell)}
                                         key={index}
