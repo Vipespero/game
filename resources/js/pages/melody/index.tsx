@@ -41,18 +41,19 @@ type PackReward = {
 
 const boardSize = 25;
 const maxEnergy = 100;
+const premiumPackCost = 180;
 
 const mergeChain = [
-    { level: 1, name: 'Semilla', symbol: 'seed', xp: 1, hearts: 2 },
-    { level: 2, name: 'Flor', symbol: 'flower', xp: 2, hearts: 4 },
-    { level: 3, name: 'Ramo', symbol: 'bouquet', xp: 5, hearts: 9 },
-    { level: 4, name: 'Peluche', symbol: 'plush', xp: 10, hearts: 16 },
-    { level: 5, name: 'Lazo', symbol: 'bow', xp: 18, hearts: 28 },
-    { level: 6, name: 'Corona', symbol: 'crown', xp: 32, hearts: 44 },
-    { level: 7, name: 'Tesoro', symbol: 'gem', xp: 55, hearts: 70 },
-    { level: 8, name: 'Castillo', symbol: 'castle', xp: 90, hearts: 110 },
-    { level: 9, name: 'Palacio', symbol: 'palace', xp: 140, hearts: 170 },
-    { level: 10, name: 'Legendario', symbol: 'rainbow', xp: 220, hearts: 260 },
+    { level: 1, name: 'Semilla', symbol: 'seed', xp: 6, hearts: 1 },
+    { level: 2, name: 'Flor', symbol: 'flower', xp: 10, hearts: 2 },
+    { level: 3, name: 'Ramo', symbol: 'bouquet', xp: 16, hearts: 4 },
+    { level: 4, name: 'Peluche', symbol: 'plush', xp: 26, hearts: 7 },
+    { level: 5, name: 'Lazo', symbol: 'bow', xp: 42, hearts: 11 },
+    { level: 6, name: 'Corona', symbol: 'crown', xp: 68, hearts: 18 },
+    { level: 7, name: 'Tesoro', symbol: 'gem', xp: 108, hearts: 28 },
+    { level: 8, name: 'Castillo', symbol: 'castle', xp: 166, hearts: 42 },
+    { level: 9, name: 'Palacio', symbol: 'palace', xp: 248, hearts: 62 },
+    { level: 10, name: 'Legendario', symbol: 'rainbow', xp: 360, hearts: 90 },
 ];
 
 const cardPool: MelodyCard[] = [
@@ -74,7 +75,7 @@ const emptyBoard = (): Array<BoardItem | null> => Array.from({ length: boardSize
 
 const getLevel = (level: number) => mergeChain[Math.min(level, mergeChain.length) - 1];
 
-const xpForLevel = (level: number) => Math.round(100 + (level - 1) * 150 + Math.pow(level - 1, 2) * 60);
+const xpForLevel = (level: number) => Math.round(60 + (level - 1) * 110 + Math.pow(level - 1, 2) * 35);
 
 const chooseCard = (): MelodyCard => {
     const roll = Math.random();
@@ -224,7 +225,7 @@ export default function MelodyMergePage() {
             next[from] = null;
             addProgress(origin.level);
 
-            if (newLevel >= 4 && Math.random() > 0.62) {
+            if (newLevel >= 5 && Math.random() > 0.92) {
                 queuePack('Sobre por fusion');
             }
 
@@ -256,12 +257,12 @@ export default function MelodyMergePage() {
     }, [board, energy, notify]);
 
     const buyPack = useCallback(() => {
-        if (hearts < 80) {
-            notify('Necesitas 80 corazones para comprar un sobre.');
+        if (hearts < premiumPackCost) {
+            notify(`Necesitas ${premiumPackCost} corazones para comprar un sobre.`);
             return;
         }
 
-        setHearts((value) => value - 80);
+        setHearts((value) => value - premiumPackCost);
         queuePack('Sobre premium');
     }, [hearts, notify, queuePack]);
 
@@ -337,9 +338,9 @@ export default function MelodyMergePage() {
     }, [mergeCells]);
 
     const missions = [
-        { label: 'Fusiona 20 objetos', value: Math.min(mergeCount, 20), goal: 20 },
-        { label: 'Colecciona 6 cartas', value: Math.min(collectedCards.length, 6), goal: 6 },
-        { label: 'Guarda 300 corazones', value: Math.min(hearts, 300), goal: 300 },
+        { label: 'Fusiona 60 objetos', value: Math.min(mergeCount, 60), goal: 60 },
+        { label: 'Colecciona 12 cartas', value: Math.min(collectedCards.length, 12), goal: 12 },
+        { label: 'Guarda 500 corazones', value: Math.min(hearts, 500), goal: 500 },
     ];
 
     return (
@@ -461,7 +462,7 @@ export default function MelodyMergePage() {
                                 </div>
                                 <button onClick={buyPack} type="button">
                                     <PackageOpen size={17} aria-hidden />
-                                    <span>80</span>
+                                    <span>{premiumPackCost}</span>
                                 </button>
                             </div>
 
