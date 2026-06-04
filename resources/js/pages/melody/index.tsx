@@ -385,6 +385,12 @@ export default function MelodyMergePage() {
                         </div>
                     </div>
 
+                    <footer className="mm-footer">
+                        <span>{freeCells} espacios libres</span>
+                        <span>{mergeCount} fusiones</span>
+                        <span>{collectedCards.length}/{cardPool.length} cartas</span>
+                    </footer>
+
                     {activeTab === 'merge' && (
                         <section className="mm-stage">
                             <div className="mm-board" aria-label="Tablero de fusion">
@@ -510,12 +516,6 @@ export default function MelodyMergePage() {
                             </div>
                         </section>
                     )}
-
-                    <footer className="mm-footer">
-                        <span>{freeCells} espacios libres</span>
-                        <span>{mergeCount} fusiones</span>
-                        <span>{collectedCards.length}/{cardPool.length} cartas</span>
-                    </footer>
 
                     <nav className="mm-tabs" aria-label="Vistas">
                         <button className={activeTab === 'merge' ? 'is-active' : ''} onClick={() => setActiveTab('merge')} type="button">

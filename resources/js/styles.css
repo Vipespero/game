@@ -57,7 +57,7 @@ button {
 .mm-shell {
     position: relative;
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     width: min(100%, 430px);
     height: min(100%, 900px);
     min-height: 0;
@@ -690,10 +690,14 @@ button {
     justify-content: space-between;
     flex-shrink: 0;
     gap: 8px;
-    min-height: 34px;
-    padding: 0 16px 8px;
+    min-height: 28px;
+    margin: 0 16px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 0 10px;
     color: var(--mm-muted);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 900;
 }
 
