@@ -364,13 +364,17 @@ button {
 
 .mm-piece--seed {
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
-        url('/Melody1.png') center 42% / 76% auto no-repeat,
+        url('/Melody1.png') center / 96% auto no-repeat,
         linear-gradient(145deg, #ffd8ee, #ff82bd);
 }
 
 .mm-piece--seed::before,
 .mm-piece--seed::after {
+    display: none;
+}
+
+.mm-piece--seed .mm-piece__shine,
+.mm-piece--seed .mm-piece__name {
     display: none;
 }
 
