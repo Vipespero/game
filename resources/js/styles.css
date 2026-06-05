@@ -287,7 +287,8 @@ button {
 }
 
 .mm-cell--seed,
-.mm-cell--flower {
+.mm-cell--flower,
+.mm-cell--bouquet {
     border-color: transparent;
     background: transparent;
     box-shadow: none;
@@ -423,28 +424,29 @@ button {
 }
 
 .mm-piece--bouquet {
-    background: linear-gradient(145deg, #ffb36d, #ee7096);
+    width: 88%;
+    height: 88%;
+    border: 0;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.5) 0 12%, transparent 13%),
+        linear-gradient(145deg, #ffd8ee, #ff74b8);
+    box-shadow: none;
 }
 
 .mm-piece--bouquet::before {
-    width: 34px;
-    height: 28px;
-    border-radius: 16px 16px 10px 10px;
-    background:
-        radial-gradient(circle at 20% 28%, #fff 0 8px, transparent 9px),
-        radial-gradient(circle at 50% 12%, #ffd75f 0 8px, transparent 9px),
-        radial-gradient(circle at 80% 28%, #fff 0 8px, transparent 9px),
-        radial-gradient(circle at 38% 55%, #ff72b3 0 8px, transparent 9px),
-        radial-gradient(circle at 62% 55%, #a987ff 0 8px, transparent 9px);
+    display: block;
+    inset: 1% -4% 0;
+    background: url('/Mymelodyrosa.png') center 55% / 88% auto no-repeat;
 }
 
 .mm-piece--bouquet::after {
-    width: 26px;
-    height: 24px;
-    border-radius: 4px 4px 14px 14px;
-    background: linear-gradient(145deg, #fff1a8, #ff9cc8);
-    clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
-    transform: translateY(16px);
+    display: none;
+}
+
+.mm-piece--bouquet .mm-piece__shine,
+.mm-piece--bouquet .mm-piece__name {
+    display: none;
 }
 
 .mm-piece--plush {
