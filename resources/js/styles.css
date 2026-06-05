@@ -378,7 +378,7 @@ button {
     border-radius: 50%;
     background:
         radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.46) 0 12%, transparent 13%),
-        linear-gradient(145deg, #ffd8ee, #ff82bd);
+        linear-gradient(145deg, #ff9696, #e73b3b);
     box-shadow: none;
 }
 
@@ -436,8 +436,8 @@ button {
 
 .mm-piece--bouquet::before {
     display: block;
-    inset: 1% -4% 0;
-    background: url('/Mymelodyrosa.png') center 55% / 88% auto no-repeat;
+    inset: 4% 2% 3%;
+    background: url('/Mymelodyrosa.png') center 56% / 76% auto no-repeat;
 }
 
 .mm-piece--bouquet::after {
