@@ -10,12 +10,14 @@ import {
     Gift,
     Heart,
     PackageOpen,
+    Scissors,
     Sparkles,
     Trophy,
     Wand2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import cardsManifest from '../../assets/cards/cards.json';
+import packImageUrl from '../../assets/sanrio_pack.png?url';
 
 type BoardItem = {
     id: string;
@@ -584,15 +586,17 @@ export default function MelodyMergePage() {
                     {pendingPack && (
                         <div className="mm-pack-modal" role="dialog" aria-modal="true" aria-label={pendingPack.label}>
                             <div className="mm-pack-modal__panel">
-                                <button className={`mm-envelope ${isPackOpened ? 'is-open' : ''}`} onClick={revealPendingPack} type="button">
-                                    <span className="mm-envelope__flap" />
-                                    <span className="mm-envelope__seal">
-                                        <PackageOpen size={24} aria-hidden />
-                                    </span>
-                                    <strong>{isPackOpened ? 'Abierto' : pendingPack.label}</strong>
-                                </button>
-
-                                {isPackOpened ? (
+                                {!isPackOpened ? (
+                                    <>
+                                        <button className="mm-envelope" onClick={revealPendingPack} type="button">
+                                            <img alt={pendingPack.label} src={packImageUrl} />
+                                            <span className="mm-envelope__cut">
+                                                <Scissors size={18} aria-hidden />
+                                            </span>
+                                        </button>
+                                        <p>Presiona la tijera para cortar el sobre.</p>
+                                    </>
+                                ) : (
                                     <>
                                         {dismissedPackCards < pendingPack.cards.length ? (
                                             <button className="mm-card-stack" onClick={advancePackCard} type="button">
@@ -628,8 +632,6 @@ export default function MelodyMergePage() {
                                             </>
                                         )}
                                     </>
-                                ) : (
-                                    <p>Presiona el sello para cortar el sobre.</p>
                                 )}
                             </div>
                         </div>
