@@ -374,7 +374,7 @@ button {
     height: 100%;
     border: 0;
     border-radius: 0;
-    background: url('/Melody1.png') center / 98% auto no-repeat;
+    background: url('/Melody1.png') center 56% / 112% auto no-repeat;
     box-shadow: none;
 }
 
