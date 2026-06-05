@@ -463,8 +463,8 @@ button {
 
 .mm-piece--plush::before {
     display: block;
-    inset: 10% -24% 4%;
-    background: url('./assets/cinamoom.png') center 55% / 112% auto no-repeat;
+    inset: 13% -10% 8%;
+    background: url('./assets/cinamoom.png') center 54% / 92% auto no-repeat;
 }
 
 .mm-piece--plush::after {
