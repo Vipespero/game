@@ -1,7 +1,7 @@
 import '@/styles.css';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { PointerEvent } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     Album,
@@ -121,6 +121,7 @@ export default function MelodyMergePage() {
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>([]);
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
     const [isPackOpened, setIsPackOpened] = useState(false);
+    const [dismissedPackCards, setDismissedPackCards] = useState(0);
     const [selectedCell, setSelectedCell] = useState<number | null>(null);
     const [draggedCell, setDraggedCell] = useState<number | null>(null);
     const [touchDrag, setTouchDrag] = useState<{
@@ -153,6 +154,28 @@ export default function MelodyMergePage() {
         return () => window.clearTimeout(timer);
     }, [toastMessage]);
 
+    useEffect(() => {
+        const idleWindow = window as Window & {
+            requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+            cancelIdleCallback?: (id: number) => void;
+        };
+
+        const preloadCards = () => {
+            cardPool.forEach((card) => {
+                const image = new Image();
+                image.src = card.imageUrl;
+            });
+        };
+
+        if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
+            const idleId = idleWindow.requestIdleCallback(preloadCards, { timeout: 1800 });
+            return () => idleWindow.cancelIdleCallback?.(idleId);
+        }
+
+        const timer = window.setTimeout(preloadCards, 600);
+        return () => window.clearTimeout(timer);
+    }, []);
+
     const collectedCards = useMemo(() => {
         const unique = new Map<string, MelodyCard>();
         openedPacks.forEach((pack) => pack.cards.forEach((card) => unique.set(card.id, card)));
@@ -170,6 +193,7 @@ export default function MelodyMergePage() {
             cards: [chooseCard(), chooseCard(), chooseCard()],
         });
         setIsPackOpened(false);
+        setDismissedPackCards(0);
         notify(`${label}: toca el sobre para abrirlo.`);
     }, [notify]);
 
@@ -178,8 +202,13 @@ export default function MelodyMergePage() {
 
         setOpenedPacks((packs) => [pendingPack, ...packs]);
         setIsPackOpened(true);
+        setDismissedPackCards(0);
         notify('Nuevas cartas agregadas al album.');
     }, [isPackOpened, notify, pendingPack]);
+
+    const advancePackCard = useCallback(() => {
+        setDismissedPackCards((value) => Math.min(value + 1, 3));
+    }, []);
 
     const addProgress = useCallback((itemLevel: number) => {
         const item = getLevel(itemLevel);
@@ -565,18 +594,39 @@ export default function MelodyMergePage() {
 
                                 {isPackOpened ? (
                                     <>
-                                        <div className="mm-pack-modal__cards">
-                                            {pendingPack.cards.map((card, index) => (
-                                                <div className={`mm-reward-card rarity-${card.rarity.toLowerCase()}`} key={`${pendingPack.id}-${card.id}-${index}`}>
-                                                    <img alt={card.name} src={card.imageUrl} />
-                                                    <span>{card.rarity}</span>
-                                                    <strong>{card.name}</strong>
+                                        {dismissedPackCards < pendingPack.cards.length ? (
+                                            <button className="mm-card-stack" onClick={advancePackCard} type="button">
+                                                {pendingPack.cards.map((card, index) => (
+                                                    <span
+                                                        className={`mm-stack-card rarity-${card.rarity.toLowerCase()} ${
+                                                            index < dismissedPackCards ? 'is-dismissed' :
+                                                                index === dismissedPackCards ? 'is-active' :
+                                                                    'is-waiting'
+                                                        }`}
+                                                        key={`${pendingPack.id}-stack-${card.id}-${index}`}
+                                                        style={{ '--stack-index': index } as CSSProperties & Record<'--stack-index', number>}
+                                                    >
+                                                        <img alt={card.name} src={card.imageUrl} />
+                                                        <small>{card.rarity}</small>
+                                                    </span>
+                                                ))}
+                                            </button>
+                                        ) : (
+                                            <>
+                                                <div className="mm-pack-modal__cards">
+                                                    {pendingPack.cards.map((card, index) => (
+                                                        <div className={`mm-reward-card rarity-${card.rarity.toLowerCase()}`} key={`${pendingPack.id}-${card.id}-${index}`}>
+                                                            <img alt={card.name} src={card.imageUrl} />
+                                                            <span>{card.rarity}</span>
+                                                            <strong>{card.name}</strong>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                        <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
-                                            Guardar
-                                        </button>
+                                                <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
+                                                    Guardar
+                                                </button>
+                                            </>
+                                        )}
                                     </>
                                 ) : (
                                     <p>Presiona el sello para cortar el sobre.</p>
