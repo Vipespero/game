@@ -386,7 +386,7 @@ button {
 .mm-piece--seed::before {
     display: block;
     inset: 3% 5% 0;
-    background: url('/Melody1.png') center 58% / 86% auto no-repeat;
+    background: url('./assets/Melody1.png') center 58% / 86% auto no-repeat;
 }
 
 .mm-piece--seed::after {
@@ -412,7 +412,7 @@ button {
 .mm-piece--flower::before {
     display: block;
     inset: 8% 2% 5%;
-    background: url('/pompompurin.png') center / 88% auto no-repeat;
+    background: url('./assets/pompompurin.png') center / 88% auto no-repeat;
 }
 
 .mm-piece--flower::after {
@@ -438,7 +438,7 @@ button {
 .mm-piece--bouquet::before {
     display: block;
     inset: 4% 2% 3%;
-    background: url('/Mymelodyrosa.png') center 56% / 76% auto no-repeat;
+    background: url('./assets/Mymelodyrosa.png') center 56% / 76% auto no-repeat;
 }
 
 .mm-piece--bouquet::after {
@@ -464,7 +464,7 @@ button {
 .mm-piece--plush::before {
     display: block;
     inset: 10% -24% 4%;
-    background: url('/cinamoom.png') center 55% / 112% auto no-repeat;
+    background: url('./assets/cinamoom.png') center 55% / 112% auto no-repeat;
 }
 
 .mm-piece--plush::after {
