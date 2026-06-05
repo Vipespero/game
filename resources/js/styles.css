@@ -601,8 +601,8 @@ button {
 .mm-actions {
     display: flex;
     justify-content: center;
-    margin-top: 14px;
-    padding-bottom: 4px;
+    margin-top: 10px;
+    padding-bottom: 2px;
 }
 
 .mm-magic-box {
@@ -610,8 +610,8 @@ button {
     display: grid;
     justify-items: center;
     gap: 4px;
-    width: min(100%, 176px);
-    min-height: 96px;
+    width: min(100%, 148px);
+    min-height: 76px;
     overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.88);
     border-radius: 22px;
@@ -619,10 +619,10 @@ button {
         radial-gradient(circle at 24% 22%, rgba(255, 255, 255, 0.46) 0 12px, transparent 13px),
         linear-gradient(160deg, #ff82bd, #b897ff);
     color: #ffffff;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 900;
     box-shadow: 0 12px 28px rgba(255, 120, 180, 0.3);
-    padding: 12px 10px;
+    padding: 9px 10px 8px;
     animation: mm-magic-idle 2.8s ease-in-out infinite;
 }
 
@@ -642,7 +642,7 @@ button {
     top: 0;
     bottom: 0;
     left: 50%;
-    width: 18px;
+    width: 15px;
     background: rgba(255, 255, 255, 0.24);
     content: '';
     transform: translateX(-50%);
@@ -650,10 +650,10 @@ button {
 
 .mm-magic-box::after {
     position: absolute;
-    top: 44px;
+    top: 37px;
     right: 0;
     left: 0;
-    height: 14px;
+    height: 12px;
     background: rgba(255, 255, 255, 0.22);
     content: '';
 }
@@ -665,8 +665,8 @@ button {
 .mm-magic-box__lid {
     position: relative;
     z-index: 1;
-    width: 64px;
-    height: 16px;
+    width: 54px;
+    height: 13px;
     border-radius: 12px 12px 6px 6px;
     background: #ffffff;
     transform: rotate(-4deg);
@@ -677,8 +677,8 @@ button {
     z-index: 1;
     display: grid;
     place-items: center;
-    width: 72px;
-    height: 48px;
+    width: 58px;
+    height: 38px;
     border: 3px solid #ffffff;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.14);
@@ -959,24 +959,24 @@ button {
 
 .mm-toast {
     position: absolute;
-    right: 16px;
-    top: 124px;
+    right: 14px;
+    top: 10px;
     bottom: auto;
-    left: 16px;
-    z-index: 50;
+    left: 14px;
+    z-index: 95;
     display: flex;
     align-items: center;
     gap: 9px;
-    min-height: 42px;
+    min-height: 36px;
     border: 1px solid rgba(255, 255, 255, 0.88);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.94);
     box-shadow: 0 12px 28px rgba(120, 65, 132, 0.18);
     color: var(--mm-muted);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 900;
     line-height: 1.2;
-    padding: 8px 12px;
+    padding: 7px 11px;
     animation: mm-toast-in 240ms ease both;
 }
 
@@ -1060,18 +1060,32 @@ button {
     width: 100%;
     height: auto;
     border-radius: 16px;
+    filter: drop-shadow(0 0 10px rgba(255, 114, 179, 0.38));
+    animation: mm-pack-glow 1.9s ease-in-out infinite;
+}
+
+@keyframes mm-pack-glow {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 8px rgba(255, 114, 179, 0.28));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 18px rgba(255, 215, 95, 0.58));
+    }
 }
 
 .mm-envelope:not(:disabled)::before {
     position: absolute;
-    inset: 0;
+    inset: 2% 7%;
     z-index: 1;
-    border-radius: 16px;
+    border-radius: 14px;
     background: linear-gradient(105deg, transparent 0 35%, rgba(255, 255, 255, 0.58) 45%, transparent 56% 100%);
     content: '';
     opacity: 0.72;
     animation: mm-pack-shine 2.1s ease-in-out infinite;
     transform: translateX(-80%);
+    clip-path: polygon(7% 0, 93% 0, 100% 5%, 100% 95%, 93% 100%, 7% 100%, 0 95%, 0 5%);
 }
 
 @keyframes mm-pack-shine {
@@ -1306,6 +1320,7 @@ button {
 @media (prefers-reduced-motion: reduce) {
     .mm-magic-box,
     .mm-envelope,
+    .mm-envelope img,
     .mm-envelope:not(:disabled)::before,
     .mm-envelope__cut,
     .mm-stack-card.is-active,
@@ -1373,10 +1388,10 @@ button {
     }
 
     .mm-magic-box {
-        min-height: 88px;
+        min-height: 70px;
     }
 
     .mm-toast {
-        top: 108px;
+        top: 8px;
     }
 }
