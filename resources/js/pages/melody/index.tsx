@@ -124,6 +124,7 @@ export default function MelodyMergePage() {
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
     const [isPackOpened, setIsPackOpened] = useState(false);
     const [dismissedPackCards, setDismissedPackCards] = useState(0);
+    const [assetsReady, setAssetsReady] = useState(false);
     const [selectedCell, setSelectedCell] = useState<number | null>(null);
     const [draggedCell, setDraggedCell] = useState<number | null>(null);
     const [touchDrag, setTouchDrag] = useState<{
@@ -157,25 +158,29 @@ export default function MelodyMergePage() {
     }, [toastMessage]);
 
     useEffect(() => {
-        const idleWindow = window as Window & {
-            requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-            cancelIdleCallback?: (id: number) => void;
-        };
+        let cancelled = false;
+        const urls = [packImageUrl, ...cardPool.map((card) => card.imageUrl)];
 
-        const preloadCards = () => {
-            cardPool.forEach((card) => {
+        const preloadImage = (url: string) =>
+            new Promise<void>((resolve) => {
                 const image = new Image();
-                image.src = card.imageUrl;
+                image.decoding = 'async';
+                image.onload = () => resolve();
+                image.onerror = () => resolve();
+                image.src = url;
+
+                if ('decode' in image) {
+                    image.decode().then(resolve).catch(resolve);
+                }
             });
+
+        Promise.all(urls.map(preloadImage)).then(() => {
+            if (!cancelled) setAssetsReady(true);
+        });
+
+        return () => {
+            cancelled = true;
         };
-
-        if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
-            const idleId = idleWindow.requestIdleCallback(preloadCards, { timeout: 1800 });
-            return () => idleWindow.cancelIdleCallback?.(idleId);
-        }
-
-        const timer = window.setTimeout(preloadCards, 600);
-        return () => window.clearTimeout(timer);
     }, []);
 
     const collectedCards = useMemo(() => {
@@ -196,8 +201,8 @@ export default function MelodyMergePage() {
         });
         setIsPackOpened(false);
         setDismissedPackCards(0);
-        notify(`${label}: toca el sobre para abrirlo.`);
-    }, [notify]);
+        notify(assetsReady ? `${label}: toca el sobre para abrirlo.` : 'Preparando cartas para el sobre.');
+    }, [assetsReady, notify]);
 
     const revealPendingPack = useCallback(() => {
         if (!pendingPack || isPackOpened) return;
@@ -588,13 +593,13 @@ export default function MelodyMergePage() {
                             <div className="mm-pack-modal__panel">
                                 {!isPackOpened ? (
                                     <>
-                                        <button className="mm-envelope" onClick={revealPendingPack} type="button">
+                                        <button className="mm-envelope" disabled={!assetsReady} onClick={revealPendingPack} type="button">
                                             <img alt={pendingPack.label} src={packImageUrl} />
                                             <span className="mm-envelope__cut">
                                                 <Scissors size={18} aria-hidden />
                                             </span>
                                         </button>
-                                        <p>Presiona la tijera para cortar el sobre.</p>
+                                        <p>{assetsReady ? 'Presiona la tijera para cortar el sobre.' : 'Preparando cartas...'}</p>
                                     </>
                                 ) : (
                                     <>
