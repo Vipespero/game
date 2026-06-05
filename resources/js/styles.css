@@ -409,8 +409,8 @@ button {
 
 .mm-piece--flower::before {
     display: block;
-    inset: 5% -7% 1%;
-    background: url('/pompompurin.png') center / 100% auto no-repeat;
+    inset: 8% 2% 5%;
+    background: url('/pompompurin.png') center / 88% auto no-repeat;
 }
 
 .mm-piece--flower::after {
