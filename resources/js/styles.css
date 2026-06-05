@@ -288,7 +288,8 @@ button {
 
 .mm-cell--seed,
 .mm-cell--flower,
-.mm-cell--bouquet {
+.mm-cell--bouquet,
+.mm-cell--plush {
     border-color: transparent;
     background: transparent;
     box-shadow: none;
@@ -450,28 +451,29 @@ button {
 }
 
 .mm-piece--plush {
-    background: linear-gradient(145deg, #b897ff, #7857e8);
+    width: 88%;
+    height: 88%;
+    border: 0;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.52) 0 12%, transparent 13%),
+        linear-gradient(145deg, #d8f4ff, #76cbff);
+    box-shadow: none;
 }
 
 .mm-piece--plush::before {
-    width: 34px;
-    height: 32px;
-    border-radius: 48% 48% 44% 44%;
-    background: #fff0fa;
-    box-shadow:
-        -13px -9px 0 -4px #fff0fa,
-        13px -9px 0 -4px #fff0fa;
+    display: block;
+    inset: 10% -24% 4%;
+    background: url('/cinamoom.png') center 55% / 112% auto no-repeat;
 }
 
 .mm-piece--plush::after {
-    width: 17px;
-    height: 7px;
-    border-radius: 999px;
-    background: #6c3a78;
-    box-shadow:
-        -8px -8px 0 -2px #6c3a78,
-        8px -8px 0 -2px #6c3a78;
-    transform: translateY(5px);
+    display: none;
+}
+
+.mm-piece--plush .mm-piece__shine,
+.mm-piece--plush .mm-piece__name {
+    display: none;
 }
 
 .mm-piece--bow {
