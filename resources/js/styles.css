@@ -248,6 +248,7 @@ button {
 .mm-board {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
     gap: 8px;
     width: 100%;
     aspect-ratio: 1;
@@ -370,17 +371,22 @@ button {
 }
 
 .mm-piece--seed {
-    width: 100%;
-    height: 100%;
+    width: 88%;
+    height: 88%;
     border: 0;
-    border-radius: 0;
+    border-radius: 50%;
     background:
-        url('/Melody1.png') center 52% / 88% auto no-repeat,
-        radial-gradient(circle at 50% 56%, rgba(255, 216, 238, 0.95) 0 48%, rgba(255, 130, 189, 0.72) 49% 68%, transparent 69%);
+        radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.46) 0 12%, transparent 13%),
+        linear-gradient(145deg, #ffd8ee, #ff82bd);
     box-shadow: none;
 }
 
-.mm-piece--seed::before,
+.mm-piece--seed::before {
+    display: block;
+    inset: 3% 5% 0;
+    background: url('/Melody1.png') center 58% / 86% auto no-repeat;
+}
+
 .mm-piece--seed::after {
     display: none;
 }
@@ -391,17 +397,22 @@ button {
 }
 
 .mm-piece--flower {
-    width: 100%;
-    height: 100%;
+    width: 88%;
+    height: 88%;
     border: 0;
-    border-radius: 0;
+    border-radius: 50%;
     background:
-        url('/pompompurin.png') center / 98% auto no-repeat,
-        radial-gradient(circle at 50% 56%, rgba(255, 231, 157, 0.96) 0 48%, rgba(255, 186, 84, 0.74) 49% 68%, transparent 69%);
+        radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.45) 0 12%, transparent 13%),
+        linear-gradient(145deg, #ffe79d, #ffba54);
     box-shadow: none;
 }
 
-.mm-piece--flower::before,
+.mm-piece--flower::before {
+    display: block;
+    inset: 5% -7% 1%;
+    background: url('/pompompurin.png') center / 100% auto no-repeat;
+}
+
 .mm-piece--flower::after {
     display: none;
 }
