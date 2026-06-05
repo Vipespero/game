@@ -395,7 +395,9 @@ button {
     height: 100%;
     border: 0;
     border-radius: 0;
-    background: url('/pompompurin.png') center / 98% auto no-repeat;
+    background:
+        url('/pompompurin.png') center / 98% auto no-repeat,
+        radial-gradient(circle at 50% 56%, rgba(255, 231, 157, 0.96) 0 48%, rgba(255, 186, 84, 0.74) 49% 68%, transparent 69%);
     box-shadow: none;
 }
 
