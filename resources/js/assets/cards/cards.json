@@ -1,0 +1,58 @@
+[
+    {
+        "id": 1,
+        "personaje": "Little Twin Stars (Kiki y Lala)",
+        "categoria": "Signos del Zodiaco - Geminis",
+        "rareza": "SSR",
+        "archivo": "SSR/01_little_twin_stars_geminis_ssr.png"
+    },
+    {
+        "id": 2,
+        "personaje": "Pochacco",
+        "categoria": "Mascotas y Amigos",
+        "rareza": "SSR",
+        "archivo": "SSR/02_pochacco_mascotas_amigos_ssr.png"
+    },
+    {
+        "id": 3,
+        "personaje": "Hello Kitty leyendo",
+        "categoria": "Hello Kitty Clasica",
+        "rareza": "R",
+        "archivo": "R/03_hello_kitty_leyendo_r.png"
+    },
+    {
+        "id": 4,
+        "personaje": "Hello Kitty en automovil",
+        "categoria": "Hello Kitty Aventurera",
+        "rareza": "SSR",
+        "archivo": "SSR/04_hello_kitty_automovil_ssr.png"
+    },
+    {
+        "id": 5,
+        "personaje": "Little Twin Stars durmiendo en la luna",
+        "categoria": "Dulces Suenos",
+        "rareza": "SR",
+        "archivo": "SR/05_little_twin_stars_luna_sr.png"
+    },
+    {
+        "id": 6,
+        "personaje": "Hello Kitty sonriente",
+        "categoria": "Hello Kitty Clasica",
+        "rareza": "SR",
+        "archivo": "SR/06_hello_kitty_sonriente_sr.png"
+    },
+    {
+        "id": 7,
+        "personaje": "Hello Kitty con mono rosa",
+        "categoria": "Hello Kitty Especial",
+        "rareza": "UR",
+        "archivo": "UR/07_hello_kitty_mono_rosa_ur.png"
+    },
+    {
+        "id": 8,
+        "personaje": "Little Twin Stars con regalo",
+        "categoria": "Signos del Zodiaco - Geminis",
+        "rareza": "R",
+        "archivo": "R/08_little_twin_stars_regalo_r.png"
+    }
+]
