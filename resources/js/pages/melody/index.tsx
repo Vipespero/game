@@ -11,11 +11,11 @@ import {
     Heart,
     PackageOpen,
     Sparkles,
-    Star,
     Trophy,
     Wand2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
+import cardsManifest from '../../assets/cards/cards.json';
 
 type BoardItem = {
     id: string;
@@ -30,7 +30,7 @@ type MelodyCard = {
     collection: string;
     rarity: CardRarity;
     flavor: string;
-    symbol: string;
+    imageUrl: string;
 };
 
 type PackReward = {
@@ -56,20 +56,30 @@ const mergeChain = [
     { level: 10, name: 'Legendario', symbol: 'rainbow', xp: 360, hearts: 90 },
 ];
 
-const cardPool: MelodyCard[] = [
-    { id: 'c-01', name: 'Dulce Jardin', collection: 'Melody Garden', rarity: 'C', flavor: 'Flores suaves para empezar el album.', symbol: 'flower' },
-    { id: 'c-02', name: 'Nube de Algodon', collection: 'Dream Room', rarity: 'C', flavor: 'Una decoracion ligera y brillante.', symbol: 'cloud' },
-    { id: 'c-03', name: 'Lazo Rosa', collection: 'Melody Garden', rarity: 'R', flavor: 'El primer accesorio especial.', symbol: 'bow' },
-    { id: 'c-04', name: 'Taza de Estrellas', collection: 'Moon Tea', rarity: 'R', flavor: 'Perfecta para una noche tranquila.', symbol: 'starcup' },
-    { id: 'c-05', name: 'Corona Pastel', collection: 'Royal Cute', rarity: 'SR', flavor: 'Brilla cuando completas misiones.', symbol: 'crown' },
-    { id: 'c-06', name: 'Vestidor Encantado', collection: 'Dream Room', rarity: 'SR', flavor: 'Abre nuevas ideas de decoracion.', symbol: 'mirror' },
-    { id: 'c-07', name: 'Palacio de Cristal', collection: 'Royal Cute', rarity: 'SSR', flavor: 'Una carta rara para el album real.', symbol: 'castle' },
-    { id: 'c-08', name: 'Noche Violeta', collection: 'Moon Tea', rarity: 'SSR', flavor: 'Magia tranquila con destellos lunares.', symbol: 'moon' },
-    { id: 'c-09', name: 'Arco Iris Secreto', collection: 'Especial', rarity: 'UR', flavor: 'Solo aparece en sobres con mucha suerte.', symbol: 'rainbow' },
-    { id: 'c-10', name: 'Vale por un Helado', collection: 'Secretas', rarity: 'SECRET', flavor: 'Recompensa personal pendiente de canjear.', symbol: 'ticket' },
-    { id: 'c-11', name: 'Escoge la Pelicula', collection: 'Secretas', rarity: 'SECRET', flavor: 'Una sorpresa real desbloqueada jugando.', symbol: 'film' },
-    { id: 'c-12', name: 'Carta Sorpresa', collection: 'Secretas', rarity: 'SECRET', flavor: 'No se explica. Se descubre.', symbol: 'gift' },
-];
+type CardManifestItem = {
+    id: number;
+    personaje: string;
+    categoria: string;
+    rareza: CardRarity;
+    archivo: string;
+};
+
+const cardImages = import.meta.glob('../../assets/cards/**/*.png', {
+    eager: true,
+    import: 'default',
+    query: '?url',
+}) as Record<string, string>;
+
+const getCardImage = (file: string) => cardImages[`../../assets/cards/${file}`] ?? '';
+
+const cardPool: MelodyCard[] = (cardsManifest as CardManifestItem[]).map((card) => ({
+    id: `card-${card.id}`,
+    name: card.personaje,
+    collection: card.categoria,
+    rarity: card.rareza,
+    flavor: `${card.rareza} - ${card.categoria}`,
+    imageUrl: getCardImage(card.archivo),
+}));
 
 const emptyBoard = (): Array<BoardItem | null> => Array.from({ length: boardSize }, () => null);
 
@@ -81,12 +91,10 @@ const chooseCard = (): MelodyCard => {
     const roll = Math.random();
 
     const rarity: CardRarity =
-        roll > 0.985 ? 'SECRET' :
-            roll > 0.955 ? 'UR' :
-                roll > 0.88 ? 'SSR' :
-                    roll > 0.72 ? 'SR' :
-                        roll > 0.42 ? 'R' :
-                            'C';
+        roll > 0.965 ? 'UR' :
+            roll > 0.78 ? 'SSR' :
+                roll > 0.46 ? 'SR' :
+                    'R';
 
     const options = cardPool.filter((card) => card.rarity === rarity);
     return options[Math.floor(Math.random() * options.length)] ?? cardPool[0];
@@ -470,19 +478,23 @@ export default function MelodyMergePage() {
                                 {cardPool.map((card) => {
                                     const owned = collectedCards.some((ownedCard) => ownedCard.id === card.id);
 
-                                    return (
-                                        <article className={`mm-card ${owned ? 'is-owned' : ''} rarity-${card.rarity.toLowerCase()}`} key={card.id}>
-                                            <div className={`mm-card__symbol mm-card__symbol--${card.symbol}`}>
-                                                {owned ? <Star size={22} aria-hidden /> : '?'}
-                                            </div>
-                                            <div>
-                                                <strong>{owned ? card.name : 'Carta oculta'}</strong>
-                                                <span>{card.collection}</span>
-                                            </div>
-                                            <small>{card.rarity}</small>
-                                        </article>
-                                    );
-                                })}
+                                            return (
+                                                <article className={`mm-card ${owned ? 'is-owned' : ''} rarity-${card.rarity.toLowerCase()}`} key={card.id}>
+                                                    <div className="mm-card__thumb">
+                                                        {owned ? (
+                                                            <img alt={card.name} src={card.imageUrl} />
+                                                        ) : (
+                                                            <span>?</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <strong>{owned ? card.name : 'Carta oculta'}</strong>
+                                                        <span>{card.collection}</span>
+                                                    </div>
+                                                    <small>{card.rarity}</small>
+                                                </article>
+                                            );
+                                        })}
                             </div>
                         </section>
                     )}
@@ -556,9 +568,9 @@ export default function MelodyMergePage() {
                                         <div className="mm-pack-modal__cards">
                                             {pendingPack.cards.map((card, index) => (
                                                 <div className={`mm-reward-card rarity-${card.rarity.toLowerCase()}`} key={`${pendingPack.id}-${card.id}-${index}`}>
+                                                    <img alt={card.name} src={card.imageUrl} />
                                                     <span>{card.rarity}</span>
                                                     <strong>{card.name}</strong>
-                                                    <small>{card.collection}</small>
                                                 </div>
                                             ))}
                                         </div>
