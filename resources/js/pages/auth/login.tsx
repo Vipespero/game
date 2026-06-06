@@ -1,5 +1,3 @@
-import '@/styles.css';
-
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Head, useForm } from '@inertiajs/react';

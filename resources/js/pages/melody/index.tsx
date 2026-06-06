@@ -1,5 +1,3 @@
-import '@/styles.css';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
@@ -442,15 +440,22 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         setHearts((value) => value + gainedHearts);
         setMergeCount((value) => value + 1);
         setXp((value) => {
-            const nextXp = value + gainedXp;
-            const goal = xpForLevel(playerLevel);
+            let nextXp = value + gainedXp;
+            let nextLevel = playerLevel;
+            let levelsGained = 0;
 
-            if (nextXp >= goal) {
-                setPlayerLevel((level) => level + 1);
-                setEnergy((current) => Math.min(maxEnergy, current + 20));
-                queuePack('Sobre de nivel');
-                notify('Subiste de nivel y ganaste energia.');
-                return nextXp - goal;
+            while (nextXp >= xpForLevel(nextLevel)) {
+                nextXp -= xpForLevel(nextLevel);
+                nextLevel += 1;
+                levelsGained += 1;
+            }
+
+            if (levelsGained > 0) {
+                setPlayerLevel(nextLevel);
+                setEnergy((current) => Math.min(maxEnergy, current + 20 * levelsGained));
+                queuePack(levelsGained > 1 ? `Sobre de nivel x${levelsGained}` : 'Sobre de nivel');
+                notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
+                return nextXp;
             }
 
             notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
