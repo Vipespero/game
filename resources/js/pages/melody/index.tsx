@@ -57,6 +57,8 @@ type MelodyGameSave = {
     mergeCount?: number;
     openedPacks?: SavedPackReward[];
     activeTab?: 'merge' | 'album' | 'room';
+    dailyRewardClaimedAt?: string | null;
+    lastSeenAt?: string | null;
 };
 
 type MelodyMergePageProps = {
@@ -71,6 +73,19 @@ type MelodyMergePageProps = {
 const boardSize = 25;
 const maxEnergy = 100;
 const premiumPackCost = 180;
+const dailyReward = {
+    energy: 30,
+    hearts: 120,
+};
+
+const duplicateHeartRewards: Record<CardRarity, number> = {
+    C: 8,
+    R: 18,
+    SR: 34,
+    SSR: 62,
+    UR: 110,
+    SECRET: 180,
+};
 
 const mergeChain = [
     { level: 1, name: 'Semilla', symbol: 'seed', xp: 6, hearts: 1 },
@@ -179,16 +194,42 @@ const normalizeTab = (tab?: string) => {
     return tab === 'album' || tab === 'room' || tab === 'merge' ? tab : 'merge';
 };
 
+const dateKey = (date = new Date()) => date.toISOString().slice(0, 10);
+
+const canClaimDailyReward = (claimedAt?: string | null) => {
+    return !claimedAt || claimedAt.slice(0, 10) !== dateKey();
+};
+
+const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy: number) => {
+    if (!lastSeenAt || savedEnergy >= maxEnergy) {
+        return 0;
+    }
+
+    const lastSeenTime = new Date(lastSeenAt).getTime();
+
+    if (Number.isNaN(lastSeenTime)) {
+        return 0;
+    }
+
+    const minutesAway = Math.floor((Date.now() - lastSeenTime) / 60000);
+
+    return Math.max(0, Math.min(maxEnergy - savedEnergy, minutesAway));
+};
+
 const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
 export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps) {
+    const savedEnergy = Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy);
+    const offlineEnergyGain = getOfflineEnergyGain(gameSave?.lastSeenAt, savedEnergy);
     const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(gameSave?.board));
-    const [energy, setEnergy] = useState(Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy));
+    const [energy, setEnergy] = useState(Math.min(savedEnergy + offlineEnergyGain, maxEnergy));
     const [hearts, setHearts] = useState(Math.max(gameSave?.hearts ?? 120, 0));
     const [xp, setXp] = useState(Math.max(gameSave?.xp ?? 0, 0));
     const [playerLevel, setPlayerLevel] = useState(Math.max(gameSave?.playerLevel ?? 1, 1));
     const [mergeCount, setMergeCount] = useState(Math.max(gameSave?.mergeCount ?? 0, 0));
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(gameSave?.openedPacks));
+    const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(gameSave?.dailyRewardClaimedAt ?? null);
+    const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(gameSave?.dailyRewardClaimedAt));
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
     const [selectedAlbumCard, setSelectedAlbumCard] = useState<MelodyCard | null>(null);
     const [isPackOpened, setIsPackOpened] = useState(false);
@@ -203,10 +244,14 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         item: BoardItem;
     } | null>(null);
     const [activeTab, setActiveTab] = useState<'merge' | 'album' | 'room'>(() => normalizeTab(gameSave?.activeTab));
-    const [toastMessage, setToastMessage] = useState(`Hola ${auth?.user?.name ?? 'jugador'}, tu partida se guarda sola.`);
+    const [toastMessage, setToastMessage] = useState(
+        offlineEnergyGain > 0
+            ? `Recuperaste ${offlineEnergyGain} energia mientras no estabas.`
+            : `Hola ${auth?.user?.name ?? 'jugador'}, tu partida se guarda sola.`,
+    );
     const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(null);
     const didPointerDragRef = useRef(false);
-    const didMountSaveRef = useRef(false);
+    const didMountSaveRef = useRef(offlineEnergyGain > 0);
     const saveTimerRef = useRef<number | null>(null);
 
     const notify = useCallback((message: string) => {
@@ -276,7 +321,9 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
             cards: pack.cards.map((card) => card.id),
         })),
         activeTab,
-    }), [activeTab, board, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
+        dailyRewardClaimedAt,
+        lastSeenAt: new Date().toISOString(),
+    }), [activeTab, board, dailyRewardClaimedAt, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
 
     useEffect(() => {
         if (!didMountSaveRef.current) {
@@ -323,11 +370,48 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
     const revealPendingPack = useCallback(() => {
         if (!pendingPack || isPackOpened) return;
 
+        const ownedIds = new Set(collectedCards.map((card) => card.id));
+        const newCards: MelodyCard[] = [];
+        const duplicatedCards: MelodyCard[] = [];
+
+        pendingPack.cards.forEach((card) => {
+            if (ownedIds.has(card.id)) {
+                duplicatedCards.push(card);
+                return;
+            }
+
+            ownedIds.add(card.id);
+            newCards.push(card);
+        });
+
+        if (duplicatedCards.length > 0) {
+            const duplicateHearts = duplicatedCards.reduce((total, card) => total + duplicateHeartRewards[card.rarity], 0);
+            setHearts((value) => value + duplicateHearts);
+
+            if (newCards.length > 0) {
+                notify(`${newCards.length} carta nueva y duplicadas +${duplicateHearts} corazones.`);
+            } else {
+                notify(`Cartas duplicadas convertidas en +${duplicateHearts} corazones.`);
+            }
+        } else {
+            notify(`${newCards.length} cartas nuevas agregadas al album.`);
+        }
+
         setOpenedPacks((packs) => [pendingPack, ...packs]);
         setIsPackOpened(true);
         setDismissedPackCards(0);
-        notify('Nuevas cartas agregadas al album.');
-    }, [isPackOpened, notify, pendingPack]);
+    }, [collectedCards, isPackOpened, notify, pendingPack]);
+
+    const claimDailyReward = useCallback(() => {
+        const now = new Date().toISOString();
+
+        setDailyRewardClaimedAt(now);
+        setShowDailyReward(false);
+        setEnergy((value) => Math.min(maxEnergy, value + dailyReward.energy));
+        setHearts((value) => value + dailyReward.hearts);
+        queuePack('Sobre diario');
+        notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones.`);
+    }, [notify, queuePack]);
 
     const advancePackCard = useCallback(() => {
         setDismissedPackCards((value) => Math.min(value + 1, 3));
@@ -710,6 +794,29 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
                         <div className="mm-toast" role="status">
                             <Sparkles size={16} aria-hidden />
                             <span>{toastMessage}</span>
+                        </div>
+                    )}
+
+                    {showDailyReward && (
+                        <div className="mm-daily-modal" role="dialog" aria-modal="true" aria-label="Recompensa diaria">
+                            <div className="mm-daily-modal__panel">
+                                <span className="mm-daily-modal__icon">
+                                    <Gift size={28} aria-hidden />
+                                </span>
+                                <p className="mm-kicker">Recompensa diaria</p>
+                                <h2>Regalo listo</h2>
+                                <div className="mm-daily-modal__rewards">
+                                    <span>+{dailyReward.energy} energia</span>
+                                    <span>+{dailyReward.hearts} corazones</span>
+                                    <span>Sobre diario</span>
+                                </div>
+                                <button onClick={claimDailyReward} type="button">
+                                    Reclamar
+                                </button>
+                                <button className="mm-daily-modal__later" onClick={() => setShowDailyReward(false)} type="button">
+                                    Luego
+                                </button>
+                            </div>
                         </div>
                     )}
 
