@@ -10,6 +10,7 @@ import {
     LogOut,
     PackageOpen,
     Scissors,
+    Settings,
     Sparkles,
     Trophy,
     Wand2,
@@ -60,6 +61,7 @@ type MelodyGameSave = {
     mergeCount?: number;
     openedPacks?: SavedPackReward[];
     activeTab?: 'merge' | 'album' | 'room';
+    claimedMissions?: string[];
     dailyRewardClaimedAt?: string | null;
     lastSeenAt?: string | null;
 };
@@ -80,6 +82,12 @@ const dailyReward = {
     energy: 30,
     hearts: 120,
 };
+
+const missionDefinitions = [
+    { id: 'merge-20', label: 'Fusiona 20 objetos', goal: 20, reward: { hearts: 80, energy: 10 } },
+    { id: 'album-5', label: 'Colecciona 5 cartas', goal: 5, reward: { hearts: 120, energy: 15 } },
+    { id: 'hearts-500', label: 'Guarda 500 corazones', goal: 500, reward: { hearts: 160, energy: 0 } },
+];
 
 const duplicateHeartRewards: Record<CardRarity, number> = {
     C: 8,
@@ -221,6 +229,12 @@ const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy
 
 const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
+const triggerFeedback = () => {
+    if ('vibrate' in navigator) {
+        navigator.vibrate(18);
+    }
+};
+
 export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps) {
     const savedEnergy = Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy);
     const offlineEnergyGain = getOfflineEnergyGain(gameSave?.lastSeenAt, savedEnergy);
@@ -231,6 +245,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
     const [playerLevel, setPlayerLevel] = useState(Math.max(gameSave?.playerLevel ?? 1, 1));
     const [mergeCount, setMergeCount] = useState(Math.max(gameSave?.mergeCount ?? 0, 0));
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(gameSave?.openedPacks));
+    const [claimedMissions, setClaimedMissions] = useState<string[]>(() => gameSave?.claimedMissions ?? []);
     const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(gameSave?.dailyRewardClaimedAt ?? null);
     const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(gameSave?.dailyRewardClaimedAt));
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
@@ -253,6 +268,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
             ? `Recuperaste ${offlineEnergyGain} energia mientras no estabas.`
             : `Hola ${auth?.user?.name ?? 'jugador'}, tu partida se guarda sola.`,
     );
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(null);
     const didPointerDragRef = useRef(false);
     const didMountSaveRef = useRef(offlineEnergyGain > 0);
@@ -261,6 +277,33 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
     const notify = useCallback((message: string) => {
         setToastMessage(message);
     }, []);
+
+    const postSave = useCallback((payload: MelodyGameSave, keepalive = false) => {
+        const body = JSON.stringify({ payload });
+
+        setSaveStatus('saving');
+
+        return fetch('/melody/save', {
+            method: 'PUT',
+            keepalive,
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+            },
+            body,
+        }).then((response) => {
+            if (!response.ok) {
+                throw new Error('Save failed');
+            }
+
+            setSaveStatus('saved');
+            window.setTimeout(() => setSaveStatus('idle'), 1200);
+        }).catch(() => {
+            setSaveStatus('error');
+            notify('No se pudo guardar la partida. Revisa tu conexion.');
+        });
+    }, [notify]);
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -325,9 +368,10 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
             cards: pack.cards.map((card) => card.id),
         })),
         activeTab,
+        claimedMissions,
         dailyRewardClaimedAt,
         lastSeenAt: new Date().toISOString(),
-    }), [activeTab, board, dailyRewardClaimedAt, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
+    }), [activeTab, board, claimedMissions, dailyRewardClaimedAt, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
 
     useEffect(() => {
         if (!didMountSaveRef.current) {
@@ -340,17 +384,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         }
 
         saveTimerRef.current = window.setTimeout(() => {
-            fetch('/melody/save', {
-                method: 'PUT',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
-                },
-                body: JSON.stringify({ payload: savePayload }),
-            }).catch(() => {
-                notify('No se pudo guardar la partida. Revisa tu conexion.');
-            });
+            void postSave(savePayload);
         }, 850);
 
         return () => {
@@ -358,7 +392,30 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
                 window.clearTimeout(saveTimerRef.current);
             }
         };
-    }, [notify, savePayload]);
+    }, [postSave, savePayload]);
+
+    useEffect(() => {
+        const saveBeforeLeaving = () => {
+            if (saveTimerRef.current) {
+                window.clearTimeout(saveTimerRef.current);
+            }
+
+            void postSave(savePayload, true);
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                saveBeforeLeaving();
+            }
+        };
+
+        window.addEventListener('pagehide', saveBeforeLeaving);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('pagehide', saveBeforeLeaving);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [postSave, savePayload]);
 
     const queuePack = useCallback((label: string) => {
         setPendingPack({
@@ -424,6 +481,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         setShowDailyReward(false);
         setEnergy((value) => Math.min(maxEnergy, value + dailyReward.energy));
         setHearts((value) => value + dailyReward.hearts);
+        triggerFeedback();
         queuePack('Sobre diario');
         notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones.`);
     }, [notify, queuePack]);
@@ -489,6 +547,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
             const newLevel = Math.min(origin.level + 1, mergeChain.length);
             next[to] = makeItem(newLevel);
             next[from] = null;
+            triggerFeedback();
             addProgress(origin.level);
 
             if (newLevel >= 5 && Math.random() > 0.92) {
@@ -519,6 +578,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
             next[firstEmpty] = makeItem(level);
             return next;
         });
+        triggerFeedback();
         notify('La caja magica dejo una semilla.');
     }, [board, energy, notify]);
 
@@ -529,8 +589,23 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         }
 
         setHearts((value) => value - premiumPackCost);
+        triggerFeedback();
         queuePack('Sobre premium');
     }, [hearts, notify, queuePack]);
+
+    const claimMission = useCallback((missionId: string) => {
+        const mission = missionDefinitions.find((item) => item.id === missionId);
+
+        if (!mission || claimedMissions.includes(mission.id)) {
+            return;
+        }
+
+        setClaimedMissions((missions) => [...missions, mission.id]);
+        setHearts((value) => value + mission.reward.hearts);
+        setEnergy((value) => Math.min(maxEnergy, value + mission.reward.energy));
+        triggerFeedback();
+        notify(`Mision completada: +${mission.reward.hearts} corazones${mission.reward.energy ? ` y +${mission.reward.energy} energia` : ''}.`);
+    }, [claimedMissions, notify]);
 
     const handleCellClick = useCallback((index: number) => {
         if (didPointerDragRef.current) {
@@ -603,11 +678,19 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         setTouchDrag(null);
     }, [mergeCells]);
 
-    const missions = [
-        { label: 'Fusiona 60 objetos', value: Math.min(mergeCount, 60), goal: 60 },
-        { label: 'Colecciona 14 cartas', value: Math.min(collectedCards.length, 14), goal: 14 },
-        { label: 'Guarda 500 corazones', value: Math.min(hearts, 500), goal: 500 },
-    ];
+    const missions = missionDefinitions.map((mission) => {
+        const rawValue =
+            mission.id === 'merge-20' ? mergeCount :
+                mission.id === 'album-5' ? collectedCards.length :
+                    hearts;
+
+        return {
+            ...mission,
+            value: Math.min(rawValue, mission.goal),
+            completed: rawValue >= mission.goal,
+            claimed: claimedMissions.includes(mission.id),
+        };
+    });
 
     return (
         <>
@@ -642,6 +725,9 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
                             <button className="mm-logout" onClick={() => router.post('/logout')} type="button">
                                 <LogOut size={15} aria-hidden />
                             </button>
+                            <button className="mm-logout" onClick={() => router.visit('/settings/profile')} type="button">
+                                <Settings size={15} aria-hidden />
+                            </button>
                         </div>
                     </header>
 
@@ -659,6 +745,12 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
                         <span>{freeCells} espacios libres</span>
                         <span>{mergeCount} fusiones</span>
                         <span>{collectedCards.length}/{cardPool.length} cartas</span>
+                        <span>
+                            {saveStatus === 'saving' ? 'guardando' :
+                                saveStatus === 'saved' ? 'guardado' :
+                                    saveStatus === 'error' ? 'sin guardar' :
+                                        'auto'}
+                        </span>
                     </footer>
 
                     {activeTab === 'merge' && (
@@ -791,6 +883,14 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
                                         <div className="mm-mission__track">
                                             <span style={{ width: `${(mission.value / mission.goal) * 100}%` }} />
                                         </div>
+                                        <button
+                                            className="mm-mission__claim"
+                                            disabled={!mission.completed || mission.claimed}
+                                            onClick={() => claimMission(mission.id)}
+                                            type="button"
+                                        >
+                                            {mission.claimed ? 'Reclamada' : mission.completed ? `Reclamar +${mission.reward.hearts}` : `Recompensa +${mission.reward.hearts}`}
+                                        </button>
                                     </div>
                                 ))}
                             </div>

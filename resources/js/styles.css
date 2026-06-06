@@ -349,7 +349,7 @@ button {
 .mm-stats {
     display: grid;
     flex: 0 0 auto;
-    grid-template-columns: repeat(4, auto);
+    grid-template-columns: repeat(5, auto);
     gap: 6px;
 }
 
@@ -1179,6 +1179,26 @@ button {
     padding: 12px;
 }
 
+.mm-mission__claim {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: end;
+    min-width: 118px;
+    height: 34px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--mm-pink), var(--mm-gold));
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.mm-mission__claim:disabled {
+    cursor: default;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--mm-muted);
+}
+
 .mm-mission__meta {
     display: flex;
     align-items: baseline;
@@ -1194,7 +1214,8 @@ button {
 }
 
 .mm-footer {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, auto));
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
@@ -1209,6 +1230,13 @@ button {
     color: var(--mm-muted);
     font-size: 10px;
     font-weight: 900;
+}
+
+.mm-footer span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .mm-toast {
