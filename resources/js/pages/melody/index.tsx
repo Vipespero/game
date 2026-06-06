@@ -2,13 +2,14 @@ import '@/styles.css';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     Album,
     Battery,
     Crown,
     Gift,
     Heart,
+    LogOut,
     PackageOpen,
     Scissors,
     Sparkles,
@@ -39,6 +40,32 @@ type PackReward = {
     id: string;
     label: string;
     cards: MelodyCard[];
+};
+
+type SavedPackReward = {
+    id: string;
+    label: string;
+    cards: string[];
+};
+
+type MelodyGameSave = {
+    board?: Array<BoardItem | null>;
+    energy?: number;
+    hearts?: number;
+    xp?: number;
+    playerLevel?: number;
+    mergeCount?: number;
+    openedPacks?: SavedPackReward[];
+    activeTab?: 'merge' | 'album' | 'room';
+};
+
+type MelodyMergePageProps = {
+    gameSave?: MelodyGameSave | null;
+    auth?: {
+        user?: {
+            name?: string;
+        } | null;
+    };
 };
 
 const boardSize = 25;
@@ -83,6 +110,8 @@ const cardPool: MelodyCard[] = (cardsManifest as CardManifestItem[]).map((card) 
     imageUrl: getCardImage(card.archivo),
 }));
 
+const cardsById = new Map(cardPool.map((card) => [card.id, card]));
+
 const emptyBoard = (): Array<BoardItem | null> => Array.from({ length: boardSize }, () => null);
 
 const getLevel = (level: number) => mergeChain[Math.min(level, mergeChain.length) - 1];
@@ -107,20 +136,59 @@ const makeItem = (level = 1): BoardItem => ({
     level,
 });
 
-export default function MelodyMergePage() {
-    const [board, setBoard] = useState<Array<BoardItem | null>>(() => {
-        const next = emptyBoard();
-        next[7] = makeItem(1);
-        next[12] = makeItem(1);
-        next[17] = makeItem(2);
-        return next;
+const defaultBoard = () => {
+    const next = emptyBoard();
+    next[7] = makeItem(1);
+    next[12] = makeItem(1);
+    next[17] = makeItem(2);
+    return next;
+};
+
+const normalizeBoard = (board?: Array<BoardItem | null>) => {
+    if (!Array.isArray(board) || board.length !== boardSize) {
+        return defaultBoard();
+    }
+
+    return board.map((cell) => {
+        if (!cell || typeof cell.level !== 'number') {
+            return null;
+        }
+
+        return {
+            id: cell.id || nanoid(),
+            level: Math.min(Math.max(1, Math.round(cell.level)), mergeChain.length),
+        };
     });
-    const [energy, setEnergy] = useState(84);
-    const [hearts, setHearts] = useState(120);
-    const [xp, setXp] = useState(0);
-    const [playerLevel, setPlayerLevel] = useState(1);
-    const [mergeCount, setMergeCount] = useState(0);
-    const [openedPacks, setOpenedPacks] = useState<PackReward[]>([]);
+};
+
+const normalizePacks = (packs?: SavedPackReward[]) => {
+    if (!Array.isArray(packs)) {
+        return [];
+    }
+
+    return packs.map((pack) => ({
+        id: pack.id || nanoid(),
+        label: pack.label || 'Sobre guardado',
+        cards: Array.isArray(pack.cards)
+            ? pack.cards.map((cardId) => cardsById.get(cardId)).filter(Boolean) as MelodyCard[]
+            : [],
+    })).filter((pack) => pack.cards.length > 0);
+};
+
+const normalizeTab = (tab?: string) => {
+    return tab === 'album' || tab === 'room' || tab === 'merge' ? tab : 'merge';
+};
+
+const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+
+export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps) {
+    const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(gameSave?.board));
+    const [energy, setEnergy] = useState(Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy));
+    const [hearts, setHearts] = useState(Math.max(gameSave?.hearts ?? 120, 0));
+    const [xp, setXp] = useState(Math.max(gameSave?.xp ?? 0, 0));
+    const [playerLevel, setPlayerLevel] = useState(Math.max(gameSave?.playerLevel ?? 1, 1));
+    const [mergeCount, setMergeCount] = useState(Math.max(gameSave?.mergeCount ?? 0, 0));
+    const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(gameSave?.openedPacks));
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
     const [selectedAlbumCard, setSelectedAlbumCard] = useState<MelodyCard | null>(null);
     const [isPackOpened, setIsPackOpened] = useState(false);
@@ -134,10 +202,12 @@ export default function MelodyMergePage() {
         y: number;
         item: BoardItem;
     } | null>(null);
-    const [activeTab, setActiveTab] = useState<'merge' | 'album' | 'room'>('merge');
-    const [toastMessage, setToastMessage] = useState('Fusiona objetos iguales para ganar sobres.');
+    const [activeTab, setActiveTab] = useState<'merge' | 'album' | 'room'>(() => normalizeTab(gameSave?.activeTab));
+    const [toastMessage, setToastMessage] = useState(`Hola ${auth?.user?.name ?? 'jugador'}, tu partida se guarda sola.`);
     const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(null);
     const didPointerDragRef = useRef(false);
+    const didMountSaveRef = useRef(false);
+    const saveTimerRef = useRef<number | null>(null);
 
     const notify = useCallback((message: string) => {
         setToastMessage(message);
@@ -193,6 +263,51 @@ export default function MelodyMergePage() {
     const xpGoal = xpForLevel(playerLevel);
     const albumPercent = Math.round((collectedCards.length / cardPool.length) * 100);
     const freeCells = board.filter((cell) => !cell).length;
+    const savePayload = useMemo<MelodyGameSave>(() => ({
+        board,
+        energy,
+        hearts,
+        xp,
+        playerLevel,
+        mergeCount,
+        openedPacks: openedPacks.map((pack) => ({
+            id: pack.id,
+            label: pack.label,
+            cards: pack.cards.map((card) => card.id),
+        })),
+        activeTab,
+    }), [activeTab, board, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
+
+    useEffect(() => {
+        if (!didMountSaveRef.current) {
+            didMountSaveRef.current = true;
+            return;
+        }
+
+        if (saveTimerRef.current) {
+            window.clearTimeout(saveTimerRef.current);
+        }
+
+        saveTimerRef.current = window.setTimeout(() => {
+            fetch('/melody/save', {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body: JSON.stringify({ payload: savePayload }),
+            }).catch(() => {
+                notify('No se pudo guardar la partida. Revisa tu conexion.');
+            });
+        }, 850);
+
+        return () => {
+            if (saveTimerRef.current) {
+                window.clearTimeout(saveTimerRef.current);
+            }
+        };
+    }, [notify, savePayload]);
 
     const queuePack = useCallback((label: string) => {
         setPendingPack({
@@ -418,6 +533,9 @@ export default function MelodyMergePage() {
                                 <Crown size={15} aria-hidden />
                                 <span>{playerLevel}</span>
                             </div>
+                            <button className="mm-logout" onClick={() => router.post('/logout')} type="button">
+                                <LogOut size={15} aria-hidden />
+                            </button>
                         </div>
                     </header>
 
