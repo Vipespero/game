@@ -383,7 +383,7 @@ export default function MelodyMergePage() {
 
     const missions = [
         { label: 'Fusiona 60 objetos', value: Math.min(mergeCount, 60), goal: 60 },
-        { label: 'Colecciona 12 cartas', value: Math.min(collectedCards.length, 12), goal: 12 },
+        { label: 'Colecciona 14 cartas', value: Math.min(collectedCards.length, 14), goal: 14 },
         { label: 'Guarda 500 corazones', value: Math.min(hearts, 500), goal: 500 },
     ];
 
