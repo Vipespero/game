@@ -42,6 +42,11 @@ type PackReward = {
     cards: MelodyCard[];
 };
 
+type PackCardResult = {
+    status: 'new' | 'duplicate';
+    bonusHearts: number;
+};
+
 type SavedPackReward = {
     id: string;
     label: string;
@@ -234,6 +239,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
     const [selectedAlbumCard, setSelectedAlbumCard] = useState<MelodyCard | null>(null);
     const [isPackOpened, setIsPackOpened] = useState(false);
     const [dismissedPackCards, setDismissedPackCards] = useState(0);
+    const [packCardResults, setPackCardResults] = useState<PackCardResult[]>([]);
     const [assetsReady, setAssetsReady] = useState(false);
     const [selectedCell, setSelectedCell] = useState<number | null>(null);
     const [draggedCell, setDraggedCell] = useState<number | null>(null);
@@ -364,6 +370,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         });
         setIsPackOpened(false);
         setDismissedPackCards(0);
+        setPackCardResults([]);
         notify(assetsReady ? `${label}: toca el sobre para abrirlo.` : 'Preparando cartas para el sobre.');
     }, [assetsReady, notify]);
 
@@ -373,15 +380,24 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         const ownedIds = new Set(collectedCards.map((card) => card.id));
         const newCards: MelodyCard[] = [];
         const duplicatedCards: MelodyCard[] = [];
+        const nextResults: PackCardResult[] = [];
 
         pendingPack.cards.forEach((card) => {
             if (ownedIds.has(card.id)) {
                 duplicatedCards.push(card);
+                nextResults.push({
+                    status: 'duplicate',
+                    bonusHearts: duplicateHeartRewards[card.rarity],
+                });
                 return;
             }
 
             ownedIds.add(card.id);
             newCards.push(card);
+            nextResults.push({
+                status: 'new',
+                bonusHearts: 0,
+            });
         });
 
         if (duplicatedCards.length > 0) {
@@ -398,6 +414,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         }
 
         setOpenedPacks((packs) => [pendingPack, ...packs]);
+        setPackCardResults(nextResults);
         setIsPackOpened(true);
         setDismissedPackCards(0);
     }, [collectedCards, isPackOpened, notify, pendingPack]);
@@ -855,13 +872,22 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
                                         ) : (
                                             <>
                                                 <div className="mm-pack-modal__cards">
-                                                    {pendingPack.cards.map((card, index) => (
-                                                        <div className={`mm-reward-card rarity-${card.rarity.toLowerCase()}`} key={`${pendingPack.id}-${card.id}-${index}`}>
-                                                            <img alt={card.name} src={card.imageUrl} />
-                                                            <span>{card.rarity}</span>
-                                                            <strong>{card.name}</strong>
-                                                        </div>
-                                                    ))}
+                                                    {pendingPack.cards.map((card, index) => {
+                                                        const result = packCardResults[index];
+
+                                                        return (
+                                                            <div className={`mm-reward-card rarity-${card.rarity.toLowerCase()} ${result?.status === 'new' ? 'is-new' : 'is-duplicate'}`} key={`${pendingPack.id}-${card.id}-${index}`}>
+                                                                <img alt={card.name} src={card.imageUrl} />
+                                                                <span>{card.rarity}</span>
+                                                                {result && (
+                                                                    <em>
+                                                                        {result.status === 'new' ? 'Nueva' : `Duplicada +${result.bonusHearts}`}
+                                                                    </em>
+                                                                )}
+                                                                <strong>{card.name}</strong>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                                 <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
                                                     Guardar
