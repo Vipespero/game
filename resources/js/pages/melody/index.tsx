@@ -122,6 +122,7 @@ export default function MelodyMergePage() {
     const [mergeCount, setMergeCount] = useState(0);
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>([]);
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
+    const [selectedAlbumCard, setSelectedAlbumCard] = useState<MelodyCard | null>(null);
     const [isPackOpened, setIsPackOpened] = useState(false);
     const [dismissedPackCards, setDismissedPackCards] = useState(0);
     const [assetsReady, setAssetsReady] = useState(false);
@@ -515,7 +516,13 @@ export default function MelodyMergePage() {
                                     const owned = collectedCards.some((ownedCard) => ownedCard.id === card.id);
 
                                             return (
-                                                <article className={`mm-card ${owned ? 'is-owned' : ''} rarity-${card.rarity.toLowerCase()}`} key={card.id}>
+                                                <button
+                                                    className={`mm-card ${owned ? 'is-owned' : ''} rarity-${card.rarity.toLowerCase()}`}
+                                                    disabled={!owned}
+                                                    key={card.id}
+                                                    onClick={() => setSelectedAlbumCard(card)}
+                                                    type="button"
+                                                >
                                                     <div className="mm-card__thumb">
                                                         {owned ? (
                                                             <img alt={card.name} src={card.imageUrl} />
@@ -528,7 +535,7 @@ export default function MelodyMergePage() {
                                                         <span>{card.collection}</span>
                                                     </div>
                                                     <small>{card.rarity}</small>
-                                                </article>
+                                                </button>
                                             );
                                         })}
                             </div>
@@ -638,6 +645,22 @@ export default function MelodyMergePage() {
                                         )}
                                     </>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedAlbumCard && (
+                        <div className="mm-card-viewer" role="dialog" aria-modal="true" aria-label={selectedAlbumCard.name}>
+                            <div className={`mm-card-viewer__panel rarity-${selectedAlbumCard.rarity.toLowerCase()}`}>
+                                <img alt={selectedAlbumCard.name} src={selectedAlbumCard.imageUrl} />
+                                <div className="mm-card-viewer__meta">
+                                    <span>{selectedAlbumCard.rarity}</span>
+                                    <strong>{selectedAlbumCard.name}</strong>
+                                    <p>{selectedAlbumCard.collection}</p>
+                                </div>
+                                <button className="mm-card-viewer__close" onClick={() => setSelectedAlbumCard(null)} type="button">
+                                    Cerrar
+                                </button>
                             </div>
                         </div>
                     )}
