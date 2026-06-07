@@ -48,6 +48,7 @@ SELECT * FROM game_settings ORDER BY `key`;
 SELECT * FROM game_packs ORDER BY sort_order;
 SELECT * FROM game_rules ORDER BY `key`;
 SELECT level, xp_required, reward_energy, reward_pack_trigger FROM player_levels ORDER BY level LIMIT 20;
+SELECT level, background_style, border_radius, image_size, image_offset_x, image_offset_y FROM merge_items ORDER BY level;
 ```
 
 Recordatorio de admin:

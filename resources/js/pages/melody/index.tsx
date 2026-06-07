@@ -43,6 +43,11 @@ type MergeItemDefinition = {
     symbol: string;
     imagePath: string | null;
     imageUrl: string;
+    backgroundStyle: string | null;
+    borderRadius: string;
+    imageSize: number;
+    imageOffsetX: number;
+    imageOffsetY: number;
     xp: number;
     hearts: number;
     isActive: boolean;
@@ -190,16 +195,16 @@ const fallbackDuplicateHeartRewards: Record<CardRarity, number> = {
 };
 
 const mergeChain: MergeItemSource[] = [
-    { level: 1, name: 'Semilla', symbol: 'seed', imagePath: 'Melody1.png', xp: 6, hearts: 1, isActive: true },
-    { level: 2, name: 'Flor', symbol: 'flower', imagePath: 'pompompurin.png', xp: 10, hearts: 2, isActive: true },
-    { level: 3, name: 'Ramo', symbol: 'bouquet', imagePath: 'Mymelodyrosa.png', xp: 16, hearts: 4, isActive: true },
-    { level: 4, name: 'Peluche', symbol: 'plush', imagePath: 'cinamoom.png', xp: 26, hearts: 7, isActive: true },
-    { level: 5, name: 'Lazo', symbol: 'bow', imagePath: null, xp: 42, hearts: 11, isActive: true },
-    { level: 6, name: 'Corona', symbol: 'crown', imagePath: null, xp: 68, hearts: 18, isActive: true },
-    { level: 7, name: 'Tesoro', symbol: 'gem', imagePath: null, xp: 108, hearts: 28, isActive: true },
-    { level: 8, name: 'Castillo', symbol: 'castle', imagePath: null, xp: 166, hearts: 42, isActive: true },
-    { level: 9, name: 'Palacio', symbol: 'palace', imagePath: null, xp: 248, hearts: 62, isActive: true },
-    { level: 10, name: 'Legendario', symbol: 'rainbow', imagePath: null, xp: 360, hearts: 90, isActive: true },
+    { level: 1, name: 'Semilla', symbol: 'seed', imagePath: 'Melody1.png', backgroundStyle: 'linear-gradient(145deg, #ff9696, #e73b3b)', borderRadius: '50%', imageSize: 86, imageOffsetX: 0, imageOffsetY: 8, xp: 6, hearts: 1, isActive: true },
+    { level: 2, name: 'Flor', symbol: 'flower', imagePath: 'pompompurin.png', backgroundStyle: 'linear-gradient(145deg, #ffe79d, #ffba54)', borderRadius: '50%', imageSize: 88, imageOffsetX: 0, imageOffsetY: 0, xp: 10, hearts: 2, isActive: true },
+    { level: 3, name: 'Ramo', symbol: 'bouquet', imagePath: 'Mymelodyrosa.png', backgroundStyle: 'linear-gradient(145deg, #ffd8ee, #ff74b8)', borderRadius: '50%', imageSize: 76, imageOffsetX: 0, imageOffsetY: 6, xp: 16, hearts: 4, isActive: true },
+    { level: 4, name: 'Peluche', symbol: 'plush', imagePath: 'cinamoom.png', backgroundStyle: 'linear-gradient(145deg, #d8f4ff, #76cbff)', borderRadius: '50%', imageSize: 92, imageOffsetX: 0, imageOffsetY: 4, xp: 26, hearts: 7, isActive: true },
+    { level: 5, name: 'Lazo', symbol: 'bow', imagePath: null, backgroundStyle: 'linear-gradient(145deg, #ff76bf, #cf4cf0)', borderRadius: '18px', imageSize: 86, imageOffsetX: 0, imageOffsetY: 0, xp: 42, hearts: 11, isActive: true },
+    { level: 6, name: 'Corona', symbol: 'crown', imagePath: null, backgroundStyle: 'linear-gradient(145deg, #ffd971, #f3a522)', borderRadius: '18px', imageSize: 86, imageOffsetX: 0, imageOffsetY: 0, xp: 68, hearts: 18, isActive: true },
+    { level: 7, name: 'Tesoro', symbol: 'gem', imagePath: null, backgroundStyle: 'linear-gradient(145deg, #8be5ff, #9d77ff 55%, #ff86c9)', borderRadius: '18px', imageSize: 86, imageOffsetX: 0, imageOffsetY: 0, xp: 108, hearts: 28, isActive: true },
+    { level: 8, name: 'Castillo', symbol: 'castle', imagePath: null, backgroundStyle: 'linear-gradient(145deg, #8be5ff, #9d77ff 55%, #ff86c9)', borderRadius: '18px', imageSize: 86, imageOffsetX: 0, imageOffsetY: 0, xp: 166, hearts: 42, isActive: true },
+    { level: 9, name: 'Palacio', symbol: 'palace', imagePath: null, backgroundStyle: 'linear-gradient(145deg, #8be5ff, #9d77ff 55%, #ff86c9)', borderRadius: '18px', imageSize: 86, imageOffsetX: 0, imageOffsetY: 0, xp: 248, hearts: 62, isActive: true },
+    { level: 10, name: 'Legendario', symbol: 'rainbow', imagePath: null, backgroundStyle: 'linear-gradient(145deg, #8be5ff, #9d77ff 55%, #ff86c9)', borderRadius: '18px', imageSize: 86, imageOffsetX: 0, imageOffsetY: 0, xp: 360, hearts: 90, isActive: true },
 ];
 
 const assetImages = import.meta.glob('../../assets/**/*.png', {
@@ -237,6 +242,14 @@ const fallbackMergeItems: MergeItemDefinition[] = mergeChain.map((item) => ({
 
 const getLevel = (level: number, items: MergeItemDefinition[] = fallbackMergeItems) =>
     items.find((item) => item.level === level) ?? (fallbackMergeItems[Math.min(Math.max(level, 1), fallbackMergeItems.length) - 1] as MergeItemDefinition);
+
+const pieceStyle = (item: MergeItemDefinition): CSSProperties => ({
+    background: item.backgroundStyle || undefined,
+    borderRadius: item.borderRadius || undefined,
+    '--mm-piece-image-size': `${item.imageSize || 86}%`,
+    '--mm-piece-image-x': `${item.imageOffsetX || 0}%`,
+    '--mm-piece-image-y': `${item.imageOffsetY || 0}%`,
+} as CSSProperties);
 
 const xpForLevel = (level: number) => Math.round(60 + (level - 1) * 110 + Math.pow(level - 1, 2) * 35);
 
@@ -998,7 +1011,7 @@ export default function MelodyMergePage({
                                             type="button"
                                         >
                                             {item && (
-                                                <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`}>
+                                                <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`} style={pieceStyle(item)}>
                                                     <span className="mm-piece__shine" />
                                                     {item.imageUrl && <img alt={item.name} className="mm-piece__image" src={item.imageUrl} />}
                                                     <span className="mm-piece__name">{item.name}</span>
@@ -1021,7 +1034,7 @@ export default function MelodyMergePage({
                                         const item = getMergeLevel(touchDrag.item.level);
 
                                         return (
-                                            <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`}>
+                                            <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`} style={pieceStyle(item)}>
                                                 <span className="mm-piece__shine" />
                                                 {item.imageUrl && <img alt={item.name} className="mm-piece__image" src={item.imageUrl} />}
                                                 <span className="mm-piece__name">{item.name}</span>

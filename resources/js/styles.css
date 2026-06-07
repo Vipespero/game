@@ -547,7 +547,8 @@ button {
     height: 84%;
     overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.72);
-    border-radius: 18px;
+    border-radius: var(--mm-piece-radius, 18px);
+    background: var(--mm-piece-bg);
     color: #ffffff;
     isolation: isolate;
     box-shadow:
@@ -583,12 +584,17 @@ button {
 
 .mm-piece__image {
     position: absolute;
-    inset: 7%;
     z-index: 1;
-    width: 86%;
-    height: 86%;
+    left: 50%;
+    top: 50%;
+    width: var(--mm-piece-image-size, 86%);
+    height: var(--mm-piece-image-size, 86%);
     object-fit: contain;
     filter: drop-shadow(0 6px 8px rgba(76, 41, 84, 0.18));
+    transform: translate(
+        calc(-50% + var(--mm-piece-image-x, 0%)),
+        calc(-50% + var(--mm-piece-image-y, 0%))
+    );
 }
 
 .mm-piece__name {

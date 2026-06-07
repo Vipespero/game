@@ -34,6 +34,11 @@ type MergeItemRow = {
     name: string;
     symbol: string;
     image_path: string | null;
+    background_style: string | null;
+    border_radius: string;
+    image_size: number;
+    image_offset_x: number;
+    image_offset_y: number;
     xp: number;
     hearts: number;
     is_active: boolean;
@@ -83,7 +88,11 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
         rules: rules.map((rule) => ({ ...rule, value: numberValue(rule.value) })),
         rarities,
         missions,
-        mergeItems: mergeItems.map((item) => ({ ...item, image_path: item.image_path ?? '' })),
+        mergeItems: mergeItems.map((item) => ({
+            ...item,
+            image_path: item.image_path ?? '',
+            background_style: item.background_style ?? '',
+        })),
         packs,
         playerLevels,
     });
@@ -295,6 +304,11 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                             <th>Nombre</th>
                                             <th>Simbolo</th>
                                             <th>Imagen</th>
+                                            <th>Fondo</th>
+                                            <th>Radio</th>
+                                            <th>Tamano</th>
+                                            <th>X</th>
+                                            <th>Y</th>
                                             <th>XP</th>
                                             <th>Corazones</th>
                                             <th>Activo</th>
@@ -307,6 +321,11 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                                 <td><input onChange={(event) => setRow('mergeItems', index, 'name', event.target.value)} value={item.name} /></td>
                                                 <td>{item.symbol}</td>
                                                 <td><input onChange={(event) => setRow('mergeItems', index, 'image_path', event.target.value)} value={item.image_path ?? ''} /></td>
+                                                <td><input onChange={(event) => setRow('mergeItems', index, 'background_style', event.target.value)} value={item.background_style ?? ''} /></td>
+                                                <td><input onChange={(event) => setRow('mergeItems', index, 'border_radius', event.target.value)} value={item.border_radius} /></td>
+                                                <td><input min={20} max={160} onChange={(event) => setRow('mergeItems', index, 'image_size', numberValue(event.target.value))} type="number" value={item.image_size} /></td>
+                                                <td><input min={-100} max={100} onChange={(event) => setRow('mergeItems', index, 'image_offset_x', numberValue(event.target.value))} type="number" value={item.image_offset_x} /></td>
+                                                <td><input min={-100} max={100} onChange={(event) => setRow('mergeItems', index, 'image_offset_y', numberValue(event.target.value))} type="number" value={item.image_offset_y} /></td>
                                                 <td><input min={0} onChange={(event) => setRow('mergeItems', index, 'xp', numberValue(event.target.value))} type="number" value={item.xp} /></td>
                                                 <td><input min={0} onChange={(event) => setRow('mergeItems', index, 'hearts', numberValue(event.target.value))} type="number" value={item.hearts} /></td>
                                                 <td><input checked={item.is_active} onChange={(event) => setRow('mergeItems', index, 'is_active', event.target.checked)} type="checkbox" /></td>
