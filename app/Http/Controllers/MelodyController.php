@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\GameSave;
 use App\Models\Card;
+use App\Models\MergeItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,6 +30,7 @@ class MelodyController extends Controller
 
         return Inertia::render('melody/index', [
             'cards' => $this->activeCards(),
+            'mergeItems' => $this->activeMergeItems(),
             'gameSave' => $gameSave?->toGameState(),
         ]);
     }
@@ -192,10 +195,28 @@ class MelodyController extends Controller
 
     private function activeCards(): array
     {
+        if (! Schema::hasTable('cards')) {
+            return [];
+        }
+
         return Card::query()
             ->orderBy('id')
             ->get()
             ->map(fn (Card $card): array => $card->toGameCard())
+            ->all();
+    }
+
+    private function activeMergeItems(): array
+    {
+        if (! Schema::hasTable('merge_items')) {
+            return [];
+        }
+
+        return MergeItem::query()
+            ->where('is_active', true)
+            ->orderBy('level')
+            ->get()
+            ->map(fn (MergeItem $item): array => $item->toGameItem())
             ->all();
     }
 }

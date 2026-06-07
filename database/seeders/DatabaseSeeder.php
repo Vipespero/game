@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(AdminUserSeeder::class);
         $this->call(CardSeeder::class);
+        $this->call(MergeItemSeeder::class);
 
         if (app()->environment(['local', 'testing'])) {
             User::factory()->create([

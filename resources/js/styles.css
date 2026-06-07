@@ -576,6 +576,21 @@ button {
     background: rgba(255, 255, 255, 0.82);
 }
 
+.mm-piece.has-image::before,
+.mm-piece.has-image::after {
+    display: none;
+}
+
+.mm-piece__image {
+    position: absolute;
+    inset: 7%;
+    z-index: 1;
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 8px rgba(76, 41, 84, 0.18));
+}
+
 .mm-piece__name {
     position: absolute;
     right: 7px;

@@ -37,6 +37,19 @@ type MelodyCard = {
     isActive: boolean;
 };
 
+type MergeItemDefinition = {
+    level: number;
+    name: string;
+    symbol: string;
+    imagePath: string | null;
+    imageUrl: string;
+    xp: number;
+    hearts: number;
+    isActive: boolean;
+};
+
+type MergeItemSource = Omit<MergeItemDefinition, 'imageUrl'>;
+
 type PackReward = {
     id: string;
     label: string;
@@ -70,6 +83,7 @@ type MelodyGameSave = {
 
 type MelodyMergePageProps = {
     cards: Array<Omit<MelodyCard, 'imageUrl'>>;
+    mergeItems?: MergeItemSource[];
     gameSave?: MelodyGameSave | null;
     auth?: {
         user?: {
@@ -102,36 +116,54 @@ const duplicateHeartRewards: Record<CardRarity, number> = {
     SECRET: 180,
 };
 
-const mergeChain = [
-    { level: 1, name: 'Semilla', symbol: 'seed', xp: 6, hearts: 1 },
-    { level: 2, name: 'Flor', symbol: 'flower', xp: 10, hearts: 2 },
-    { level: 3, name: 'Ramo', symbol: 'bouquet', xp: 16, hearts: 4 },
-    { level: 4, name: 'Peluche', symbol: 'plush', xp: 26, hearts: 7 },
-    { level: 5, name: 'Lazo', symbol: 'bow', xp: 42, hearts: 11 },
-    { level: 6, name: 'Corona', symbol: 'crown', xp: 68, hearts: 18 },
-    { level: 7, name: 'Tesoro', symbol: 'gem', xp: 108, hearts: 28 },
-    { level: 8, name: 'Castillo', symbol: 'castle', xp: 166, hearts: 42 },
-    { level: 9, name: 'Palacio', symbol: 'palace', xp: 248, hearts: 62 },
-    { level: 10, name: 'Legendario', symbol: 'rainbow', xp: 360, hearts: 90 },
+const mergeChain: MergeItemSource[] = [
+    { level: 1, name: 'Semilla', symbol: 'seed', imagePath: 'Melody1.png', xp: 6, hearts: 1, isActive: true },
+    { level: 2, name: 'Flor', symbol: 'flower', imagePath: 'pompompurin.png', xp: 10, hearts: 2, isActive: true },
+    { level: 3, name: 'Ramo', symbol: 'bouquet', imagePath: 'Mymelodyrosa.png', xp: 16, hearts: 4, isActive: true },
+    { level: 4, name: 'Peluche', symbol: 'plush', imagePath: 'cinamoom.png', xp: 26, hearts: 7, isActive: true },
+    { level: 5, name: 'Lazo', symbol: 'bow', imagePath: null, xp: 42, hearts: 11, isActive: true },
+    { level: 6, name: 'Corona', symbol: 'crown', imagePath: null, xp: 68, hearts: 18, isActive: true },
+    { level: 7, name: 'Tesoro', symbol: 'gem', imagePath: null, xp: 108, hearts: 28, isActive: true },
+    { level: 8, name: 'Castillo', symbol: 'castle', imagePath: null, xp: 166, hearts: 42, isActive: true },
+    { level: 9, name: 'Palacio', symbol: 'palace', imagePath: null, xp: 248, hearts: 62, isActive: true },
+    { level: 10, name: 'Legendario', symbol: 'rainbow', imagePath: null, xp: 360, hearts: 90, isActive: true },
 ];
 
-const cardImages = import.meta.glob('../../assets/cards/**/*.png', {
+const assetImages = import.meta.glob('../../assets/**/*.png', {
     eager: true,
     import: 'default',
     query: '?url',
 }) as Record<string, string>;
+
+const getAssetImage = (file?: string | null) => {
+    if (!file) {
+        return '';
+    }
+
+    if (file.startsWith('http') || file.startsWith('/')) {
+        return file;
+    }
+
+    return assetImages[`../../assets/${file}`] ?? '';
+};
 
 const getCardImage = (file: string) => {
     if (file.startsWith('http') || file.startsWith('/')) {
         return file;
     }
 
-    return cardImages[`../../assets/cards/${file}`] ?? '';
+    return getAssetImage(`cards/${file}`);
 };
 
 const emptyBoard = (): Array<BoardItem | null> => Array.from({ length: boardSize }, () => null);
 
-const getLevel = (level: number) => mergeChain[Math.min(level, mergeChain.length) - 1];
+const fallbackMergeItems: MergeItemDefinition[] = mergeChain.map((item) => ({
+    ...item,
+    imageUrl: getAssetImage(item.imagePath),
+}));
+
+const getLevel = (level: number, items: MergeItemDefinition[] = fallbackMergeItems) =>
+    items.find((item) => item.level === level) ?? (fallbackMergeItems[Math.min(Math.max(level, 1), fallbackMergeItems.length) - 1] as MergeItemDefinition);
 
 const xpForLevel = (level: number) => Math.round(60 + (level - 1) * 110 + Math.pow(level - 1, 2) * 35);
 
@@ -238,11 +270,24 @@ const triggerFeedback = () => {
     }
 };
 
-export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePageProps) {
+export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth }: MelodyMergePageProps) {
     const cardPool = useMemo<MelodyCard[]>(() => cards.map((card) => ({
         ...card,
         imageUrl: getCardImage(card.imagePath),
     })), [cards]);
+    const mergeItemPool = useMemo<MergeItemDefinition[]>(() => {
+        const source = mergeItems.length > 0 ? mergeItems : mergeChain;
+
+        return source.map((item) => ({
+            ...item,
+            imageUrl: getAssetImage(item.imagePath),
+        }));
+    }, [mergeItems]);
+    const maxMergeItemLevel = useMemo(
+        () => Math.max(...mergeItemPool.map((item) => item.level), mergeChain.length),
+        [mergeItemPool],
+    );
+    const getMergeLevel = useCallback((level: number) => getLevel(level, mergeItemPool), [mergeItemPool]);
     const cardsById = useMemo(() => new Map(cardPool.map((card) => [card.id, card])), [cardPool]);
     const savedEnergy = Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy);
     const offlineEnergyGain = getOfflineEnergyGain(gameSave?.lastSeenAt, savedEnergy);
@@ -330,7 +375,11 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
 
     useEffect(() => {
         let cancelled = false;
-        const urls = [packImageUrl, ...cardPool.map((card) => card.imageUrl)];
+        const urls = [
+            packImageUrl,
+            ...cardPool.map((card) => card.imageUrl),
+            ...mergeItemPool.map((item) => item.imageUrl),
+        ].filter(Boolean);
 
         const preloadImage = (url: string) =>
             new Promise<void>((resolve) => {
@@ -352,7 +401,7 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [cardPool, mergeItemPool]);
 
     const collectedCards = useMemo(() => {
         const unique = new Map<string, MelodyCard>();
@@ -506,7 +555,7 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
     }, []);
 
     const addProgress = useCallback((itemLevel: number) => {
-        const item = getLevel(itemLevel);
+        const item = getMergeLevel(itemLevel);
         const gainedXp = item.xp;
         const gainedHearts = item.hearts;
 
@@ -534,7 +583,7 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
             notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
             return nextXp;
         });
-    }, [notify, playerLevel, queuePack]);
+    }, [getMergeLevel, notify, playerLevel, queuePack]);
 
     const mergeCells = useCallback((from: number, to: number) => {
         if (from === to) return;
@@ -559,7 +608,7 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
                 return current;
             }
 
-            const newLevel = Math.min(origin.level + 1, mergeChain.length);
+            const newLevel = Math.min(origin.level + 1, maxMergeItemLevel);
             next[to] = makeItem(newLevel);
             next[from] = null;
             triggerFeedback();
@@ -571,7 +620,7 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
 
             return next;
         });
-    }, [addProgress, notify, queuePack]);
+    }, [addProgress, maxMergeItemLevel, notify, queuePack]);
 
     const generateItem = useCallback(() => {
         if (energy <= 0) {
@@ -776,35 +825,40 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
                     {activeTab === 'merge' && (
                         <section className="mm-stage">
                             <div className="mm-board" aria-label="Tablero de fusion">
-                                {board.map((cell, index) => (
-                                    <button
-                                        className={`mm-cell ${cell ? `mm-cell--filled mm-cell--${getLevel(cell.level).symbol}` : ''} ${selectedCell === index ? 'is-selected' : ''}`}
-                                        data-cell-index={index}
-                                        draggable={Boolean(cell)}
-                                        key={index}
-                                        onClick={() => handleCellClick(index)}
-                                        onDragStart={() => setDraggedCell(index)}
-                                        onDragOver={(event) => event.preventDefault()}
-                                        onDrop={() => {
-                                            if (draggedCell !== null) {
-                                                mergeCells(draggedCell, index);
-                                                setDraggedCell(null);
-                                            }
-                                        }}
-                                        onPointerCancel={handlePointerEnd}
-                                        onPointerDown={(event) => handlePointerDown(index, event)}
-                                        onPointerMove={handlePointerMove}
-                                        onPointerUp={handlePointerEnd}
-                                        type="button"
-                                    >
-                                        {cell && (
-                                            <span className={`mm-piece mm-piece--${getLevel(cell.level).symbol}`}>
-                                                <span className="mm-piece__shine" />
-                                                <span className="mm-piece__name">{getLevel(cell.level).name}</span>
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
+                                {board.map((cell, index) => {
+                                    const item = cell ? getMergeLevel(cell.level) : null;
+
+                                    return (
+                                        <button
+                                            className={`mm-cell ${item ? `mm-cell--filled mm-cell--${item.symbol}` : ''} ${selectedCell === index ? 'is-selected' : ''}`}
+                                            data-cell-index={index}
+                                            draggable={Boolean(cell)}
+                                            key={index}
+                                            onClick={() => handleCellClick(index)}
+                                            onDragStart={() => setDraggedCell(index)}
+                                            onDragOver={(event) => event.preventDefault()}
+                                            onDrop={() => {
+                                                if (draggedCell !== null) {
+                                                    mergeCells(draggedCell, index);
+                                                    setDraggedCell(null);
+                                                }
+                                            }}
+                                            onPointerCancel={handlePointerEnd}
+                                            onPointerDown={(event) => handlePointerDown(index, event)}
+                                            onPointerMove={handlePointerMove}
+                                            onPointerUp={handlePointerEnd}
+                                            type="button"
+                                        >
+                                            {item && (
+                                                <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`}>
+                                                    <span className="mm-piece__shine" />
+                                                    {item.imageUrl && <img alt={item.name} className="mm-piece__image" src={item.imageUrl} />}
+                                                    <span className="mm-piece__name">{item.name}</span>
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             {touchDrag && (
@@ -815,10 +869,17 @@ export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePa
                                         top: touchDrag.y,
                                     }}
                                 >
-                                    <span className={`mm-piece mm-piece--${getLevel(touchDrag.item.level).symbol}`}>
-                                        <span className="mm-piece__shine" />
-                                        <span className="mm-piece__name">{getLevel(touchDrag.item.level).name}</span>
-                                    </span>
+                                    {(() => {
+                                        const item = getMergeLevel(touchDrag.item.level);
+
+                                        return (
+                                            <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`}>
+                                                <span className="mm-piece__shine" />
+                                                {item.imageUrl && <img alt={item.name} className="mm-piece__image" src={item.imageUrl} />}
+                                                <span className="mm-piece__name">{item.name}</span>
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                             )}
 
