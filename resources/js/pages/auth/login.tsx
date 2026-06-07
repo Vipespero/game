@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { Heart, LoaderCircle, LockKeyhole, Sparkles, UserPlus } from 'lucide-react';
-import cardManifest from '../../assets/cards/cards.json';
 import packImageUrl from '../../assets/sanrio_pack.png?url';
 
 type AuthMode = 'login' | 'register';
 
 type LoginProps = {
+    cardCount?: number;
     mode?: AuthMode;
     canRegister?: boolean;
     status?: string;
@@ -19,7 +19,7 @@ const cardImages = import.meta.glob('../../assets/cards/**/*.png', {
     query: '?url',
 }) as Record<string, string>;
 
-export default function LoginPage({ mode = 'login', canRegister = true, status }: LoginProps) {
+export default function LoginPage({ cardCount = 0, mode = 'login', canRegister = true, status }: LoginProps) {
     const [authMode, setAuthMode] = useState<AuthMode>(mode);
     const [loadedAssets, setLoadedAssets] = useState(0);
 
@@ -184,7 +184,7 @@ export default function LoginPage({ mode = 'login', canRegister = true, status }
                         </button>
                     )}
 
-                    <p className="mm-auth__count">{(cardManifest as Array<unknown>).length} cartas oficiales listas para el album.</p>
+                    <p className="mm-auth__count">{cardCount} cartas activas listas para el album.</p>
                 </section>
             </main>
         </>

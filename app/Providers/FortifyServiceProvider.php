@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\Card;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -50,6 +51,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'mode' => 'login',
+            'cardCount' => Card::query()->where('is_active', true)->count(),
             'canResetPassword' => false,
             'canRegister' => Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
@@ -71,6 +73,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn () => Inertia::render('auth/login', [
             'mode' => 'register',
+            'cardCount' => Card::query()->where('is_active', true)->count(),
             'canResetPassword' => false,
             'canRegister' => Features::enabled(Features::registration()),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),

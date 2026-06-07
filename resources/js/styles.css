@@ -1970,6 +1970,82 @@ button {
     padding: 3px 7px;
 }
 
+.mm-admin__row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mm-admin__row-actions button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--mm-muted);
+}
+
+.mm-admin__row-actions button:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+
+.mm-admin__form {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+}
+
+.mm-admin__form label {
+    display: grid;
+    gap: 5px;
+}
+
+.mm-admin__form label span {
+    color: var(--mm-muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.mm-admin__form input,
+.mm-admin__form select {
+    width: 100%;
+    height: 44px;
+    border: 1px solid rgba(126, 84, 132, 0.16);
+    border-radius: 14px;
+    outline: none;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--mm-ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 0 13px;
+}
+
+.mm-admin__form input:focus,
+.mm-admin__form select:focus {
+    border-color: rgba(255, 114, 179, 0.52);
+    box-shadow: 0 0 0 4px rgba(255, 114, 179, 0.14);
+}
+
+.mm-admin__form small {
+    color: #cf407f;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.mm-admin__check {
+    display: flex !important;
+    align-items: center;
+    gap: 9px !important;
+}
+
+.mm-admin__check input {
+    width: 18px;
+    height: 18px;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .mm-magic-box,
     .mm-envelope,

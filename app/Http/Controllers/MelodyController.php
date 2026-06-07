@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GameSave;
+use App\Models\Card;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -18,23 +19,6 @@ class MelodyController extends Controller
     private const MAX_ITEM_LEVEL = 10;
     private const MAX_PACK_HISTORY = 120;
     private const VALID_TABS = ['merge', 'album', 'room'];
-    private const VALID_CARD_IDS = [
-        'card-1',
-        'card-2',
-        'card-3',
-        'card-4',
-        'card-5',
-        'card-6',
-        'card-7',
-        'card-8',
-        'card-9',
-        'card-10',
-        'card-11',
-        'card-12',
-        'card-13',
-        'card-14',
-    ];
-
     public function show(Request $request): Response
     {
         $gameSave = $request->user()
@@ -43,6 +27,7 @@ class MelodyController extends Controller
             ->first();
 
         return Inertia::render('melody/index', [
+            'cards' => $this->activeCards(),
             'gameSave' => $gameSave?->toGameState(),
         ]);
     }
@@ -65,7 +50,7 @@ class MelodyController extends Controller
             'state.openedPacks.*.id' => ['required_with:state.openedPacks', 'string', 'max:64'],
             'state.openedPacks.*.label' => ['required_with:state.openedPacks', 'string', 'max:80'],
             'state.openedPacks.*.cards' => ['required_with:state.openedPacks', 'array', 'min:1', 'max:3'],
-            'state.openedPacks.*.cards.*' => ['string', Rule::in(self::VALID_CARD_IDS)],
+            'state.openedPacks.*.cards.*' => ['string', Rule::exists('cards', 'external_id')],
             'state.activeTab' => ['sometimes', Rule::in(self::VALID_TABS)],
             'state.claimedMissions' => ['sometimes', 'array', 'max:12'],
             'state.claimedMissions.*' => ['string', 'max:40'],
@@ -203,5 +188,14 @@ class MelodyController extends Controller
                 ->values()
                 ->all(),
         );
+    }
+
+    private function activeCards(): array
+    {
+        return Card::query()
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Card $card): array => $card->toGameCard())
+            ->all();
     }
 }

@@ -25,6 +25,7 @@ class MelodyGameTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('melody/index')
+                ->has('cards')
                 ->where('gameSave', null),
             );
     }

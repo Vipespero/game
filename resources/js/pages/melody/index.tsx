@@ -16,7 +16,6 @@ import {
     Wand2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import cardsManifest from '../../assets/cards/cards.json';
 import packImageUrl from '../../assets/sanrio_pack.png?url';
 
 type BoardItem = {
@@ -32,7 +31,10 @@ type MelodyCard = {
     collection: string;
     rarity: CardRarity;
     flavor: string;
+    imagePath: string;
     imageUrl: string;
+    dropWeight: number;
+    isActive: boolean;
 };
 
 type PackReward = {
@@ -67,6 +69,7 @@ type MelodyGameSave = {
 };
 
 type MelodyMergePageProps = {
+    cards: Array<Omit<MelodyCard, 'imageUrl'>>;
     gameSave?: MelodyGameSave | null;
     auth?: {
         user?: {
@@ -112,32 +115,19 @@ const mergeChain = [
     { level: 10, name: 'Legendario', symbol: 'rainbow', xp: 360, hearts: 90 },
 ];
 
-type CardManifestItem = {
-    id: number;
-    personaje: string;
-    categoria: string;
-    rareza: CardRarity;
-    archivo: string;
-};
-
 const cardImages = import.meta.glob('../../assets/cards/**/*.png', {
     eager: true,
     import: 'default',
     query: '?url',
 }) as Record<string, string>;
 
-const getCardImage = (file: string) => cardImages[`../../assets/cards/${file}`] ?? '';
+const getCardImage = (file: string) => {
+    if (file.startsWith('http') || file.startsWith('/')) {
+        return file;
+    }
 
-const cardPool: MelodyCard[] = (cardsManifest as CardManifestItem[]).map((card) => ({
-    id: `card-${card.id}`,
-    name: card.personaje,
-    collection: card.categoria,
-    rarity: card.rareza,
-    flavor: `${card.rareza} - ${card.categoria}`,
-    imageUrl: getCardImage(card.archivo),
-}));
-
-const cardsById = new Map(cardPool.map((card) => [card.id, card]));
+    return cardImages[`../../assets/cards/${file}`] ?? '';
+};
 
 const emptyBoard = (): Array<BoardItem | null> => Array.from({ length: boardSize }, () => null);
 
@@ -145,17 +135,29 @@ const getLevel = (level: number) => mergeChain[Math.min(level, mergeChain.length
 
 const xpForLevel = (level: number) => Math.round(60 + (level - 1) * 110 + Math.pow(level - 1, 2) * 35);
 
-const chooseCard = (): MelodyCard => {
-    const roll = Math.random();
+const chooseCard = (cardPool: MelodyCard[]): MelodyCard | null => {
+    if (cardPool.length === 0) {
+        return null;
+    }
 
-    const rarity: CardRarity =
-        roll > 0.965 ? 'UR' :
-            roll > 0.78 ? 'SSR' :
-                roll > 0.46 ? 'SR' :
-                    'R';
+    const activeCards = cardPool.filter((card) => card.isActive);
 
-    const options = cardPool.filter((card) => card.rarity === rarity);
-    return options[Math.floor(Math.random() * options.length)] ?? cardPool[0];
+    if (activeCards.length === 0) {
+        return null;
+    }
+
+    const totalWeight = activeCards.reduce((total, card) => total + Math.max(card.dropWeight, 1), 0);
+    let roll = Math.random() * totalWeight;
+
+    for (const card of activeCards) {
+        roll -= Math.max(card.dropWeight, 1);
+
+        if (roll <= 0) {
+            return card;
+        }
+    }
+
+    return activeCards[0];
 };
 
 const makeItem = (level = 1): BoardItem => ({
@@ -188,7 +190,7 @@ const normalizeBoard = (board?: Array<BoardItem | null>) => {
     });
 };
 
-const normalizePacks = (packs?: SavedPackReward[]) => {
+const normalizePacks = (cardsById: Map<string, MelodyCard>, packs?: SavedPackReward[]) => {
     if (!Array.isArray(packs)) {
         return [];
     }
@@ -236,7 +238,12 @@ const triggerFeedback = () => {
     }
 };
 
-export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps) {
+export default function MelodyMergePage({ cards, gameSave, auth }: MelodyMergePageProps) {
+    const cardPool = useMemo<MelodyCard[]>(() => cards.map((card) => ({
+        ...card,
+        imageUrl: getCardImage(card.imagePath),
+    })), [cards]);
+    const cardsById = useMemo(() => new Map(cardPool.map((card) => [card.id, card])), [cardPool]);
     const savedEnergy = Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy);
     const offlineEnergyGain = getOfflineEnergyGain(gameSave?.lastSeenAt, savedEnergy);
     const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(gameSave?.board));
@@ -245,7 +252,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
     const [xp, setXp] = useState(Math.max(gameSave?.xp ?? 0, 0));
     const [playerLevel, setPlayerLevel] = useState(Math.max(gameSave?.playerLevel ?? 1, 1));
     const [mergeCount, setMergeCount] = useState(Math.max(gameSave?.mergeCount ?? 0, 0));
-    const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(gameSave?.openedPacks));
+    const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(cardsById, gameSave?.openedPacks));
     const [claimedMissions, setClaimedMissions] = useState<string[]>(() => gameSave?.claimedMissions ?? []);
     const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(gameSave?.dailyRewardClaimedAt ?? null);
     const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(gameSave?.dailyRewardClaimedAt));
@@ -312,7 +319,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         }, 60000);
 
         return () => window.clearInterval(timer);
-    }, []);
+    }, [cardPool]);
 
     useEffect(() => {
         if (!toastMessage) return;
@@ -354,7 +361,7 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
     }, [openedPacks]);
 
     const xpGoal = xpForLevel(playerLevel);
-    const albumPercent = Math.round((collectedCards.length / cardPool.length) * 100);
+    const albumPercent = cardPool.length > 0 ? Math.round((collectedCards.length / cardPool.length) * 100) : 0;
     const freeCells = board.filter((cell) => !cell).length;
     const savePayload = useMemo<MelodyGameSave>(() => ({
         board,
@@ -419,16 +426,23 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
     }, [postSave, savePayload]);
 
     const queuePack = useCallback((label: string) => {
+        const packCards = [chooseCard(cardPool), chooseCard(cardPool), chooseCard(cardPool)].filter(Boolean) as MelodyCard[];
+
+        if (packCards.length === 0) {
+            notify('No hay cartas activas para abrir sobres.');
+            return;
+        }
+
         setPendingPack({
             id: nanoid(),
             label,
-            cards: [chooseCard(), chooseCard(), chooseCard()],
+            cards: packCards,
         });
         setIsPackOpened(false);
         setDismissedPackCards(0);
         setPackCardResults([]);
         notify(assetsReady ? `${label}: toca el sobre para abrirlo.` : 'Preparando cartas para el sobre.');
-    }, [assetsReady, notify]);
+    }, [assetsReady, cardPool, notify]);
 
     const revealPendingPack = useCallback(() => {
         if (!pendingPack || isPackOpened) return;

@@ -9,6 +9,8 @@ type AdminStats = {
     totalHearts: number;
     totalMerges: number;
     totalCards: number;
+    catalogCards: number;
+    activeCards: number;
 };
 
 type PlayerRow = {
@@ -38,6 +40,8 @@ const statCards = (stats: AdminStats) => [
     { label: 'Corazones', value: stats.totalHearts, icon: Heart },
     { label: 'Fusiones', value: stats.totalMerges, icon: BarChart3 },
     { label: 'Cartas', value: stats.totalCards, icon: Crown },
+    { label: 'Catalogo', value: stats.catalogCards, icon: Crown },
+    { label: 'Activas', value: stats.activeCards, icon: Sparkles },
 ];
 
 export default function AdminDashboard({ stats, players }: AdminDashboardProps) {
@@ -57,6 +61,9 @@ export default function AdminDashboard({ stats, players }: AdminDashboardProps) 
                             </div>
                         </div>
                         <div className="mm-admin__actions">
+                            <button onClick={() => router.visit('/admin/cards')} type="button">
+                                Cartas
+                            </button>
                             <button onClick={() => router.visit('/')} type="button">
                                 Juego
                             </button>

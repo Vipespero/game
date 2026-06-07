@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Card;
 use App\Models\GameSave;
 use App\Models\User;
 use Inertia\Inertia;
@@ -67,6 +68,8 @@ class DashboardController extends Controller
                 'totalHearts' => $totalHearts,
                 'totalMerges' => $totalMerges,
                 'totalCards' => $totalCards,
+                'catalogCards' => Card::query()->count(),
+                'activeCards' => Card::query()->where('is_active', true)->count(),
             ],
             'players' => $playersWithSaves->values()->merge($playersWithoutSaves)->take(30)->values(),
         ]);
