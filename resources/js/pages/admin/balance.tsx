@@ -190,7 +190,7 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                         </section>
                     )}
 
-                    <form className="mm-admin__balance" onSubmit={submit}>
+                    <form className={`mm-admin__balance ${activeMenu === 'mergeItems' ? 'has-live-preview' : ''}`} onSubmit={submit}>
                         <nav className="mm-admin__menu" aria-label="Secciones de balance">
                             {menus.map((menu) => (
                                 <button

@@ -2168,16 +2168,21 @@ button {
 }
 
 .mm-admin__live-preview {
-    position: sticky;
-    top: 118px;
-    z-index: 4;
+    position: fixed;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 30;
     display: flex;
     align-items: center;
     gap: 12px;
-    border-top: 1px solid rgba(126, 84, 132, 0.12);
-    border-bottom: 1px solid rgba(126, 84, 132, 0.12);
-    background: rgba(255, 250, 253, 0.96);
+    width: min(calc(100% - 20px), 410px);
+    margin: 0 auto;
+    border: 1px solid rgba(255, 255, 255, 0.86);
+    border-radius: 18px;
+    background: rgba(255, 250, 253, 0.97);
     padding: 10px 12px;
+    box-shadow: 0 16px 36px rgba(120, 65, 132, 0.22);
     backdrop-filter: blur(16px);
 }
 
@@ -2215,6 +2220,14 @@ button {
 
 .mm-admin__piece-preview--live .mm-piece__name {
     font-size: 7px;
+}
+
+.mm-admin__balance.has-live-preview {
+    padding-bottom: 106px;
+}
+
+.mm-admin__balance.has-live-preview .mm-admin__save {
+    bottom: 106px;
 }
 
 .mm-admin__merge-picker {
@@ -2526,5 +2539,16 @@ button {
 
     .mm-toast {
         top: 8px;
+    }
+}
+
+@media (max-height: 560px) {
+    .mm-admin__live-preview {
+        top: max(8px, env(safe-area-inset-top));
+        bottom: auto;
+    }
+
+    .mm-admin__balance.has-live-preview .mm-admin__save {
+        bottom: 12px;
     }
 }
