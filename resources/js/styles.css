@@ -349,7 +349,7 @@ button {
 .mm-stats {
     display: grid;
     flex: 0 0 auto;
-    grid-template-columns: repeat(5, auto);
+    grid-template-columns: repeat(6, auto);
     gap: 6px;
 }
 
@@ -1807,6 +1807,169 @@ button {
     font-weight: 900;
 }
 
+.mm-admin {
+    min-height: 100vh;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px),
+        linear-gradient(135deg, #ffe5f1 0%, #f5edff 48%, #e6f8ff 100%);
+    background-size: 36px 36px, 36px 36px, auto;
+    color: var(--mm-ink);
+    padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+}
+
+.mm-admin__shell {
+    display: grid;
+    gap: 14px;
+    width: min(100%, 1120px);
+    margin: 0 auto;
+}
+
+.mm-admin__header,
+.mm-admin__panel,
+.mm-admin__stat {
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    background: rgba(255, 250, 253, 0.82);
+    box-shadow: 0 16px 36px rgba(120, 65, 132, 0.14);
+    backdrop-filter: blur(18px);
+}
+
+.mm-admin__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: 22px;
+    padding: 14px;
+}
+
+.mm-admin__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mm-admin__actions button,
+.mm-admin__panel-head button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: 38px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, var(--mm-pink), var(--mm-lilac));
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 0 12px;
+}
+
+.mm-admin__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.mm-admin__stat {
+    display: grid;
+    gap: 5px;
+    min-height: 104px;
+    border-radius: 18px;
+    padding: 13px;
+}
+
+.mm-admin__stat svg {
+    color: var(--mm-pink);
+}
+
+.mm-admin__stat span {
+    color: var(--mm-muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.mm-admin__stat strong {
+    color: var(--mm-ink);
+    font-size: 25px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.mm-admin__panel {
+    overflow: hidden;
+    border-radius: 22px;
+}
+
+.mm-admin__panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px;
+}
+
+.mm-admin__panel-head h2 {
+    margin: 0;
+    color: var(--mm-ink);
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.mm-admin__table-wrap {
+    overflow-x: auto;
+}
+
+.mm-admin__table {
+    width: 100%;
+    min-width: 820px;
+    border-collapse: collapse;
+}
+
+.mm-admin__table th,
+.mm-admin__table td {
+    border-top: 1px solid rgba(126, 84, 132, 0.12);
+    padding: 11px 12px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.mm-admin__table th {
+    color: var(--mm-muted);
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.mm-admin__table td {
+    color: var(--mm-ink);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.mm-admin__table td:first-child {
+    display: grid;
+    gap: 3px;
+    min-width: 190px;
+}
+
+.mm-admin__table td:first-child span {
+    overflow: hidden;
+    color: var(--mm-muted);
+    font-size: 11px;
+    text-overflow: ellipsis;
+}
+
+.mm-admin__table em {
+    width: fit-content;
+    border-radius: 999px;
+    background: rgba(255, 211, 231, 0.9);
+    color: var(--mm-pink);
+    font-size: 10px;
+    font-style: normal;
+    padding: 3px 7px;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .mm-magic-box,
     .mm-envelope,
@@ -1852,6 +2015,7 @@ button {
 
     .mm-stats {
         gap: 4px;
+        grid-template-columns: repeat(3, auto);
     }
 
     .mm-stat {

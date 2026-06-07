@@ -70,6 +70,7 @@ type MelodyMergePageProps = {
     gameSave?: MelodyGameSave | null;
     auth?: {
         user?: {
+            is_admin?: boolean;
             name?: string;
         } | null;
     };
@@ -728,6 +729,11 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
                             <button className="mm-logout" onClick={() => router.visit('/settings/profile')} type="button">
                                 <Settings size={15} aria-hidden />
                             </button>
+                            {auth?.user?.is_admin && (
+                                <button className="mm-logout" onClick={() => router.visit('/admin')} type="button">
+                                    <Crown size={15} aria-hidden />
+                                </button>
+                            )}
                         </div>
                     </header>
 
