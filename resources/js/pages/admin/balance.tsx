@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import type { CSSProperties, FormEvent, ReactNode } from 'react';
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { RefreshCcw, Save, ShieldCheck } from 'lucide-react';
 
 type SettingRow = { key: string; value: string | number };
@@ -38,6 +38,8 @@ type BalanceProps = BalanceFormData & {
     progressKeys: string[];
     triggerKeys: string[];
 };
+
+type BalanceMenu = keyof BalanceFormData;
 
 const numberValue = (value: string | number | null | undefined) => Number(value ?? 0);
 
@@ -122,6 +124,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 export default function AdminBalance({ ready, settings, rules, rarities, missions, mergeItems, packs, playerLevels, progressKeys, triggerKeys }: BalanceProps) {
+    const [activeMenu, setActiveMenu] = useState<BalanceMenu>('settings');
     const form = useForm<BalanceFormData>({
         settings: settings.map((setting) => ({ ...setting, value: numberValue(setting.value) })),
         rules: rules.map((rule) => ({ ...rule, value: numberValue(rule.value) })),
@@ -146,6 +149,16 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
         event.preventDefault();
         form.post('/admin/balance');
     };
+
+    const menus: Array<{ id: BalanceMenu; label: string; count: number }> = [
+        { id: 'settings', label: 'Configuracion', count: form.data.settings.length },
+        { id: 'rules', label: 'Reglas', count: form.data.rules.length },
+        { id: 'rarities', label: 'Rarezas', count: form.data.rarities.length },
+        { id: 'missions', label: 'Misiones', count: form.data.missions.length },
+        { id: 'mergeItems', label: 'Objetos', count: form.data.mergeItems.length },
+        { id: 'packs', label: 'Sobres', count: form.data.packs.length },
+        { id: 'playerLevels', label: 'Niveles', count: form.data.playerLevels.length },
+    ];
 
     return (
         <>
@@ -175,7 +188,22 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                     )}
 
                     <form className="mm-admin__balance" onSubmit={submit}>
-                        <Section kicker="General" title="Configuracion" note="Valores base de energia y recompensa diaria.">
+                        <nav className="mm-admin__menu" aria-label="Secciones de balance">
+                            {menus.map((menu) => (
+                                <button
+                                    aria-pressed={activeMenu === menu.id}
+                                    className={activeMenu === menu.id ? 'is-active' : ''}
+                                    key={menu.id}
+                                    onClick={() => setActiveMenu(menu.id)}
+                                    type="button"
+                                >
+                                    <span>{menu.label}</span>
+                                    <strong>{menu.count}</strong>
+                                </button>
+                            ))}
+                        </nav>
+
+                        {activeMenu === 'settings' && <Section kicker="General" title="Configuracion" note="Valores base de energia y recompensa diaria.">
                             <div className="mm-admin__edit-grid">
                                 {form.data.settings.map((setting, index) => (
                                     <article className="mm-admin__edit-card" key={setting.key}>
@@ -185,9 +213,9 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     </article>
                                 ))}
                             </div>
-                        </Section>
+                        </Section>}
 
-                        <Section kicker="Reglas" title="Generacion" note="Controla lo que sale de la caja magica y los sobres por fusion.">
+                        {activeMenu === 'rules' && <Section kicker="Reglas" title="Generacion" note="Controla lo que sale de la caja magica y los sobres por fusion.">
                             <div className="mm-admin__edit-grid">
                                 {form.data.rules.map((rule, index) => (
                                     <article className="mm-admin__edit-card" key={rule.key}>
@@ -197,9 +225,9 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     </article>
                                 ))}
                             </div>
-                        </Section>
+                        </Section>}
 
-                        <Section kicker="Cartas" title="Rarezas" note="Define nombres, orden y recompensa por cartas duplicadas.">
+                        {activeMenu === 'rarities' && <Section kicker="Cartas" title="Rarezas" note="Define nombres, orden y recompensa por cartas duplicadas.">
                             <div className="mm-admin__edit-grid">
                                 {form.data.rarities.map((rarity, index) => (
                                     <article className="mm-admin__edit-card" key={rarity.id}>
@@ -213,9 +241,9 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     </article>
                                 ))}
                             </div>
-                        </Section>
+                        </Section>}
 
-                        <Section kicker="Objetivos" title="Misiones" note="Metas que el jugador puede reclamar por progreso.">
+                        {activeMenu === 'missions' && <Section kicker="Objetivos" title="Misiones" note="Metas que el jugador puede reclamar por progreso.">
                             <div className="mm-admin__edit-grid">
                                 {form.data.missions.map((mission, index) => (
                                     <article className="mm-admin__edit-card" key={mission.id}>
@@ -238,9 +266,9 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     </article>
                                 ))}
                             </div>
-                        </Section>
+                        </Section>}
 
-                        <Section kicker="Tablero" title="Objetos fusionables" note="Ajusta recompensa, imagen, encuadre y estilo visual de cada ficha.">
+                        {activeMenu === 'mergeItems' && <Section kicker="Tablero" title="Objetos fusionables" note="Ajusta recompensa, imagen, encuadre y estilo visual de cada ficha.">
                             <div className="mm-admin__edit-grid mm-admin__edit-grid--wide">
                                 {form.data.mergeItems.map((item, index) => (
                                     <article className="mm-admin__edit-card" key={item.id}>
@@ -276,9 +304,9 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     </article>
                                 ))}
                             </div>
-                        </Section>
+                        </Section>}
 
-                        <Section kicker="Sobres" title="Packs" note="Define cuando aparece cada sobre, costo y cantidad de cartas.">
+                        {activeMenu === 'packs' && <Section kicker="Sobres" title="Packs" note="Define cuando aparece cada sobre, costo y cantidad de cartas.">
                             <div className="mm-admin__edit-grid">
                                 {form.data.packs.map((pack, index) => (
                                     <article className="mm-admin__edit-card" key={pack.id}>
@@ -300,9 +328,9 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     </article>
                                 ))}
                             </div>
-                        </Section>
+                        </Section>}
 
-                        <Section kicker="Niveles" title="Curva de jugador" note="XP necesaria, energia y sobre entregado al subir cada nivel.">
+                        {activeMenu === 'playerLevels' && <Section kicker="Niveles" title="Curva de jugador" note="XP necesaria, energia y sobre entregado al subir cada nivel.">
                             <div className="mm-admin__edit-grid">
                                 {form.data.playerLevels.map((level, index) => (
                                     <article className="mm-admin__edit-card" key={level.id}>
@@ -321,7 +349,7 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     </article>
                                 ))}
                             </div>
-                        </Section>
+                        </Section>}
 
                         <button className="mm-admin__save" disabled={!ready || form.processing} type="submit">
                             <Save size={16} aria-hidden />
