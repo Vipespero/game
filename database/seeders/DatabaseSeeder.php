@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AdminUserSeeder::class);
         $this->call(CardRaritySeeder::class);
         $this->call(CardSeeder::class);
+        $this->call(GamePackSeeder::class);
         $this->call(GameSettingSeeder::class);
         $this->call(MergeItemSeeder::class);
         $this->call(MissionSeeder::class);

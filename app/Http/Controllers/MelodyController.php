@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Card;
 use App\Models\CardRarity;
+use App\Models\GamePack;
 use App\Models\GameSave;
 use App\Models\GameSetting;
 use App\Models\MergeItem;
@@ -35,6 +36,7 @@ class MelodyController extends Controller
             'cards' => $this->activeCards(),
             'cardRarities' => $this->activeCardRarities(),
             'gameConfig' => $this->gameConfig(),
+            'gamePacks' => $this->activeGamePacks(),
             'mergeItems' => $this->activeMergeItems(),
             'missions' => $this->activeMissions(),
             'gameSave' => $gameSave?->toGameState(),
@@ -247,6 +249,20 @@ class MelodyController extends Controller
             ->all();
     }
 
+    private function activeGamePacks(): array
+    {
+        if (! Schema::hasTable('game_packs')) {
+            return [];
+        }
+
+        return GamePack::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (GamePack $pack): array => $pack->toGamePack())
+            ->all();
+    }
+
     private function activeMergeItems(): array
     {
         if (! Schema::hasTable('merge_items')) {
@@ -265,7 +281,6 @@ class MelodyController extends Controller
     {
         $settings = GameSetting::values([
             'max_energy' => self::MAX_ENERGY,
-            'premium_pack_cost' => 180,
             'daily_reward_energy' => 30,
             'daily_reward_hearts' => 120,
             'level_reward_energy' => 20,
@@ -273,7 +288,6 @@ class MelodyController extends Controller
 
         return [
             'maxEnergy' => max(1, $settings['max_energy']),
-            'premiumPackCost' => max(1, $settings['premium_pack_cost']),
             'dailyRewardEnergy' => max(0, $settings['daily_reward_energy']),
             'dailyRewardHearts' => max(0, $settings['daily_reward_hearts']),
             'levelRewardEnergy' => max(0, $settings['level_reward_energy']),

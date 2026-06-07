@@ -15,6 +15,7 @@ php artisan migrate --force
 php artisan db:seed --class=Database\\Seeders\\AdminUserSeeder
 php artisan db:seed --class=Database\\Seeders\\CardRaritySeeder
 php artisan db:seed --class=Database\\Seeders\\CardSeeder
+php artisan db:seed --class=Database\\Seeders\\GamePackSeeder
 php artisan db:seed --class=Database\\Seeders\\GameSettingSeeder
 php artisan db:seed --class=Database\\Seeders\\MergeItemSeeder
 php artisan db:seed --class=Database\\Seeders\\MissionSeeder
@@ -34,11 +35,13 @@ SHOW TABLES LIKE 'merge_items';
 SHOW TABLES LIKE 'missions';
 SHOW TABLES LIKE 'card_rarities';
 SHOW TABLES LIKE 'game_settings';
+SHOW TABLES LIKE 'game_packs';
 
 SELECT level, name, image_path FROM merge_items ORDER BY level;
 SELECT * FROM missions ORDER BY sort_order;
 SELECT * FROM card_rarities ORDER BY sort_order;
 SELECT * FROM game_settings ORDER BY `key`;
+SELECT * FROM game_packs ORDER BY sort_order;
 ```
 
 Recordatorio de admin:

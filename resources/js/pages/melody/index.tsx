@@ -60,10 +60,19 @@ type CardRarityDefinition = {
 
 type GameConfig = {
     maxEnergy: number;
-    premiumPackCost: number;
     dailyRewardEnergy: number;
     dailyRewardHearts: number;
     levelRewardEnergy: number;
+};
+
+type GamePackDefinition = {
+    id: string;
+    label: string;
+    triggerKey: 'premium' | 'daily' | 'level' | 'merge';
+    costHearts: number;
+    cardsCount: number;
+    sortOrder?: number;
+    isActive?: boolean;
 };
 
 type MissionDefinition = {
@@ -114,6 +123,7 @@ type MelodyMergePageProps = {
     cards: Array<Omit<MelodyCard, 'imageUrl'>>;
     cardRarities?: CardRarityDefinition[];
     gameConfig?: GameConfig;
+    gamePacks?: GamePackDefinition[];
     mergeItems?: MergeItemSource[];
     missions?: MissionDefinition[];
     gameSave?: MelodyGameSave | null;
@@ -128,7 +138,6 @@ type MelodyMergePageProps = {
 const boardSize = 25;
 const fallbackGameConfig: GameConfig = {
     maxEnergy: 100,
-    premiumPackCost: 180,
     dailyRewardEnergy: 30,
     dailyRewardHearts: 120,
     levelRewardEnergy: 20,
@@ -138,6 +147,13 @@ const fallbackMissions: MissionDefinition[] = [
     { id: 'merge-20', label: 'Fusiona 20 objetos', progressKey: 'merge_count', goal: 20, reward: { hearts: 80, energy: 10 } },
     { id: 'album-5', label: 'Colecciona 5 cartas', progressKey: 'collected_cards', goal: 5, reward: { hearts: 120, energy: 15 } },
     { id: 'hearts-500', label: 'Guarda 500 corazones', progressKey: 'hearts', goal: 500, reward: { hearts: 160, energy: 0 } },
+];
+
+const fallbackGamePacks: GamePackDefinition[] = [
+    { id: 'premium', label: 'Sobre premium', triggerKey: 'premium', costHearts: 180, cardsCount: 3 },
+    { id: 'daily', label: 'Sobre diario', triggerKey: 'daily', costHearts: 0, cardsCount: 3 },
+    { id: 'level', label: 'Sobre de nivel', triggerKey: 'level', costHearts: 0, cardsCount: 3 },
+    { id: 'merge', label: 'Sobre por fusion', triggerKey: 'merge', costHearts: 0, cardsCount: 3 },
 ];
 
 const fallbackDuplicateHeartRewards: Record<CardRarity, number> = {
@@ -307,6 +323,7 @@ export default function MelodyMergePage({
     cards,
     cardRarities = [],
     gameConfig,
+    gamePacks = [],
     mergeItems = [],
     missions: configuredMissions = [],
     gameSave,
@@ -317,7 +334,6 @@ export default function MelodyMergePage({
         ...gameConfig,
     };
     const maxEnergy = Math.max(1, config.maxEnergy);
-    const premiumPackCost = Math.max(1, config.premiumPackCost);
     const dailyReward = {
         energy: Math.max(0, config.dailyRewardEnergy),
         hearts: Math.max(0, config.dailyRewardHearts),
@@ -336,6 +352,15 @@ export default function MelodyMergePage({
         () => configuredMissions.length > 0 ? configuredMissions : fallbackMissions,
         [configuredMissions],
     );
+    const packDefinitions = useMemo(
+        () => gamePacks.length > 0 ? gamePacks : fallbackGamePacks,
+        [gamePacks],
+    );
+    const getPack = useCallback((triggerKey: GamePackDefinition['triggerKey']) => {
+        return packDefinitions.find((pack) => pack.triggerKey === triggerKey)
+            ?? (fallbackGamePacks.find((pack) => pack.triggerKey === triggerKey) as GamePackDefinition);
+    }, [packDefinitions]);
+    const premiumPack = getPack('premium');
     const cardPool = useMemo<MelodyCard[]>(() => cards.map((card) => ({
         ...card,
         imageUrl: getCardImage(card.imagePath),
@@ -539,8 +564,9 @@ export default function MelodyMergePage({
         };
     }, [postSave, savePayload]);
 
-    const queuePack = useCallback((label: string) => {
-        const packCards = [chooseCard(cardPool), chooseCard(cardPool), chooseCard(cardPool)].filter(Boolean) as MelodyCard[];
+    const queuePack = useCallback((pack: GamePackDefinition, labelOverride?: string) => {
+        const cardsCount = Math.max(1, Math.min(pack.cardsCount, 10));
+        const packCards = Array.from({ length: cardsCount }, () => chooseCard(cardPool)).filter(Boolean) as MelodyCard[];
 
         if (packCards.length === 0) {
             notify('No hay cartas activas para abrir sobres.');
@@ -549,13 +575,13 @@ export default function MelodyMergePage({
 
         setPendingPack({
             id: nanoid(),
-            label,
+            label: labelOverride ?? pack.label,
             cards: packCards,
         });
         setIsPackOpened(false);
         setDismissedPackCards(0);
         setPackCardResults([]);
-        notify(assetsReady ? `${label}: toca el sobre para abrirlo.` : 'Preparando cartas para el sobre.');
+        notify(assetsReady ? `${labelOverride ?? pack.label}: toca el sobre para abrirlo.` : 'Preparando cartas para el sobre.');
     }, [assetsReady, cardPool, notify]);
 
     const revealPendingPack = useCallback(() => {
@@ -611,9 +637,9 @@ export default function MelodyMergePage({
         setEnergy((value) => Math.min(maxEnergy, value + dailyReward.energy));
         setHearts((value) => value + dailyReward.hearts);
         triggerFeedback();
-        queuePack('Sobre diario');
+        queuePack(getPack('daily'));
         notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones.`);
-    }, [dailyReward.energy, dailyReward.hearts, maxEnergy, notify, queuePack]);
+    }, [dailyReward.energy, dailyReward.hearts, getPack, maxEnergy, notify, queuePack]);
 
     const advancePackCard = useCallback(() => {
         setDismissedPackCards((value) => Math.min(value + 1, 3));
@@ -640,7 +666,8 @@ export default function MelodyMergePage({
             if (levelsGained > 0) {
                 setPlayerLevel(nextLevel);
                 setEnergy((current) => Math.min(maxEnergy, current + levelRewardEnergy * levelsGained));
-                queuePack(levelsGained > 1 ? `Sobre de nivel x${levelsGained}` : 'Sobre de nivel');
+                const levelPack = getPack('level');
+                queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
                 notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
                 return nextXp;
             }
@@ -648,7 +675,7 @@ export default function MelodyMergePage({
             notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
             return nextXp;
         });
-    }, [getMergeLevel, levelRewardEnergy, maxEnergy, notify, playerLevel, queuePack]);
+    }, [getMergeLevel, getPack, levelRewardEnergy, maxEnergy, notify, playerLevel, queuePack]);
 
     const mergeCells = useCallback((from: number, to: number) => {
         if (from === to) return;
@@ -680,12 +707,12 @@ export default function MelodyMergePage({
             addProgress(origin.level);
 
             if (newLevel >= 5 && Math.random() > 0.92) {
-                queuePack('Sobre por fusion');
+                queuePack(getPack('merge'));
             }
 
             return next;
         });
-    }, [addProgress, maxMergeItemLevel, notify, queuePack]);
+    }, [addProgress, getPack, maxMergeItemLevel, notify, queuePack]);
 
     const generateItem = useCallback(() => {
         if (energy <= 0) {
@@ -712,15 +739,17 @@ export default function MelodyMergePage({
     }, [board, energy, notify]);
 
     const buyPack = useCallback(() => {
-        if (hearts < premiumPackCost) {
-            notify(`Necesitas ${premiumPackCost} corazones para comprar un sobre.`);
+        const premiumPack = getPack('premium');
+
+        if (hearts < premiumPack.costHearts) {
+            notify(`Necesitas ${premiumPack.costHearts} corazones para comprar un sobre.`);
             return;
         }
 
-        setHearts((value) => value - premiumPackCost);
+        setHearts((value) => value - premiumPack.costHearts);
         triggerFeedback();
-        queuePack('Sobre premium');
-    }, [hearts, notify, queuePack]);
+        queuePack(premiumPack);
+    }, [getPack, hearts, notify, queuePack]);
 
     const claimMission = useCallback((missionId: string) => {
         const mission = missionDefinitions.find((item) => item.id === missionId);
@@ -969,7 +998,7 @@ export default function MelodyMergePage({
                                 </div>
                                 <button onClick={buyPack} type="button">
                                     <PackageOpen size={17} aria-hidden />
-                                    <span>{premiumPackCost}</span>
+                                    <span>{premiumPack.costHearts}</span>
                                 </button>
                             </div>
 

@@ -11,7 +11,6 @@ class GameSettingSeeder extends Seeder
     {
         $settings = [
             'max_energy' => 100,
-            'premium_pack_cost' => 180,
             'daily_reward_energy' => 30,
             'daily_reward_hearts' => 120,
             'level_reward_energy' => 20,

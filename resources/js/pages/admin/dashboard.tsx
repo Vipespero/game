@@ -62,6 +62,9 @@ export default function AdminDashboard({ stats, catalogReady, players }: AdminDa
                             </div>
                         </div>
                         <div className="mm-admin__actions">
+                            <button onClick={() => router.visit('/admin/balance')} type="button">
+                                Balance
+                            </button>
                             <button onClick={() => router.visit('/admin/cards')} type="button">
                                 Cartas
                             </button>
