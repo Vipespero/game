@@ -168,40 +168,6 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                             <strong>Balance pendiente</strong>
                             <span>Faltan tablas nuevas. Ejecuta migraciones cuando toque desplegar el VPS.</span>
                         </section>
-
-                        <section className="mm-admin__panel">
-                            <div className="mm-admin__panel-head">
-                                <div>
-                                    <p className="mm-kicker">Reglas</p>
-                                    <h2>Generacion</h2>
-                                </div>
-                            </div>
-                            <div className="mm-admin__table-wrap">
-                                <table className="mm-admin__table">
-                                    <thead>
-                                        <tr>
-                                            <th>Clave</th>
-                                            <th>Valor</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {form.data.rules.map((rule, index) => (
-                                            <tr key={rule.key}>
-                                                <td><strong>{rule.key}</strong></td>
-                                                <td>
-                                                    <input
-                                                        min={0}
-                                                        onChange={(event) => setRow('rules', index, 'value', numberValue(event.target.value))}
-                                                        type="number"
-                                                        value={rule.value}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </section>
                     )}
 
                     <form className="mm-admin__balance" onSubmit={submit}>
@@ -230,6 +196,40 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                                         onChange={(event) => setRow('settings', index, 'value', numberValue(event.target.value))}
                                                         type="number"
                                                         value={setting.value}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section className="mm-admin__panel">
+                            <div className="mm-admin__panel-head">
+                                <div>
+                                    <p className="mm-kicker">Reglas</p>
+                                    <h2>Generacion</h2>
+                                </div>
+                            </div>
+                            <div className="mm-admin__table-wrap">
+                                <table className="mm-admin__table">
+                                    <thead>
+                                        <tr>
+                                            <th>Clave</th>
+                                            <th>Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {form.data.rules.map((rule, index) => (
+                                            <tr key={rule.key}>
+                                                <td><strong>{rule.key}</strong></td>
+                                                <td>
+                                                    <input
+                                                        min={0}
+                                                        onChange={(event) => setRow('rules', index, 'value', numberValue(event.target.value))}
+                                                        type="number"
+                                                        value={rule.value}
                                                     />
                                                 </td>
                                             </tr>
