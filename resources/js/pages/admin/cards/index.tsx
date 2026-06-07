@@ -63,50 +63,32 @@ export default function AdminCards({ cards, catalogReady }: AdminCardsProps) {
                             </button>
                         </div>
 
-                        <div className="mm-admin__table-wrap">
-                            <table className="mm-admin__table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nombre</th>
-                                        <th>Coleccion</th>
-                                        <th>Rareza</th>
-                                        <th>Peso</th>
-                                        <th>Imagen</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {cards.map((card) => (
-                                        <tr key={card.id}>
-                                            <td>{card.external_id}</td>
-                                            <td>
-                                                <strong>{card.name}</strong>
-                                            </td>
-                                            <td>{card.collection}</td>
-                                            <td>{card.rarity}</td>
-                                            <td>{card.drop_weight}</td>
-                                            <td>{card.image_path}</td>
-                                            <td>{card.is_active ? 'Activa' : 'Inactiva'}</td>
-                                            <td>
-                                                <div className="mm-admin__row-actions">
-                                                    <button onClick={() => router.visit(`/admin/cards/${card.id}/edit`)} type="button">
-                                                        <Edit3 size={14} aria-hidden />
-                                                    </button>
-                                                    <button
-                                                        disabled={!card.is_active}
-                                                        onClick={() => router.delete(`/admin/cards/${card.id}`)}
-                                                        type="button"
-                                                    >
-                                                        <Power size={14} aria-hidden />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="mm-admin__list">
+                            {cards.map((card) => (
+                                <article className="mm-admin__edit-card" key={card.id}>
+                                    <div className="mm-admin__card-head">
+                                        <strong>{card.name}</strong>
+                                        <span>{card.is_active ? 'Activa' : 'Inactiva'}</span>
+                                    </div>
+                                    <div className="mm-admin__meta-grid">
+                                        <span>ID <strong>{card.external_id}</strong></span>
+                                        <span>Rareza <strong>{card.rarity}</strong></span>
+                                        <span>Peso <strong>{card.drop_weight}</strong></span>
+                                        <span>Coleccion <strong>{card.collection}</strong></span>
+                                    </div>
+                                    <p className="mm-admin__path">{card.image_path}</p>
+                                    <div className="mm-admin__row-actions">
+                                        <button onClick={() => router.visit(`/admin/cards/${card.id}/edit`)} type="button">
+                                            <Edit3 size={14} aria-hidden />
+                                            Editar
+                                        </button>
+                                        <button disabled={!card.is_active} onClick={() => router.delete(`/admin/cards/${card.id}`)} type="button">
+                                            <Power size={14} aria-hidden />
+                                            Desactivar
+                                        </button>
+                                    </div>
+                                </article>
+                            ))}
                         </div>
                     </section>
                 </section>

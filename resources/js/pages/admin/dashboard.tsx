@@ -110,39 +110,25 @@ export default function AdminDashboard({ stats, catalogReady, players }: AdminDa
                             </button>
                         </div>
 
-                        <div className="mm-admin__table-wrap">
-                            <table className="mm-admin__table">
-                                <thead>
-                                    <tr>
-                                        <th>Jugador</th>
-                                        <th>Nivel</th>
-                                        <th>Corazones</th>
-                                        <th>Energia</th>
-                                        <th>Cartas</th>
-                                        <th>Fusiones</th>
-                                        <th>Vista</th>
-                                        <th>Guardado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {players.map((player) => (
-                                        <tr key={`${player.id ?? 'deleted'}-${player.email}`}>
-                                            <td>
-                                                <strong>{player.name}</strong>
-                                                <span>{player.email || 'sin email'}</span>
-                                                {player.isAdmin && <em>admin</em>}
-                                            </td>
-                                            <td>{player.level}</td>
-                                            <td>{player.hearts.toLocaleString()}</td>
-                                            <td>{player.energy}</td>
-                                            <td>{player.cards}</td>
-                                            <td>{player.merges.toLocaleString()}</td>
-                                            <td>{player.activeTab}</td>
-                                            <td>{player.updatedAt ?? 'sin fecha'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="mm-admin__list">
+                            {players.map((player) => (
+                                <article className="mm-admin__edit-card" key={`${player.id ?? 'deleted'}-${player.email}`}>
+                                    <div className="mm-admin__card-head">
+                                        <strong>{player.name}</strong>
+                                        {player.isAdmin && <span>admin</span>}
+                                    </div>
+                                    <p className="mm-admin__path">{player.email || 'sin email'}</p>
+                                    <div className="mm-admin__meta-grid">
+                                        <span>Nivel <strong>{player.level}</strong></span>
+                                        <span>Corazones <strong>{player.hearts.toLocaleString()}</strong></span>
+                                        <span>Energia <strong>{player.energy}</strong></span>
+                                        <span>Cartas <strong>{player.cards}</strong></span>
+                                        <span>Fusiones <strong>{player.merges.toLocaleString()}</strong></span>
+                                        <span>Vista <strong>{player.activeTab}</strong></span>
+                                    </div>
+                                    <p className="mm-admin__path">{player.updatedAt ?? 'sin fecha'}</p>
+                                </article>
+                            ))}
                         </div>
                     </section>
                 </section>

@@ -27,6 +27,7 @@ body {
     min-height: 100%;
     overflow: hidden;
     background: #fceef7;
+    overscroll-behavior: none;
 }
 
 body,
@@ -266,7 +267,7 @@ button {
     position: fixed;
     inset: 0;
     display: grid;
-    place-items: center;
+    place-items: stretch center;
     overflow: hidden;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
@@ -276,7 +277,7 @@ button {
         linear-gradient(135deg, #ffe5f1 0%, #f5edff 48%, #e6f8ff 100%);
     background-size: 36px 36px, 36px 36px, auto, auto, auto;
     color: var(--mm-ink);
-    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
 }
 
 .mm-shell {
@@ -284,11 +285,11 @@ button {
     display: grid;
     grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     width: min(100%, 430px);
-    height: min(100%, 900px);
+    height: 100%;
     min-height: 0;
     overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.78);
-    border-radius: 28px;
+    border-radius: 22px;
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 244, 251, 0.72)),
         rgba(255, 250, 253, 0.72);
@@ -303,7 +304,7 @@ button {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 16px 16px 10px;
+    padding: 12px 12px 8px;
 }
 
 .mm-brand {
@@ -341,7 +342,7 @@ button {
 .mm-album h2,
 .mm-section-title h2 {
     margin: 0;
-    font-size: 23px;
+    font-size: 21px;
     font-weight: 900;
     line-height: 1;
 }
@@ -349,7 +350,7 @@ button {
 .mm-stats {
     display: grid;
     flex: 0 0 auto;
-    grid-template-columns: repeat(6, auto);
+    grid-template-columns: repeat(3, auto);
     gap: 6px;
 }
 
@@ -469,7 +470,7 @@ button {
 .mm-room {
     min-height: 0;
     overflow: hidden;
-    padding: 0 16px 10px;
+    padding: 0 10px 10px;
     scrollbar-width: none;
 }
 
@@ -488,15 +489,15 @@ button {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(5, 1fr);
-    gap: 8px;
+    gap: 6px;
     width: 100%;
     aspect-ratio: 1;
     border: 3px solid rgba(255, 255, 255, 0.86);
-    border-radius: 24px;
+    border-radius: 20px;
     background:
         linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 229, 244, 0.76)),
         repeating-linear-gradient(45deg, rgba(255, 120, 180, 0.12) 0 8px, transparent 8px 16px);
-    padding: 10px;
+    padding: 8px;
     box-shadow:
         inset 0 0 0 1px rgba(126, 84, 132, 0.08),
         0 18px 34px rgba(120, 65, 132, 0.12);
@@ -1836,13 +1837,13 @@ button {
         linear-gradient(135deg, #ffe5f1 0%, #f5edff 48%, #e6f8ff 100%);
     background-size: 36px 36px, 36px 36px, auto;
     color: var(--mm-ink);
-    padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+    padding: max(8px, env(safe-area-inset-top)) 8px max(12px, env(safe-area-inset-bottom));
 }
 
 .mm-admin__shell {
     display: grid;
-    gap: 14px;
-    width: min(100%, 1120px);
+    gap: 10px;
+    width: min(100%, 430px);
     margin: 0 auto;
 }
 
@@ -1856,17 +1857,15 @@ button {
 }
 
 .mm-admin__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
     gap: 12px;
-    border-radius: 22px;
-    padding: 14px;
+    border-radius: 18px;
+    padding: 12px;
 }
 
 .mm-admin__actions {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
     gap: 8px;
 }
 
@@ -1876,8 +1875,8 @@ button {
     align-items: center;
     justify-content: center;
     gap: 7px;
-    height: 38px;
-    border-radius: 13px;
+    min-height: 40px;
+    border-radius: 12px;
     background: linear-gradient(135deg, var(--mm-pink), var(--mm-lilac));
     color: #ffffff;
     font-size: 12px;
@@ -1887,8 +1886,8 @@ button {
 
 .mm-admin__stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
 }
 
 .mm-admin__notice {
@@ -1917,9 +1916,9 @@ button {
 .mm-admin__stat {
     display: grid;
     gap: 5px;
-    min-height: 104px;
-    border-radius: 18px;
-    padding: 13px;
+    min-height: 92px;
+    border-radius: 14px;
+    padding: 11px;
 }
 
 .mm-admin__stat svg {
@@ -1941,15 +1940,13 @@ button {
 
 .mm-admin__panel {
     overflow: hidden;
-    border-radius: 22px;
+    border-radius: 18px;
 }
 
 .mm-admin__panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
     gap: 12px;
-    padding: 14px;
+    padding: 12px;
 }
 
 .mm-admin__panel-head h2 {
@@ -1972,13 +1969,13 @@ button {
 
 .mm-admin__edit-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
-    padding: 14px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 10px;
 }
 
 .mm-admin__edit-grid--wide {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
 }
 
 .mm-admin__edit-card {
@@ -2054,12 +2051,52 @@ button {
 
 .mm-admin__field-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 10px;
+}
+
+.mm-admin__list {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+}
+
+.mm-admin__meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.mm-admin__meta-grid span {
+    display: grid;
+    gap: 2px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.58);
+    color: var(--mm-muted);
+    font-size: 10px;
+    font-weight: 900;
+    padding: 8px;
+    text-transform: uppercase;
+}
+
+.mm-admin__meta-grid strong {
+    color: var(--mm-ink);
+    font-size: 12px;
+    text-transform: none;
+}
+
+.mm-admin__path {
+    overflow-wrap: anywhere;
+    margin: 0;
+    color: var(--mm-muted);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.35;
 }
 
 .mm-admin__table-wrap {
     overflow-x: auto;
+    display: none;
 }
 
 .mm-admin__table {
@@ -2150,16 +2187,18 @@ button {
 }
 
 .mm-admin__row-actions {
-    display: inline-flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
 }
 
 .mm-admin__row-actions button {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 38px;
     border-radius: 11px;
     background: rgba(255, 255, 255, 0.76);
     color: var(--mm-muted);
@@ -2173,7 +2212,7 @@ button {
 .mm-admin__form {
     display: grid;
     gap: 12px;
-    padding: 14px;
+    padding: 12px;
 }
 
 .mm-admin__form label {
@@ -2227,7 +2266,7 @@ button {
 
 .mm-admin__balance {
     display: grid;
-    gap: 18px;
+    gap: 12px;
 }
 
 .mm-admin__save {
@@ -2249,47 +2288,6 @@ button {
     box-shadow: 0 14px 26px rgba(120, 65, 132, 0.2);
 }
 
-@media (max-width: 720px) {
-    .mm-admin {
-        padding: max(10px, env(safe-area-inset-top)) 8px max(14px, env(safe-area-inset-bottom));
-    }
-
-    .mm-admin__shell {
-        gap: 10px;
-    }
-
-    .mm-admin__header,
-    .mm-admin__panel-head {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .mm-admin__actions {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        width: 100%;
-    }
-
-    .mm-admin__actions button {
-        padding: 0 8px;
-    }
-
-    .mm-admin__edit-grid,
-    .mm-admin__edit-grid--wide {
-        grid-template-columns: 1fr;
-        gap: 10px;
-        padding: 10px;
-    }
-
-    .mm-admin__field-row {
-        grid-template-columns: 1fr;
-    }
-
-    .mm-admin__save {
-        width: 100%;
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .mm-magic-box,
     .mm-envelope,
@@ -2302,16 +2300,6 @@ button {
     .mm-daily-modal__panel,
     .mm-card-viewer__panel {
         animation: none;
-    }
-}
-
-@media (min-width: 760px) {
-    .mm-app {
-        padding: 24px;
-    }
-
-    .mm-shell {
-        width: min(100%, 480px);
     }
 }
 
