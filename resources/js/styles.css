@@ -2012,6 +2012,22 @@ button {
     height: 18px;
 }
 
+.mm-admin__piece-preview {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+}
+
+.mm-admin__piece-preview .mm-piece {
+    width: 52px;
+    height: 52px;
+}
+
+.mm-admin__piece-preview .mm-piece__name {
+    font-size: 6px;
+}
+
 .mm-admin__table td:first-child {
     display: grid;
     gap: 3px;

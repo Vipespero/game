@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import type { FormEvent } from 'react';
+import type { CSSProperties, FormEvent } from 'react';
 import { RefreshCcw, Save, ShieldCheck } from 'lucide-react';
 
 type SettingRow = {
@@ -81,6 +81,32 @@ type BalanceProps = BalanceFormData & {
 };
 
 const numberValue = (value: string | number | null | undefined) => Number(value ?? 0);
+
+const assetImages = import.meta.glob('../../assets/**/*.png', {
+    eager: true,
+    import: 'default',
+    query: '?url',
+}) as Record<string, string>;
+
+const getAssetImage = (file?: string | null) => {
+    if (!file) {
+        return '';
+    }
+
+    if (file.startsWith('http') || file.startsWith('/')) {
+        return file;
+    }
+
+    return assetImages[`../../assets/${file}`] ?? '';
+};
+
+const previewStyle = (item: MergeItemRow): CSSProperties => ({
+    background: item.background_style || undefined,
+    borderRadius: item.border_radius || undefined,
+    '--mm-piece-image-size': `${item.image_size || 86}%`,
+    '--mm-piece-image-x': `${item.image_offset_x || 0}%`,
+    '--mm-piece-image-y': `${item.image_offset_y || 0}%`,
+} as CSSProperties);
 
 export default function AdminBalance({ ready, settings, rules, rarities, missions, mergeItems, packs, playerLevels, progressKeys, triggerKeys }: BalanceProps) {
     const form = useForm<BalanceFormData>({
@@ -301,6 +327,7 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                     <thead>
                                         <tr>
                                             <th>Nivel</th>
+                                            <th>Preview</th>
                                             <th>Nombre</th>
                                             <th>Simbolo</th>
                                             <th>Imagen</th>
@@ -318,6 +345,15 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                         {form.data.mergeItems.map((item, index) => (
                                             <tr key={item.id}>
                                                 <td><strong>{item.level}</strong></td>
+                                                <td>
+                                                    <span className="mm-admin__piece-preview">
+                                                        <span className={`mm-piece mm-piece--${item.symbol} ${item.image_path ? 'has-image' : ''}`} style={previewStyle(item)}>
+                                                            <span className="mm-piece__shine" />
+                                                            {item.image_path && <img alt={item.name} className="mm-piece__image" src={getAssetImage(item.image_path)} />}
+                                                            <span className="mm-piece__name">{item.name}</span>
+                                                        </span>
+                                                    </span>
+                                                </td>
                                                 <td><input onChange={(event) => setRow('mergeItems', index, 'name', event.target.value)} value={item.name} /></td>
                                                 <td>{item.symbol}</td>
                                                 <td><input onChange={(event) => setRow('mergeItems', index, 'image_path', event.target.value)} value={item.image_path ?? ''} /></td>
