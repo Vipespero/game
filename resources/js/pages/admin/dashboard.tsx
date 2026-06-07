@@ -29,6 +29,7 @@ type PlayerRow = {
 
 type AdminDashboardProps = {
     stats: AdminStats;
+    catalogReady: boolean;
     players: PlayerRow[];
 };
 
@@ -44,7 +45,7 @@ const statCards = (stats: AdminStats) => [
     { label: 'Activas', value: stats.activeCards, icon: Sparkles },
 ];
 
-export default function AdminDashboard({ stats, players }: AdminDashboardProps) {
+export default function AdminDashboard({ stats, catalogReady, players }: AdminDashboardProps) {
     return (
         <>
             <Head title="Admin" />
@@ -86,6 +87,13 @@ export default function AdminDashboard({ stats, players }: AdminDashboardProps) 
                             );
                         })}
                     </section>
+
+                    {!catalogReady && (
+                        <section className="mm-admin__notice" role="status">
+                            <strong>Catalogo pendiente</strong>
+                            <span>Falta crear la tabla cards en MySQL. Ejecuta php artisan migrate --force en el VPS.</span>
+                        </section>
+                    )}
 
                     <section className="mm-admin__panel">
                         <div className="mm-admin__panel-head">

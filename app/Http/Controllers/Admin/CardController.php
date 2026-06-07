@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Card;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,11 +17,19 @@ class CardController extends Controller
 
     public function index(): Response
     {
+        if (! Schema::hasTable('cards')) {
+            return Inertia::render('admin/cards/index', [
+                'cards' => [],
+                'catalogReady' => false,
+            ]);
+        }
+
         return Inertia::render('admin/cards/index', [
             'cards' => Card::query()
                 ->orderBy('id')
                 ->get()
                 ->map(fn (Card $card): array => $this->serialize($card)),
+            'catalogReady' => true,
         ]);
     }
 

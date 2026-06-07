@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Card;
 use App\Models\GameSave;
 use App\Models\User;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -13,6 +14,7 @@ class DashboardController extends Controller
 {
     public function __invoke(): Response
     {
+        $hasCardsTable = Schema::hasTable('cards');
         $saves = GameSave::query()
             ->with(['user:id,name,email,is_admin,created_at', 'packs.cards'])
             ->latest('updated_at')
@@ -68,9 +70,10 @@ class DashboardController extends Controller
                 'totalHearts' => $totalHearts,
                 'totalMerges' => $totalMerges,
                 'totalCards' => $totalCards,
-                'catalogCards' => Card::query()->count(),
-                'activeCards' => Card::query()->where('is_active', true)->count(),
+                'catalogCards' => $hasCardsTable ? Card::query()->count() : 0,
+                'activeCards' => $hasCardsTable ? Card::query()->where('is_active', true)->count() : 0,
             ],
+            'catalogReady' => $hasCardsTable,
             'players' => $playersWithSaves->values()->merge($playersWithoutSaves)->take(30)->values(),
         ]);
     }

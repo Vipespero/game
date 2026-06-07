@@ -1870,6 +1870,29 @@ button {
     gap: 10px;
 }
 
+.mm-admin__notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.08);
+    color: #7f1d1d;
+    padding: 12px 14px;
+}
+
+.mm-admin__notice strong {
+    font-size: 0.86rem;
+    font-weight: 900;
+}
+
+.mm-admin__notice span {
+    color: #991b1b;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
 .mm-admin__stat {
     display: grid;
     gap: 5px;

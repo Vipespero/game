@@ -14,9 +14,10 @@ type CardRow = {
 
 type AdminCardsProps = {
     cards: CardRow[];
+    catalogReady: boolean;
 };
 
-export default function AdminCards({ cards }: AdminCardsProps) {
+export default function AdminCards({ cards, catalogReady }: AdminCardsProps) {
     return (
         <>
             <Head title="Cartas" />
@@ -42,6 +43,13 @@ export default function AdminCards({ cards }: AdminCardsProps) {
                             </button>
                         </div>
                     </header>
+
+                    {!catalogReady && (
+                        <section className="mm-admin__notice" role="status">
+                            <strong>Tabla cards no encontrada</strong>
+                            <span>Primero ejecuta php artisan migrate --force en el VPS y luego vuelve a cargar esta pantalla.</span>
+                        </section>
+                    )}
 
                     <section className="mm-admin__panel">
                         <div className="mm-admin__panel-head">
