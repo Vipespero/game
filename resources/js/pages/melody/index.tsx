@@ -62,7 +62,14 @@ type GameConfig = {
     maxEnergy: number;
     dailyRewardEnergy: number;
     dailyRewardHearts: number;
-    levelRewardEnergy: number;
+};
+
+type GameRules = {
+    magicBoxPrimaryLevel: number;
+    magicBoxBonusLevel: number;
+    magicBoxBonusChancePercent: number;
+    mergePackMinLevel: number;
+    mergePackChancePercent: number;
 };
 
 type GamePackDefinition = {
@@ -86,6 +93,14 @@ type MissionDefinition = {
     };
     sortOrder?: number;
     isActive?: boolean;
+};
+
+type PlayerLevelDefinition = {
+    level: number;
+    xpRequired: number;
+    rewardEnergy: number;
+    rewardPackTrigger: GamePackDefinition['triggerKey'] | null;
+    isActive: boolean;
 };
 
 type PackReward = {
@@ -124,8 +139,10 @@ type MelodyMergePageProps = {
     cardRarities?: CardRarityDefinition[];
     gameConfig?: GameConfig;
     gamePacks?: GamePackDefinition[];
+    gameRules?: GameRules;
     mergeItems?: MergeItemSource[];
     missions?: MissionDefinition[];
+    playerLevels?: PlayerLevelDefinition[];
     gameSave?: MelodyGameSave | null;
     auth?: {
         user?: {
@@ -140,7 +157,14 @@ const fallbackGameConfig: GameConfig = {
     maxEnergy: 100,
     dailyRewardEnergy: 30,
     dailyRewardHearts: 120,
-    levelRewardEnergy: 20,
+};
+
+const fallbackGameRules: GameRules = {
+    magicBoxPrimaryLevel: 1,
+    magicBoxBonusLevel: 2,
+    magicBoxBonusChancePercent: 18,
+    mergePackMinLevel: 5,
+    mergePackChancePercent: 8,
 };
 
 const fallbackMissions: MissionDefinition[] = [
@@ -215,6 +239,14 @@ const getLevel = (level: number, items: MergeItemDefinition[] = fallbackMergeIte
     items.find((item) => item.level === level) ?? (fallbackMergeItems[Math.min(Math.max(level, 1), fallbackMergeItems.length) - 1] as MergeItemDefinition);
 
 const xpForLevel = (level: number) => Math.round(60 + (level - 1) * 110 + Math.pow(level - 1, 2) * 35);
+
+const fallbackPlayerLevels: PlayerLevelDefinition[] = Array.from({ length: 100 }, (_, index) => ({
+    level: index + 1,
+    xpRequired: xpForLevel(index + 1),
+    rewardEnergy: 20,
+    rewardPackTrigger: 'level',
+    isActive: true,
+}));
 
 const chooseCard = (cardPool: MelodyCard[]): MelodyCard | null => {
     if (cardPool.length === 0) {
@@ -324,8 +356,10 @@ export default function MelodyMergePage({
     cardRarities = [],
     gameConfig,
     gamePacks = [],
+    gameRules,
     mergeItems = [],
     missions: configuredMissions = [],
+    playerLevels = [],
     gameSave,
     auth,
 }: MelodyMergePageProps) {
@@ -333,12 +367,23 @@ export default function MelodyMergePage({
         ...fallbackGameConfig,
         ...gameConfig,
     };
+    const rules = {
+        ...fallbackGameRules,
+        ...gameRules,
+    };
     const maxEnergy = Math.max(1, config.maxEnergy);
     const dailyReward = {
         energy: Math.max(0, config.dailyRewardEnergy),
         hearts: Math.max(0, config.dailyRewardHearts),
     };
-    const levelRewardEnergy = Math.max(0, config.levelRewardEnergy);
+    const levelDefinitions = useMemo(
+        () => playerLevels.length > 0 ? playerLevels : fallbackPlayerLevels,
+        [playerLevels],
+    );
+    const getPlayerLevel = useCallback((level: number) => {
+        return levelDefinitions.find((item) => item.level === level)
+            ?? fallbackPlayerLevels[Math.min(Math.max(level, 1), fallbackPlayerLevels.length) - 1];
+    }, [levelDefinitions]);
     const duplicateHeartRewards = useMemo<Record<CardRarity, number>>(() => {
         const rewards = { ...fallbackDuplicateHeartRewards };
 
@@ -499,7 +544,7 @@ export default function MelodyMergePage({
         return [...unique.values()];
     }, [openedPacks]);
 
-    const xpGoal = xpForLevel(playerLevel);
+    const xpGoal = getPlayerLevel(playerLevel).xpRequired;
     const albumPercent = cardPool.length > 0 ? Math.round((collectedCards.length / cardPool.length) * 100) : 0;
     const freeCells = board.filter((cell) => !cell).length;
     const savePayload = useMemo<MelodyGameSave>(() => ({
@@ -657,16 +702,22 @@ export default function MelodyMergePage({
             let nextLevel = playerLevel;
             let levelsGained = 0;
 
-            while (nextXp >= xpForLevel(nextLevel)) {
-                nextXp -= xpForLevel(nextLevel);
+            let gainedEnergy = 0;
+            let rewardPackTrigger: GamePackDefinition['triggerKey'] | null = null;
+
+            while (nextXp >= getPlayerLevel(nextLevel).xpRequired) {
+                const levelDefinition = getPlayerLevel(nextLevel);
+                nextXp -= levelDefinition.xpRequired;
+                gainedEnergy += levelDefinition.rewardEnergy;
+                rewardPackTrigger = levelDefinition.rewardPackTrigger ?? rewardPackTrigger;
                 nextLevel += 1;
                 levelsGained += 1;
             }
 
             if (levelsGained > 0) {
                 setPlayerLevel(nextLevel);
-                setEnergy((current) => Math.min(maxEnergy, current + levelRewardEnergy * levelsGained));
-                const levelPack = getPack('level');
+                setEnergy((current) => Math.min(maxEnergy, current + gainedEnergy));
+                const levelPack = getPack(rewardPackTrigger ?? 'level');
                 queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
                 notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
                 return nextXp;
@@ -675,7 +726,7 @@ export default function MelodyMergePage({
             notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
             return nextXp;
         });
-    }, [getMergeLevel, getPack, levelRewardEnergy, maxEnergy, notify, playerLevel, queuePack]);
+    }, [getMergeLevel, getPack, getPlayerLevel, maxEnergy, notify, playerLevel, queuePack]);
 
     const mergeCells = useCallback((from: number, to: number) => {
         if (from === to) return;
@@ -706,13 +757,13 @@ export default function MelodyMergePage({
             triggerFeedback();
             addProgress(origin.level);
 
-            if (newLevel >= 5 && Math.random() > 0.92) {
+            if (newLevel >= rules.mergePackMinLevel && Math.random() * 100 < rules.mergePackChancePercent) {
                 queuePack(getPack('merge'));
             }
 
             return next;
         });
-    }, [addProgress, getPack, maxMergeItemLevel, notify, queuePack]);
+    }, [addProgress, getPack, maxMergeItemLevel, notify, queuePack, rules.mergePackChancePercent, rules.mergePackMinLevel]);
 
     const generateItem = useCallback(() => {
         if (energy <= 0) {
@@ -730,13 +781,16 @@ export default function MelodyMergePage({
         setEnergy((value) => value - 1);
         setBoard((current) => {
             const next = [...current];
-            const level = Math.random() > 0.82 ? 2 : 1;
+            const generatedLevel = Math.random() * 100 < rules.magicBoxBonusChancePercent
+                ? rules.magicBoxBonusLevel
+                : rules.magicBoxPrimaryLevel;
+            const level = Math.min(Math.max(1, generatedLevel), maxMergeItemLevel);
             next[firstEmpty] = makeItem(level);
             return next;
         });
         triggerFeedback();
         notify('La caja magica dejo una semilla.');
-    }, [board, energy, notify]);
+    }, [board, energy, maxMergeItemLevel, notify, rules.magicBoxBonusChancePercent, rules.magicBoxBonusLevel, rules.magicBoxPrimaryLevel]);
 
     const buyPack = useCallback(() => {
         const premiumPack = getPack('premium');

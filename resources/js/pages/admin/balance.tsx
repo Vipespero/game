@@ -50,12 +50,23 @@ type PackRow = {
     is_active: boolean;
 };
 
+type PlayerLevelRow = {
+    id: number;
+    level: number;
+    xp_required: number;
+    reward_energy: number;
+    reward_pack_trigger: string | null;
+    is_active: boolean;
+};
+
 type BalanceFormData = {
     settings: Array<SettingRow & { value: number }>;
+    rules: Array<SettingRow & { value: number }>;
     rarities: RarityRow[];
     missions: MissionRow[];
     mergeItems: MergeItemRow[];
     packs: PackRow[];
+    playerLevels: PlayerLevelRow[];
 };
 
 type BalanceProps = BalanceFormData & {
@@ -66,13 +77,15 @@ type BalanceProps = BalanceFormData & {
 
 const numberValue = (value: string | number | null | undefined) => Number(value ?? 0);
 
-export default function AdminBalance({ ready, settings, rarities, missions, mergeItems, packs, progressKeys, triggerKeys }: BalanceProps) {
+export default function AdminBalance({ ready, settings, rules, rarities, missions, mergeItems, packs, playerLevels, progressKeys, triggerKeys }: BalanceProps) {
     const form = useForm<BalanceFormData>({
         settings: settings.map((setting) => ({ ...setting, value: numberValue(setting.value) })),
+        rules: rules.map((rule) => ({ ...rule, value: numberValue(rule.value) })),
         rarities,
         missions,
         mergeItems: mergeItems.map((item) => ({ ...item, image_path: item.image_path ?? '' })),
         packs,
+        playerLevels,
     });
 
     const setRow = (
@@ -119,6 +132,40 @@ export default function AdminBalance({ ready, settings, rarities, missions, merg
                         <section className="mm-admin__notice" role="status">
                             <strong>Balance pendiente</strong>
                             <span>Faltan tablas nuevas. Ejecuta migraciones cuando toque desplegar el VPS.</span>
+                        </section>
+
+                        <section className="mm-admin__panel">
+                            <div className="mm-admin__panel-head">
+                                <div>
+                                    <p className="mm-kicker">Reglas</p>
+                                    <h2>Generacion</h2>
+                                </div>
+                            </div>
+                            <div className="mm-admin__table-wrap">
+                                <table className="mm-admin__table">
+                                    <thead>
+                                        <tr>
+                                            <th>Clave</th>
+                                            <th>Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {form.data.rules.map((rule, index) => (
+                                            <tr key={rule.key}>
+                                                <td><strong>{rule.key}</strong></td>
+                                                <td>
+                                                    <input
+                                                        min={0}
+                                                        onChange={(event) => setRow('rules', index, 'value', numberValue(event.target.value))}
+                                                        type="number"
+                                                        value={rule.value}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </section>
                     )}
 
@@ -304,6 +351,44 @@ export default function AdminBalance({ ready, settings, rarities, missions, merg
                                                 <td><input min={1} max={10} onChange={(event) => setRow('packs', index, 'cards_count', numberValue(event.target.value))} type="number" value={pack.cards_count} /></td>
                                                 <td><input min={0} onChange={(event) => setRow('packs', index, 'sort_order', numberValue(event.target.value))} type="number" value={pack.sort_order} /></td>
                                                 <td><input checked={pack.is_active} onChange={(event) => setRow('packs', index, 'is_active', event.target.checked)} type="checkbox" /></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section className="mm-admin__panel">
+                            <div className="mm-admin__panel-head">
+                                <div>
+                                    <p className="mm-kicker">Niveles</p>
+                                    <h2>Curva de jugador</h2>
+                                </div>
+                            </div>
+                            <div className="mm-admin__table-wrap">
+                                <table className="mm-admin__table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nivel</th>
+                                            <th>XP requerida</th>
+                                            <th>Energia</th>
+                                            <th>Sobre</th>
+                                            <th>Activo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {form.data.playerLevels.map((level, index) => (
+                                            <tr key={level.id}>
+                                                <td><strong>{level.level}</strong></td>
+                                                <td><input min={1} onChange={(event) => setRow('playerLevels', index, 'xp_required', numberValue(event.target.value))} type="number" value={level.xp_required} /></td>
+                                                <td><input min={0} onChange={(event) => setRow('playerLevels', index, 'reward_energy', numberValue(event.target.value))} type="number" value={level.reward_energy} /></td>
+                                                <td>
+                                                    <select onChange={(event) => setRow('playerLevels', index, 'reward_pack_trigger', event.target.value || null)} value={level.reward_pack_trigger ?? ''}>
+                                                        <option value="">sin sobre</option>
+                                                        {triggerKeys.map((key) => <option key={key} value={key}>{key}</option>)}
+                                                    </select>
+                                                </td>
+                                                <td><input checked={level.is_active} onChange={(event) => setRow('playerLevels', index, 'is_active', event.target.checked)} type="checkbox" /></td>
                                             </tr>
                                         ))}
                                     </tbody>

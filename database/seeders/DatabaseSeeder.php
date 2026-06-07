@@ -15,8 +15,10 @@ class DatabaseSeeder extends Seeder
         $this->call(CardRaritySeeder::class);
         $this->call(CardSeeder::class);
         $this->call(GamePackSeeder::class);
+        $this->call(GameRuleSeeder::class);
         $this->call(GameSettingSeeder::class);
         $this->call(MergeItemSeeder::class);
         $this->call(MissionSeeder::class);
+        $this->call(PlayerLevelSeeder::class);
     }
 }

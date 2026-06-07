@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CardRarity;
 use App\Models\GamePack;
+use App\Models\GameRule;
 use App\Models\GameSetting;
 use App\Models\MergeItem;
 use App\Models\Mission;
+use App\Models\PlayerLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -25,10 +27,12 @@ class BalanceController extends Controller
         return Inertia::render('admin/balance', [
             'ready' => $this->ready(),
             'settings' => $this->settings(),
+            'rules' => $this->rules(),
             'rarities' => $this->rarities(),
             'missions' => $this->missions(),
             'mergeItems' => $this->mergeItems(),
             'packs' => $this->packs(),
+            'playerLevels' => $this->playerLevels(),
             'progressKeys' => self::PROGRESS_KEYS,
             'triggerKeys' => self::TRIGGER_KEYS,
         ]);
@@ -42,6 +46,10 @@ class BalanceController extends Controller
             'settings' => ['required', 'array'],
             'settings.*.key' => ['required', 'string', 'max:80', Rule::exists('game_settings', 'key')],
             'settings.*.value' => ['required', 'integer', 'min:0', 'max:999999'],
+
+            'rules' => ['required', 'array'],
+            'rules.*.key' => ['required', 'string', 'max:80', Rule::exists('game_rules', 'key')],
+            'rules.*.value' => ['required', 'integer', 'min:0', 'max:999999'],
 
             'rarities' => ['required', 'array'],
             'rarities.*.id' => ['required', 'integer', Rule::exists('card_rarities', 'id')],
@@ -76,10 +84,21 @@ class BalanceController extends Controller
             'packs.*.cards_count' => ['required', 'integer', 'min:1', 'max:10'],
             'packs.*.sort_order' => ['required', 'integer', 'min:0', 'max:9999'],
             'packs.*.is_active' => ['required', 'boolean'],
+
+            'playerLevels' => ['required', 'array'],
+            'playerLevels.*.id' => ['required', 'integer', Rule::exists('player_levels', 'id')],
+            'playerLevels.*.xp_required' => ['required', 'integer', 'min:1', 'max:9999999'],
+            'playerLevels.*.reward_energy' => ['required', 'integer', 'min:0', 'max:999999'],
+            'playerLevels.*.reward_pack_trigger' => ['nullable', Rule::in(self::TRIGGER_KEYS)],
+            'playerLevels.*.is_active' => ['required', 'boolean'],
         ]);
 
         foreach ($validated['settings'] as $setting) {
             GameSetting::query()->where('key', $setting['key'])->update(['value' => (string) $setting['value']]);
+        }
+
+        foreach ($validated['rules'] as $rule) {
+            GameRule::query()->where('key', $rule['key'])->update(['value' => (string) $rule['value']]);
         }
 
         foreach ($validated['rarities'] as $rarity) {
@@ -98,6 +117,10 @@ class BalanceController extends Controller
             GamePack::query()->whereKey($pack['id'])->update(collect($pack)->except('id')->all());
         }
 
+        foreach ($validated['playerLevels'] as $level) {
+            PlayerLevel::query()->whereKey($level['id'])->update(collect($level)->except('id')->all());
+        }
+
         return to_route('admin.balance.edit');
     }
 
@@ -107,7 +130,9 @@ class BalanceController extends Controller
             && Schema::hasTable('card_rarities')
             && Schema::hasTable('missions')
             && Schema::hasTable('merge_items')
-            && Schema::hasTable('game_packs');
+            && Schema::hasTable('game_packs')
+            && Schema::hasTable('game_rules')
+            && Schema::hasTable('player_levels');
     }
 
     private function settings(): array
@@ -117,6 +142,15 @@ class BalanceController extends Controller
         }
 
         return GameSetting::query()->orderBy('key')->get(['key', 'value'])->all();
+    }
+
+    private function rules(): array
+    {
+        if (! Schema::hasTable('game_rules')) {
+            return [];
+        }
+
+        return GameRule::query()->orderBy('key')->get(['key', 'value'])->all();
     }
 
     private function rarities(): array
@@ -153,5 +187,14 @@ class BalanceController extends Controller
         }
 
         return GamePack::query()->orderBy('sort_order')->get()->all();
+    }
+
+    private function playerLevels(): array
+    {
+        if (! Schema::hasTable('player_levels')) {
+            return [];
+        }
+
+        return PlayerLevel::query()->orderBy('level')->get()->all();
     }
 }

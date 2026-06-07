@@ -13,7 +13,6 @@ class GameSettingSeeder extends Seeder
             'max_energy' => 100,
             'daily_reward_energy' => 30,
             'daily_reward_hearts' => 120,
-            'level_reward_energy' => 20,
         ];
 
         foreach ($settings as $key => $value) {

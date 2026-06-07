@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Card;
 use App\Models\CardRarity;
 use App\Models\GamePack;
+use App\Models\GameRule;
 use App\Models\GameSave;
 use App\Models\GameSetting;
 use App\Models\MergeItem;
 use App\Models\Mission;
+use App\Models\PlayerLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -37,8 +39,10 @@ class MelodyController extends Controller
             'cardRarities' => $this->activeCardRarities(),
             'gameConfig' => $this->gameConfig(),
             'gamePacks' => $this->activeGamePacks(),
+            'gameRules' => $this->gameRules(),
             'mergeItems' => $this->activeMergeItems(),
             'missions' => $this->activeMissions(),
+            'playerLevels' => $this->activePlayerLevels(),
             'gameSave' => $gameSave?->toGameState(),
         ]);
     }
@@ -263,6 +267,20 @@ class MelodyController extends Controller
             ->all();
     }
 
+    private function activePlayerLevels(): array
+    {
+        if (! Schema::hasTable('player_levels')) {
+            return [];
+        }
+
+        return PlayerLevel::query()
+            ->where('is_active', true)
+            ->orderBy('level')
+            ->get()
+            ->map(fn (PlayerLevel $level): array => $level->toGameLevel())
+            ->all();
+    }
+
     private function activeMergeItems(): array
     {
         if (! Schema::hasTable('merge_items')) {
@@ -283,14 +301,31 @@ class MelodyController extends Controller
             'max_energy' => self::MAX_ENERGY,
             'daily_reward_energy' => 30,
             'daily_reward_hearts' => 120,
-            'level_reward_energy' => 20,
         ]);
 
         return [
             'maxEnergy' => max(1, $settings['max_energy']),
             'dailyRewardEnergy' => max(0, $settings['daily_reward_energy']),
             'dailyRewardHearts' => max(0, $settings['daily_reward_hearts']),
-            'levelRewardEnergy' => max(0, $settings['level_reward_energy']),
+        ];
+    }
+
+    private function gameRules(): array
+    {
+        $rules = GameRule::values([
+            'magic_box_primary_level' => 1,
+            'magic_box_bonus_level' => 2,
+            'magic_box_bonus_chance_percent' => 18,
+            'merge_pack_min_level' => 5,
+            'merge_pack_chance_percent' => 8,
+        ]);
+
+        return [
+            'magicBoxPrimaryLevel' => max(1, $rules['magic_box_primary_level']),
+            'magicBoxBonusLevel' => max(1, $rules['magic_box_bonus_level']),
+            'magicBoxBonusChancePercent' => min(max(0, $rules['magic_box_bonus_chance_percent']), 100),
+            'mergePackMinLevel' => max(1, $rules['merge_pack_min_level']),
+            'mergePackChancePercent' => min(max(0, $rules['merge_pack_chance_percent']), 100),
         ];
     }
 }

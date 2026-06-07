@@ -71,7 +71,6 @@ return new class extends Migration
             ['key' => 'max_energy', 'value' => '100', 'created_at' => $now, 'updated_at' => $now],
             ['key' => 'daily_reward_energy', 'value' => '30', 'created_at' => $now, 'updated_at' => $now],
             ['key' => 'daily_reward_hearts', 'value' => '120', 'created_at' => $now, 'updated_at' => $now],
-            ['key' => 'level_reward_energy', 'value' => '20', 'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 };
