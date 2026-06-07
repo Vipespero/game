@@ -25,9 +25,10 @@
 html,
 body {
     min-height: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: #fceef7;
-    overscroll-behavior: none;
+    overscroll-behavior-x: none;
 }
 
 body,
@@ -1831,6 +1832,9 @@ button {
 
 .mm-admin {
     min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
         linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px),
