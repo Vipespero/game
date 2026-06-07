@@ -125,6 +125,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 export default function AdminBalance({ ready, settings, rules, rarities, missions, mergeItems, packs, playerLevels, progressKeys, triggerKeys }: BalanceProps) {
     const [activeMenu, setActiveMenu] = useState<BalanceMenu>('settings');
+    const [activeMergeItemId, setActiveMergeItemId] = useState<number | null>(mergeItems[0]?.id ?? null);
     const form = useForm<BalanceFormData>({
         settings: settings.map((setting) => ({ ...setting, value: numberValue(setting.value) })),
         rules: rules.map((rule) => ({ ...rule, value: numberValue(rule.value) })),
@@ -159,6 +160,7 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
         { id: 'packs', label: 'Sobres', count: form.data.packs.length },
         { id: 'playerLevels', label: 'Niveles', count: form.data.playerLevels.length },
     ];
+    const activeMergeItem = form.data.mergeItems.find((item) => item.id === activeMergeItemId) ?? form.data.mergeItems[0];
 
     return (
         <>
@@ -269,17 +271,25 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                         </Section>}
 
                         {activeMenu === 'mergeItems' && <Section kicker="Tablero" title="Objetos fusionables" note="Ajusta recompensa, imagen, encuadre y estilo visual de cada ficha.">
+                            {activeMergeItem && (
+                                <aside className="mm-admin__live-preview" aria-label="Vista previa del objeto activo">
+                                    <span className="mm-admin__piece-preview mm-admin__piece-preview--live">
+                                        <span className={`mm-piece mm-piece--${activeMergeItem.symbol} ${activeMergeItem.image_path ? 'has-image' : ''}`} style={previewStyle(activeMergeItem)}>
+                                            <span className="mm-piece__shine" />
+                                            {activeMergeItem.image_path && <img alt={activeMergeItem.name} className="mm-piece__image" src={getAssetImage(activeMergeItem.image_path)} />}
+                                            <span className="mm-piece__name">{activeMergeItem.name}</span>
+                                        </span>
+                                    </span>
+                                    <div>
+                                        <strong>{activeMergeItem.name}</strong>
+                                        <span>Nivel {activeMergeItem.level} - {activeMergeItem.symbol}</span>
+                                    </div>
+                                </aside>
+                            )}
                             <div className="mm-admin__edit-grid mm-admin__edit-grid--wide">
                                 {form.data.mergeItems.map((item, index) => (
-                                    <article className="mm-admin__edit-card" key={item.id}>
+                                    <article className="mm-admin__edit-card" key={item.id} onClick={() => setActiveMergeItemId(item.id)} onFocus={() => setActiveMergeItemId(item.id)}>
                                         <div className="mm-admin__merge-top">
-                                            <span className="mm-admin__piece-preview">
-                                                <span className={`mm-piece mm-piece--${item.symbol} ${item.image_path ? 'has-image' : ''}`} style={previewStyle(item)}>
-                                                    <span className="mm-piece__shine" />
-                                                    {item.image_path && <img alt={item.name} className="mm-piece__image" src={getAssetImage(item.image_path)} />}
-                                                    <span className="mm-piece__name">{item.name}</span>
-                                                </span>
-                                            </span>
                                             <div>
                                                 <strong>Nivel {item.level}</strong>
                                                 <span>{item.symbol}</span>

@@ -2167,6 +2167,56 @@ button {
     font-size: 6px;
 }
 
+.mm-admin__live-preview {
+    position: sticky;
+    top: 118px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid rgba(126, 84, 132, 0.12);
+    border-bottom: 1px solid rgba(126, 84, 132, 0.12);
+    background: rgba(255, 250, 253, 0.96);
+    padding: 10px 12px;
+    backdrop-filter: blur(16px);
+}
+
+.mm-admin__live-preview > div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.mm-admin__live-preview strong {
+    overflow: hidden;
+    color: var(--mm-ink);
+    font-size: 14px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mm-admin__live-preview > div > span {
+    color: var(--mm-muted);
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.mm-admin__piece-preview--live {
+    width: 70px;
+    height: 70px;
+    flex: 0 0 auto;
+}
+
+.mm-admin__piece-preview--live .mm-piece {
+    width: 64px;
+    height: 64px;
+}
+
+.mm-admin__piece-preview--live .mm-piece__name {
+    font-size: 7px;
+}
+
 .mm-admin__table td:first-child {
     display: grid;
     gap: 3px;
