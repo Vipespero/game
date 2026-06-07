@@ -279,8 +279,8 @@ export default function MelodyMergePage({ gameSave, auth }: MelodyMergePageProps
         setToastMessage(message);
     }, []);
 
-    const postSave = useCallback((payload: MelodyGameSave, keepalive = false) => {
-        const body = JSON.stringify({ payload });
+    const postSave = useCallback((state: MelodyGameSave, keepalive = false) => {
+        const body = JSON.stringify({ state });
 
         setSaveStatus('saving');
 

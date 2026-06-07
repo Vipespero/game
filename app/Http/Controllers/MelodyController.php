@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GameSave;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,43 +37,63 @@ class MelodyController extends Controller
 
     public function show(Request $request): Response
     {
+        $gameSave = $request->user()
+            ->gameSave()
+            ->with(['boardItems', 'packs.cards', 'claimedMissions'])
+            ->first();
+
         return Inertia::render('melody/index', [
-            'gameSave' => $request->user()->gameSave?->payload,
+            'gameSave' => $gameSave?->toGameState(),
         ]);
     }
 
     public function save(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'payload' => ['required', 'array'],
-            'payload.board' => ['sometimes', 'array', 'size:'.self::BOARD_SIZE],
-            'payload.board.*' => ['nullable', 'array'],
-            'payload.board.*.id' => ['nullable', 'string', 'max:64'],
-            'payload.board.*.level' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_ITEM_LEVEL],
-            'payload.energy' => ['sometimes', 'integer', 'min:0', 'max:'.self::MAX_ENERGY],
-            'payload.hearts' => ['sometimes', 'integer', 'min:0', 'max:999999'],
-            'payload.xp' => ['sometimes', 'integer', 'min:0', 'max:999999'],
-            'payload.playerLevel' => ['sometimes', 'integer', 'min:1', 'max:999'],
-            'payload.mergeCount' => ['sometimes', 'integer', 'min:0', 'max:999999'],
-            'payload.openedPacks' => ['sometimes', 'array', 'max:'.self::MAX_PACK_HISTORY],
-            'payload.openedPacks.*' => ['array'],
-            'payload.openedPacks.*.id' => ['required_with:payload.openedPacks', 'string', 'max:64'],
-            'payload.openedPacks.*.label' => ['required_with:payload.openedPacks', 'string', 'max:80'],
-            'payload.openedPacks.*.cards' => ['required_with:payload.openedPacks', 'array', 'min:1', 'max:3'],
-            'payload.openedPacks.*.cards.*' => ['string', Rule::in(self::VALID_CARD_IDS)],
-            'payload.activeTab' => ['sometimes', Rule::in(self::VALID_TABS)],
-            'payload.claimedMissions' => ['sometimes', 'array', 'max:12'],
-            'payload.claimedMissions.*' => ['string', 'max:40'],
-            'payload.dailyRewardClaimedAt' => ['nullable', 'date'],
-            'payload.lastSeenAt' => ['nullable', 'date'],
+            'state' => ['required', 'array'],
+            'state.board' => ['sometimes', 'array', 'size:'.self::BOARD_SIZE],
+            'state.board.*' => ['nullable', 'array'],
+            'state.board.*.id' => ['nullable', 'string', 'max:64'],
+            'state.board.*.level' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_ITEM_LEVEL],
+            'state.energy' => ['sometimes', 'integer', 'min:0', 'max:'.self::MAX_ENERGY],
+            'state.hearts' => ['sometimes', 'integer', 'min:0', 'max:999999'],
+            'state.xp' => ['sometimes', 'integer', 'min:0', 'max:999999'],
+            'state.playerLevel' => ['sometimes', 'integer', 'min:1', 'max:999'],
+            'state.mergeCount' => ['sometimes', 'integer', 'min:0', 'max:999999'],
+            'state.openedPacks' => ['sometimes', 'array', 'max:'.self::MAX_PACK_HISTORY],
+            'state.openedPacks.*' => ['array'],
+            'state.openedPacks.*.id' => ['required_with:state.openedPacks', 'string', 'max:64'],
+            'state.openedPacks.*.label' => ['required_with:state.openedPacks', 'string', 'max:80'],
+            'state.openedPacks.*.cards' => ['required_with:state.openedPacks', 'array', 'min:1', 'max:3'],
+            'state.openedPacks.*.cards.*' => ['string', Rule::in(self::VALID_CARD_IDS)],
+            'state.activeTab' => ['sometimes', Rule::in(self::VALID_TABS)],
+            'state.claimedMissions' => ['sometimes', 'array', 'max:12'],
+            'state.claimedMissions.*' => ['string', 'max:40'],
+            'state.dailyRewardClaimedAt' => ['nullable', 'date'],
+            'state.lastSeenAt' => ['nullable', 'date'],
         ]);
 
-        $payload = $this->sanitizePayload($validated['payload']);
+        $state = $this->sanitizeState($validated['state']);
 
-        $request->user()->gameSave()->updateOrCreate(
-            ['user_id' => $request->user()->id],
-            ['payload' => $payload],
-        );
+        DB::transaction(function () use ($state, $request): void {
+            $gameSave = $request->user()->gameSave()->updateOrCreate(
+                ['user_id' => $request->user()->id],
+                [
+                    'energy' => $state['energy'],
+                    'hearts' => $state['hearts'],
+                    'xp' => $state['xp'],
+                    'player_level' => $state['playerLevel'],
+                    'merge_count' => $state['mergeCount'],
+                    'active_tab' => $state['activeTab'],
+                    'daily_reward_claimed_at' => $state['dailyRewardClaimedAt'],
+                    'last_seen_at' => now(),
+                ],
+            );
+
+            $this->syncBoard($gameSave, $state['board']);
+            $this->syncPacks($gameSave, $state['openedPacks']);
+            $this->syncClaimedMissions($gameSave, $state['claimedMissions']);
+        });
 
         return response()->json([
             'saved' => true,
@@ -81,9 +103,9 @@ class MelodyController extends Controller
     /**
      * Keep client saves small and shaped like the game actually expects.
      */
-    private function sanitizePayload(array $payload): array
+    private function sanitizeState(array $state): array
     {
-        $openedPacks = collect(Arr::get($payload, 'openedPacks', []))
+        $openedPacks = collect(Arr::get($state, 'openedPacks', []))
             ->take(self::MAX_PACK_HISTORY)
             ->map(fn (array $pack): array => [
                 'id' => (string) $pack['id'],
@@ -93,16 +115,16 @@ class MelodyController extends Controller
             ->all();
 
         return [
-            'board' => $this->sanitizeBoard(Arr::get($payload, 'board', [])),
-            'energy' => (int) Arr::get($payload, 'energy', 0),
-            'hearts' => (int) Arr::get($payload, 'hearts', 0),
-            'xp' => (int) Arr::get($payload, 'xp', 0),
-            'playerLevel' => (int) Arr::get($payload, 'playerLevel', 1),
-            'mergeCount' => (int) Arr::get($payload, 'mergeCount', 0),
+            'board' => $this->sanitizeBoard(Arr::get($state, 'board', [])),
+            'energy' => (int) Arr::get($state, 'energy', 0),
+            'hearts' => (int) Arr::get($state, 'hearts', 0),
+            'xp' => (int) Arr::get($state, 'xp', 0),
+            'playerLevel' => (int) Arr::get($state, 'playerLevel', 1),
+            'mergeCount' => (int) Arr::get($state, 'mergeCount', 0),
             'openedPacks' => $openedPacks,
-            'activeTab' => Arr::get($payload, 'activeTab', 'merge'),
-            'claimedMissions' => array_values(array_unique(Arr::get($payload, 'claimedMissions', []))),
-            'dailyRewardClaimedAt' => Arr::get($payload, 'dailyRewardClaimedAt'),
+            'activeTab' => Arr::get($state, 'activeTab', 'merge'),
+            'claimedMissions' => array_values(array_unique(Arr::get($state, 'claimedMissions', []))),
+            'dailyRewardClaimedAt' => Arr::get($state, 'dailyRewardClaimedAt'),
             'lastSeenAt' => now()->toISOString(),
         ];
     }
@@ -123,5 +145,63 @@ class MelodyController extends Controller
             })
             ->pad(self::BOARD_SIZE, null)
             ->all();
+    }
+
+    private function syncBoard(GameSave $gameSave, array $board): void
+    {
+        $gameSave->boardItems()->delete();
+
+        $items = collect($board)
+            ->map(function (?array $cell, int $position): ?array {
+                if (! $cell) {
+                    return null;
+                }
+
+                return [
+                    'position' => $position,
+                    'item_id' => $cell['id'],
+                    'level' => $cell['level'],
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        $gameSave->boardItems()->createMany($items);
+    }
+
+    private function syncPacks(GameSave $gameSave, array $packs): void
+    {
+        $gameSave->packs()->delete();
+
+        collect($packs)->each(function (array $pack, int $position) use ($gameSave): void {
+            $savedPack = $gameSave->packs()->create([
+                'pack_uid' => $pack['id'],
+                'label' => $pack['label'],
+                'position' => $position,
+            ]);
+
+            $savedPack->cards()->createMany(
+                collect($pack['cards'])
+                    ->map(fn (string $cardId, int $cardPosition): array => [
+                        'card_id' => $cardId,
+                        'position' => $cardPosition,
+                    ])
+                    ->all(),
+            );
+        });
+    }
+
+    private function syncClaimedMissions(GameSave $gameSave, array $missions): void
+    {
+        $gameSave->claimedMissions()->delete();
+
+        $gameSave->claimedMissions()->createMany(
+            collect($missions)
+                ->unique()
+                ->map(fn (string $missionId): array => ['mission_id' => $missionId])
+                ->values()
+                ->all(),
+        );
     }
 }

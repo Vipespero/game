@@ -33,16 +33,22 @@ class AdminDashboardTest extends TestCase
 
         GameSave::query()->create([
             'user_id' => $player->id,
-            'payload' => [
-                'hearts' => 240,
-                'energy' => 80,
-                'playerLevel' => 2,
-                'mergeCount' => 4,
-                'activeTab' => 'album',
-                'openedPacks' => [
-                    ['id' => 'pack-one', 'label' => 'Sobre', 'cards' => ['card-1', 'card-2']],
-                ],
-            ],
+            'hearts' => 240,
+            'energy' => 80,
+            'player_level' => 2,
+            'merge_count' => 4,
+            'active_tab' => 'album',
+        ]);
+
+        $save = $player->gameSave()->firstOrFail();
+        $pack = $save->packs()->create([
+            'pack_uid' => 'pack-one',
+            'label' => 'Sobre',
+            'position' => 0,
+        ]);
+        $pack->cards()->createMany([
+            ['card_id' => 'card-1', 'position' => 0],
+            ['card_id' => 'card-2', 'position' => 1],
         ]);
 
         $this->actingAs($admin)

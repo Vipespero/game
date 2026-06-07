@@ -37,7 +37,7 @@ class MelodyGameTest extends TestCase
 
         $this->actingAs($user)
             ->putJson(route('melody.save'), [
-                'payload' => [
+                'state' => [
                     'board' => $board,
                     'energy' => 80,
                     'hearts' => 240,
@@ -60,11 +60,14 @@ class MelodyGameTest extends TestCase
             ->assertOk()
             ->assertJson(['saved' => true]);
 
-        $payload = $user->gameSave()->firstOrFail()->payload;
+        $state = $user->gameSave()
+            ->with(['boardItems', 'packs.cards', 'claimedMissions'])
+            ->firstOrFail()
+            ->toGameState();
 
-        $this->assertCount(25, $payload['board']);
-        $this->assertSame(80, $payload['energy']);
-        $this->assertSame('album', $payload['activeTab']);
-        $this->assertSame(['merge-20'], $payload['claimedMissions']);
+        $this->assertCount(25, $state['board']);
+        $this->assertSame(80, $state['energy']);
+        $this->assertSame('album', $state['activeTab']);
+        $this->assertSame(['merge-20'], $state['claimedMissions']);
     }
 }
