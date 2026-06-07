@@ -160,7 +160,8 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
         { id: 'packs', label: 'Sobres', count: form.data.packs.length },
         { id: 'playerLevels', label: 'Niveles', count: form.data.playerLevels.length },
     ];
-    const activeMergeItem = form.data.mergeItems.find((item) => item.id === activeMergeItemId) ?? form.data.mergeItems[0];
+    const activeMergeIndex = Math.max(0, form.data.mergeItems.findIndex((item) => item.id === activeMergeItemId));
+    const activeMergeItem = form.data.mergeItems[activeMergeIndex] ?? form.data.mergeItems[0];
 
     return (
         <>
@@ -272,48 +273,74 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
 
                         {activeMenu === 'mergeItems' && <Section kicker="Tablero" title="Objetos fusionables" note="Ajusta recompensa, imagen, encuadre y estilo visual de cada ficha.">
                             {activeMergeItem && (
-                                <aside className="mm-admin__live-preview" aria-label="Vista previa del objeto activo">
-                                    <span className="mm-admin__piece-preview mm-admin__piece-preview--live">
-                                        <span className={`mm-piece mm-piece--${activeMergeItem.symbol} ${activeMergeItem.image_path ? 'has-image' : ''}`} style={previewStyle(activeMergeItem)}>
-                                            <span className="mm-piece__shine" />
-                                            {activeMergeItem.image_path && <img alt={activeMergeItem.name} className="mm-piece__image" src={getAssetImage(activeMergeItem.image_path)} />}
-                                            <span className="mm-piece__name">{activeMergeItem.name}</span>
+                                <>
+                                    <aside className="mm-admin__live-preview" aria-label="Vista previa del objeto activo">
+                                        <span className="mm-admin__piece-preview mm-admin__piece-preview--live">
+                                            <span className={`mm-piece mm-piece--${activeMergeItem.symbol} ${activeMergeItem.image_path ? 'has-image' : ''}`} style={previewStyle(activeMergeItem)}>
+                                                <span className="mm-piece__shine" />
+                                                {activeMergeItem.image_path && <img alt={activeMergeItem.name} className="mm-piece__image" src={getAssetImage(activeMergeItem.image_path)} />}
+                                                <span className="mm-piece__name">{activeMergeItem.name}</span>
+                                            </span>
                                         </span>
-                                    </span>
-                                    <div>
-                                        <strong>{activeMergeItem.name}</strong>
-                                        <span>Nivel {activeMergeItem.level} - {activeMergeItem.symbol}</span>
+                                        <div>
+                                            <strong>{activeMergeItem.name}</strong>
+                                            <span>Nivel {activeMergeItem.level} - {activeMergeItem.symbol}</span>
+                                        </div>
+                                    </aside>
+
+                                    <div className="mm-admin__merge-picker" aria-label="Objetos fusionables">
+                                        {form.data.mergeItems.map((item) => (
+                                            <button
+                                                aria-pressed={activeMergeItem.id === item.id}
+                                                className={activeMergeItem.id === item.id ? 'is-active' : ''}
+                                                key={item.id}
+                                                onClick={() => setActiveMergeItemId(item.id)}
+                                                type="button"
+                                            >
+                                                <span className="mm-admin__piece-preview">
+                                                    <span className={`mm-piece mm-piece--${item.symbol} ${item.image_path ? 'has-image' : ''}`} style={previewStyle(item)}>
+                                                        <span className="mm-piece__shine" />
+                                                        {item.image_path && <img alt={item.name} className="mm-piece__image" src={getAssetImage(item.image_path)} />}
+                                                        <span className="mm-piece__name">{item.name}</span>
+                                                    </span>
+                                                </span>
+                                                <strong>N{item.level}</strong>
+                                            </button>
+                                        ))}
                                     </div>
-                                </aside>
+                                </>
                             )}
-                            <div className="mm-admin__edit-grid mm-admin__edit-grid--wide">
-                                {form.data.mergeItems.map((item, index) => (
-                                    <article className="mm-admin__edit-card" key={item.id} onClick={() => setActiveMergeItemId(item.id)} onFocus={() => setActiveMergeItemId(item.id)}>
+                            {activeMergeItem && (
+                                <div className="mm-admin__edit-grid mm-admin__edit-grid--wide">
+                                    <article className="mm-admin__edit-card" key={activeMergeItem.id}>
                                         <div className="mm-admin__merge-top">
                                             <div>
-                                                <strong>Nivel {item.level}</strong>
-                                                <span>{item.symbol}</span>
+                                                <strong>Nivel {activeMergeItem.level}</strong>
+                                                <span>{activeMergeItem.symbol}</span>
                                             </div>
                                         </div>
-                                        <Field label="Nombre"><input onChange={(event) => setRow('mergeItems', index, 'name', event.target.value)} value={item.name} /></Field>
-                                        <Field label="Imagen" hint="Asset interno, /storage/... o URL completa."><input onChange={(event) => setRow('mergeItems', index, 'image_path', event.target.value)} value={item.image_path ?? ''} /></Field>
-                                        <Field label="Fondo"><input onChange={(event) => setRow('mergeItems', index, 'background_style', event.target.value)} value={item.background_style ?? ''} /></Field>
+                                        <div className="mm-admin__group-title">Identidad</div>
+                                        <Field label="Nombre"><input onChange={(event) => setRow('mergeItems', activeMergeIndex, 'name', event.target.value)} value={activeMergeItem.name} /></Field>
+                                        <Field label="Imagen" hint="Asset interno, /storage/... o URL completa."><input onChange={(event) => setRow('mergeItems', activeMergeIndex, 'image_path', event.target.value)} value={activeMergeItem.image_path ?? ''} /></Field>
+                                        <Field label="Fondo"><input onChange={(event) => setRow('mergeItems', activeMergeIndex, 'background_style', event.target.value)} value={activeMergeItem.background_style ?? ''} /></Field>
+                                        <div className="mm-admin__group-title">Encuadre</div>
                                         <div className="mm-admin__field-row">
-                                            <Field label="Radio"><input onChange={(event) => setRow('mergeItems', index, 'border_radius', event.target.value)} value={item.border_radius} /></Field>
-                                            <Field label="Tamano"><input min={20} max={160} onChange={(event) => setRow('mergeItems', index, 'image_size', numberValue(event.target.value))} type="number" value={item.image_size} /></Field>
+                                            <Field label="Radio"><input onChange={(event) => setRow('mergeItems', activeMergeIndex, 'border_radius', event.target.value)} value={activeMergeItem.border_radius} /></Field>
+                                            <Field label="Tamano"><input min={20} max={160} onChange={(event) => setRow('mergeItems', activeMergeIndex, 'image_size', numberValue(event.target.value))} type="number" value={activeMergeItem.image_size} /></Field>
                                         </div>
                                         <div className="mm-admin__field-row">
-                                            <Field label="Offset X"><input min={-100} max={100} onChange={(event) => setRow('mergeItems', index, 'image_offset_x', numberValue(event.target.value))} type="number" value={item.image_offset_x} /></Field>
-                                            <Field label="Offset Y"><input min={-100} max={100} onChange={(event) => setRow('mergeItems', index, 'image_offset_y', numberValue(event.target.value))} type="number" value={item.image_offset_y} /></Field>
+                                            <Field label="Offset X"><input min={-100} max={100} onChange={(event) => setRow('mergeItems', activeMergeIndex, 'image_offset_x', numberValue(event.target.value))} type="number" value={activeMergeItem.image_offset_x} /></Field>
+                                            <Field label="Offset Y"><input min={-100} max={100} onChange={(event) => setRow('mergeItems', activeMergeIndex, 'image_offset_y', numberValue(event.target.value))} type="number" value={activeMergeItem.image_offset_y} /></Field>
                                         </div>
+                                        <div className="mm-admin__group-title">Beneficios</div>
                                         <div className="mm-admin__field-row">
-                                            <Field label="XP"><input min={0} onChange={(event) => setRow('mergeItems', index, 'xp', numberValue(event.target.value))} type="number" value={item.xp} /></Field>
-                                            <Field label="Corazones"><input min={0} onChange={(event) => setRow('mergeItems', index, 'hearts', numberValue(event.target.value))} type="number" value={item.hearts} /></Field>
+                                            <Field label="XP"><input min={0} onChange={(event) => setRow('mergeItems', activeMergeIndex, 'xp', numberValue(event.target.value))} type="number" value={activeMergeItem.xp} /></Field>
+                                            <Field label="Corazones"><input min={0} onChange={(event) => setRow('mergeItems', activeMergeIndex, 'hearts', numberValue(event.target.value))} type="number" value={activeMergeItem.hearts} /></Field>
                                         </div>
-                                        <Field label="Activo"><input checked={item.is_active} onChange={(event) => setRow('mergeItems', index, 'is_active', event.target.checked)} type="checkbox" /></Field>
+                                        <Field label="Activo"><input checked={activeMergeItem.is_active} onChange={(event) => setRow('mergeItems', activeMergeIndex, 'is_active', event.target.checked)} type="checkbox" /></Field>
                                     </article>
-                                ))}
-                            </div>
+                                </div>
+                            )}
                         </Section>}
 
                         {activeMenu === 'packs' && <Section kicker="Sobres" title="Packs" note="Define cuando aparece cada sobre, costo y cantidad de cartas.">
