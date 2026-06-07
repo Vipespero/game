@@ -50,6 +50,35 @@ type MergeItemDefinition = {
 
 type MergeItemSource = Omit<MergeItemDefinition, 'imageUrl'>;
 
+type CardRarityDefinition = {
+    code: CardRarity;
+    name: string;
+    duplicateHearts: number;
+    sortOrder: number;
+    isActive: boolean;
+};
+
+type GameConfig = {
+    maxEnergy: number;
+    premiumPackCost: number;
+    dailyRewardEnergy: number;
+    dailyRewardHearts: number;
+    levelRewardEnergy: number;
+};
+
+type MissionDefinition = {
+    id: string;
+    label: string;
+    progressKey: 'merge_count' | 'collected_cards' | 'hearts';
+    goal: number;
+    reward: {
+        hearts: number;
+        energy: number;
+    };
+    sortOrder?: number;
+    isActive?: boolean;
+};
+
 type PackReward = {
     id: string;
     label: string;
@@ -83,7 +112,10 @@ type MelodyGameSave = {
 
 type MelodyMergePageProps = {
     cards: Array<Omit<MelodyCard, 'imageUrl'>>;
+    cardRarities?: CardRarityDefinition[];
+    gameConfig?: GameConfig;
     mergeItems?: MergeItemSource[];
+    missions?: MissionDefinition[];
     gameSave?: MelodyGameSave | null;
     auth?: {
         user?: {
@@ -94,20 +126,21 @@ type MelodyMergePageProps = {
 };
 
 const boardSize = 25;
-const maxEnergy = 100;
-const premiumPackCost = 180;
-const dailyReward = {
-    energy: 30,
-    hearts: 120,
+const fallbackGameConfig: GameConfig = {
+    maxEnergy: 100,
+    premiumPackCost: 180,
+    dailyRewardEnergy: 30,
+    dailyRewardHearts: 120,
+    levelRewardEnergy: 20,
 };
 
-const missionDefinitions = [
-    { id: 'merge-20', label: 'Fusiona 20 objetos', goal: 20, reward: { hearts: 80, energy: 10 } },
-    { id: 'album-5', label: 'Colecciona 5 cartas', goal: 5, reward: { hearts: 120, energy: 15 } },
-    { id: 'hearts-500', label: 'Guarda 500 corazones', goal: 500, reward: { hearts: 160, energy: 0 } },
+const fallbackMissions: MissionDefinition[] = [
+    { id: 'merge-20', label: 'Fusiona 20 objetos', progressKey: 'merge_count', goal: 20, reward: { hearts: 80, energy: 10 } },
+    { id: 'album-5', label: 'Colecciona 5 cartas', progressKey: 'collected_cards', goal: 5, reward: { hearts: 120, energy: 15 } },
+    { id: 'hearts-500', label: 'Guarda 500 corazones', progressKey: 'hearts', goal: 500, reward: { hearts: 160, energy: 0 } },
 ];
 
-const duplicateHeartRewards: Record<CardRarity, number> = {
+const fallbackDuplicateHeartRewards: Record<CardRarity, number> = {
     C: 8,
     R: 18,
     SR: 34,
@@ -246,7 +279,7 @@ const canClaimDailyReward = (claimedAt?: string | null) => {
     return !claimedAt || claimedAt.slice(0, 10) !== dateKey();
 };
 
-const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy: number) => {
+const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy: number, maxEnergy: number) => {
     if (!lastSeenAt || savedEnergy >= maxEnergy) {
         return 0;
     }
@@ -270,7 +303,39 @@ const triggerFeedback = () => {
     }
 };
 
-export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth }: MelodyMergePageProps) {
+export default function MelodyMergePage({
+    cards,
+    cardRarities = [],
+    gameConfig,
+    mergeItems = [],
+    missions: configuredMissions = [],
+    gameSave,
+    auth,
+}: MelodyMergePageProps) {
+    const config = {
+        ...fallbackGameConfig,
+        ...gameConfig,
+    };
+    const maxEnergy = Math.max(1, config.maxEnergy);
+    const premiumPackCost = Math.max(1, config.premiumPackCost);
+    const dailyReward = {
+        energy: Math.max(0, config.dailyRewardEnergy),
+        hearts: Math.max(0, config.dailyRewardHearts),
+    };
+    const levelRewardEnergy = Math.max(0, config.levelRewardEnergy);
+    const duplicateHeartRewards = useMemo<Record<CardRarity, number>>(() => {
+        const rewards = { ...fallbackDuplicateHeartRewards };
+
+        cardRarities.forEach((rarity) => {
+            rewards[rarity.code] = rarity.duplicateHearts;
+        });
+
+        return rewards;
+    }, [cardRarities]);
+    const missionDefinitions = useMemo(
+        () => configuredMissions.length > 0 ? configuredMissions : fallbackMissions,
+        [configuredMissions],
+    );
     const cardPool = useMemo<MelodyCard[]>(() => cards.map((card) => ({
         ...card,
         imageUrl: getCardImage(card.imagePath),
@@ -290,7 +355,7 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
     const getMergeLevel = useCallback((level: number) => getLevel(level, mergeItemPool), [mergeItemPool]);
     const cardsById = useMemo(() => new Map(cardPool.map((card) => [card.id, card])), [cardPool]);
     const savedEnergy = Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy);
-    const offlineEnergyGain = getOfflineEnergyGain(gameSave?.lastSeenAt, savedEnergy);
+    const offlineEnergyGain = getOfflineEnergyGain(gameSave?.lastSeenAt, savedEnergy, maxEnergy);
     const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(gameSave?.board));
     const [energy, setEnergy] = useState(Math.min(savedEnergy + offlineEnergyGain, maxEnergy));
     const [hearts, setHearts] = useState(Math.max(gameSave?.hearts ?? 120, 0));
@@ -364,7 +429,7 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
         }, 60000);
 
         return () => window.clearInterval(timer);
-    }, [cardPool]);
+    }, [maxEnergy]);
 
     useEffect(() => {
         if (!toastMessage) return;
@@ -536,7 +601,7 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
         setPackCardResults(nextResults);
         setIsPackOpened(true);
         setDismissedPackCards(0);
-    }, [collectedCards, isPackOpened, notify, pendingPack]);
+    }, [collectedCards, duplicateHeartRewards, isPackOpened, notify, pendingPack]);
 
     const claimDailyReward = useCallback(() => {
         const now = new Date().toISOString();
@@ -548,7 +613,7 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
         triggerFeedback();
         queuePack('Sobre diario');
         notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones.`);
-    }, [notify, queuePack]);
+    }, [dailyReward.energy, dailyReward.hearts, maxEnergy, notify, queuePack]);
 
     const advancePackCard = useCallback(() => {
         setDismissedPackCards((value) => Math.min(value + 1, 3));
@@ -574,7 +639,7 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
 
             if (levelsGained > 0) {
                 setPlayerLevel(nextLevel);
-                setEnergy((current) => Math.min(maxEnergy, current + 20 * levelsGained));
+                setEnergy((current) => Math.min(maxEnergy, current + levelRewardEnergy * levelsGained));
                 queuePack(levelsGained > 1 ? `Sobre de nivel x${levelsGained}` : 'Sobre de nivel');
                 notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
                 return nextXp;
@@ -583,7 +648,7 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
             notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
             return nextXp;
         });
-    }, [getMergeLevel, notify, playerLevel, queuePack]);
+    }, [getMergeLevel, levelRewardEnergy, maxEnergy, notify, playerLevel, queuePack]);
 
     const mergeCells = useCallback((from: number, to: number) => {
         if (from === to) return;
@@ -669,7 +734,7 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
         setEnergy((value) => Math.min(maxEnergy, value + mission.reward.energy));
         triggerFeedback();
         notify(`Mision completada: +${mission.reward.hearts} corazones${mission.reward.energy ? ` y +${mission.reward.energy} energia` : ''}.`);
-    }, [claimedMissions, notify]);
+    }, [claimedMissions, maxEnergy, missionDefinitions, notify]);
 
     const handleCellClick = useCallback((index: number) => {
         if (didPointerDragRef.current) {
@@ -744,8 +809,8 @@ export default function MelodyMergePage({ cards, mergeItems = [], gameSave, auth
 
     const missions = missionDefinitions.map((mission) => {
         const rawValue =
-            mission.id === 'merge-20' ? mergeCount :
-                mission.id === 'album-5' ? collectedCards.length :
+            mission.progressKey === 'merge_count' ? mergeCount :
+                mission.progressKey === 'collected_cards' ? collectedCards.length :
                     hearts;
 
         return {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Card;
+use App\Models\CardRarity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -37,7 +38,7 @@ class CardController extends Controller
     {
         return Inertia::render('admin/cards/form', [
             'card' => null,
-            'rarities' => self::RARITIES,
+            'rarities' => $this->rarities(),
         ]);
     }
 
@@ -52,7 +53,7 @@ class CardController extends Controller
     {
         return Inertia::render('admin/cards/form', [
             'card' => $this->serialize($card),
-            'rarities' => self::RARITIES,
+            'rarities' => $this->rarities(),
         ]);
     }
 
@@ -82,7 +83,7 @@ class CardController extends Controller
             ],
             'name' => ['required', 'string', 'max:255'],
             'collection' => ['required', 'string', 'max:255'],
-            'rarity' => ['required', Rule::in(self::RARITIES)],
+            'rarity' => ['required', Rule::in($this->rarities())],
             'image_path' => ['required', 'string', 'max:255'],
             'drop_weight' => ['required', 'integer', 'min:1', 'max:10000'],
             'is_active' => ['required', 'boolean'],
@@ -101,5 +102,20 @@ class CardController extends Controller
             'drop_weight' => $card->drop_weight,
             'is_active' => $card->is_active,
         ];
+    }
+
+    private function rarities(): array
+    {
+        if (! Schema::hasTable('card_rarities')) {
+            return self::RARITIES;
+        }
+
+        $rarities = CardRarity::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->pluck('code')
+            ->all();
+
+        return $rarities ?: self::RARITIES;
     }
 }

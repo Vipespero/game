@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\GameSave;
 use App\Models\Card;
+use App\Models\CardRarity;
+use App\Models\GameSave;
+use App\Models\GameSetting;
 use App\Models\MergeItem;
+use App\Models\Mission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -30,20 +33,30 @@ class MelodyController extends Controller
 
         return Inertia::render('melody/index', [
             'cards' => $this->activeCards(),
+            'cardRarities' => $this->activeCardRarities(),
+            'gameConfig' => $this->gameConfig(),
             'mergeItems' => $this->activeMergeItems(),
+            'missions' => $this->activeMissions(),
             'gameSave' => $gameSave?->toGameState(),
         ]);
     }
 
     public function save(Request $request): JsonResponse
     {
+        $gameConfig = $this->gameConfig();
+        $cardRules = ['string'];
+
+        if (Schema::hasTable('cards')) {
+            $cardRules[] = Rule::exists('cards', 'external_id');
+        }
+
         $validated = $request->validate([
             'state' => ['required', 'array'],
             'state.board' => ['sometimes', 'array', 'size:'.self::BOARD_SIZE],
             'state.board.*' => ['nullable', 'array'],
             'state.board.*.id' => ['nullable', 'string', 'max:64'],
             'state.board.*.level' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_ITEM_LEVEL],
-            'state.energy' => ['sometimes', 'integer', 'min:0', 'max:'.self::MAX_ENERGY],
+            'state.energy' => ['sometimes', 'integer', 'min:0', 'max:'.$gameConfig['maxEnergy']],
             'state.hearts' => ['sometimes', 'integer', 'min:0', 'max:999999'],
             'state.xp' => ['sometimes', 'integer', 'min:0', 'max:999999'],
             'state.playerLevel' => ['sometimes', 'integer', 'min:1', 'max:999'],
@@ -53,7 +66,7 @@ class MelodyController extends Controller
             'state.openedPacks.*.id' => ['required_with:state.openedPacks', 'string', 'max:64'],
             'state.openedPacks.*.label' => ['required_with:state.openedPacks', 'string', 'max:80'],
             'state.openedPacks.*.cards' => ['required_with:state.openedPacks', 'array', 'min:1', 'max:3'],
-            'state.openedPacks.*.cards.*' => ['string', Rule::exists('cards', 'external_id')],
+            'state.openedPacks.*.cards.*' => $cardRules,
             'state.activeTab' => ['sometimes', Rule::in(self::VALID_TABS)],
             'state.claimedMissions' => ['sometimes', 'array', 'max:12'],
             'state.claimedMissions.*' => ['string', 'max:40'],
@@ -206,6 +219,34 @@ class MelodyController extends Controller
             ->all();
     }
 
+    private function activeCardRarities(): array
+    {
+        if (! Schema::hasTable('card_rarities')) {
+            return [];
+        }
+
+        return CardRarity::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (CardRarity $rarity): array => $rarity->toGameRarity())
+            ->all();
+    }
+
+    private function activeMissions(): array
+    {
+        if (! Schema::hasTable('missions')) {
+            return [];
+        }
+
+        return Mission::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (Mission $mission): array => $mission->toGameMission())
+            ->all();
+    }
+
     private function activeMergeItems(): array
     {
         if (! Schema::hasTable('merge_items')) {
@@ -218,5 +259,24 @@ class MelodyController extends Controller
             ->get()
             ->map(fn (MergeItem $item): array => $item->toGameItem())
             ->all();
+    }
+
+    private function gameConfig(): array
+    {
+        $settings = GameSetting::values([
+            'max_energy' => self::MAX_ENERGY,
+            'premium_pack_cost' => 180,
+            'daily_reward_energy' => 30,
+            'daily_reward_hearts' => 120,
+            'level_reward_energy' => 20,
+        ]);
+
+        return [
+            'maxEnergy' => max(1, $settings['max_energy']),
+            'premiumPackCost' => max(1, $settings['premium_pack_cost']),
+            'dailyRewardEnergy' => max(0, $settings['daily_reward_energy']),
+            'dailyRewardHearts' => max(0, $settings['daily_reward_hearts']),
+            'levelRewardEnergy' => max(0, $settings['level_reward_energy']),
+        ];
     }
 }
