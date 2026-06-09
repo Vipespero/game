@@ -32,14 +32,14 @@ return new class extends Migration
     private function seedDefaults(): void
     {
         $items = [
-            [1, 'Semilla', 'seed', 'Melody1.png', 6, 1],
+            [1, 'Corona', 'crown', 'pochaco.png', 6, 1],
             [2, 'Flor', 'flower', 'pompompurin.png', 10, 2],
-            [3, 'Ramo', 'bouquet', 'Mymelodyrosa.png', 16, 4],
+            [3, 'Castillo', 'castle', 'Fresa.png', 16, 4],
             [4, 'Peluche', 'plush', 'cinamoom.png', 26, 7],
             [5, 'Lazo', 'bow', 'bibble.png', 42, 11],
-            [6, 'Corona', 'crown', 'pochaco.png', 68, 18],
+            [6, 'Semilla', 'seed', 'Melody1.png', 68, 18],
             [7, 'Tesoro', 'gem', 'maria.png', 108, 28],
-            [8, 'Castillo', 'castle', 'Fresa.png', 166, 42],
+            [8, 'Ramo', 'bouquet', 'Mymelodyrosa.png', 166, 42],
             [9, 'Palacio', 'palace', null, 248, 62],
             [10, 'Legendario', 'rainbow', null, 360, 90],
             [11, 'Estrella', 'star', null, 510, 128],

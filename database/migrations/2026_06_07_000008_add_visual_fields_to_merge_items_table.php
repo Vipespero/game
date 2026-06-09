@@ -36,14 +36,14 @@ return new class extends Migration
     private function seedVisuals(): void
     {
         $visuals = [
-            1 => ['linear-gradient(145deg, #ff9696, #e73b3b)', '50%', 86, 0, 8],
+            1 => ['linear-gradient(145deg, #fff4c7, #ffbd59 52%, #ff8a3d)', '50%', 106, 0, 4],
             2 => ['linear-gradient(145deg, #ffe79d, #ffba54)', '50%', 88, 0, 0],
-            3 => ['linear-gradient(145deg, #ffd8ee, #ff74b8)', '50%', 76, 0, 6],
+            3 => ['linear-gradient(145deg, #c9ff9c, #ff8ab3 50%, #e32266)', '50%', 110, 0, 3],
             4 => ['linear-gradient(145deg, #d8f4ff, #76cbff)', '50%', 92, 0, 4],
             5 => ['linear-gradient(145deg, #f7c4ff, #b56cff 52%, #7c4dff)', '50%', 104, 0, 2],
-            6 => ['linear-gradient(145deg, #fff4c7, #ffbd59 52%, #ff8a3d)', '50%', 106, 0, 4],
+            6 => ['linear-gradient(145deg, #ff9696, #e73b3b)', '50%', 86, 0, 8],
             7 => ['linear-gradient(145deg, #ffc1dc, #9d4edd 55%, #35235f)', '50%', 118, 0, 5],
-            8 => ['linear-gradient(145deg, #c9ff9c, #ff8ab3 50%, #e32266)', '50%', 110, 0, 3],
+            8 => ['linear-gradient(145deg, #ffd8ee, #ff74b8)', '50%', 76, 0, 6],
             9 => ['linear-gradient(145deg, #f8b7ff, #8b5cf6 55%, #65d7ff)', '50%', 100, 0, 0],
             10 => ['linear-gradient(145deg, #ffe66d, #ff78bd 52%, #8b5cf6)', '50%', 100, 0, 0],
             11 => ['linear-gradient(145deg, #fff1a8, #ff7ab6 55%, #9d77ff)', '50%', 100, 0, 0],
