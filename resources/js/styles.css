@@ -584,6 +584,14 @@ button {
     display: none;
 }
 
+.mm-piece.has-image {
+    width: 88%;
+    height: 88%;
+    border: 0;
+    box-shadow: none;
+}
+
+.mm-piece.has-image .mm-piece__shine,
 .mm-piece.has-image .mm-piece__name {
     display: none;
 }
