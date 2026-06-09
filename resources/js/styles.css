@@ -588,7 +588,9 @@ button {
     width: 88%;
     height: 88%;
     border: 0;
+    border-radius: 50%;
     box-shadow: none;
+    clip-path: circle(50% at 50% 50%);
 }
 
 .mm-piece.has-image .mm-piece__shine,
@@ -603,6 +605,8 @@ button {
     top: 50%;
     width: var(--mm-piece-image-size, 86%);
     height: var(--mm-piece-image-size, 86%);
+    border-radius: 50%;
+    clip-path: circle(50% at 50% 50%);
     object-fit: contain;
     filter: drop-shadow(0 6px 8px rgba(76, 41, 84, 0.18));
     transform: translate(
