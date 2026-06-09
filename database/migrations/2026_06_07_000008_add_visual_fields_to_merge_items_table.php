@@ -44,7 +44,7 @@ return new class extends Migration
             6 => ['linear-gradient(145deg, #ff9696, #e73b3b)', '50%', 86, 0, 8],
             7 => ['linear-gradient(145deg, #ffc1dc, #9d4edd 55%, #35235f)', '50%', 118, 0, 5],
             8 => ['linear-gradient(145deg, #ffd8ee, #ff74b8)', '50%', 76, 0, 6],
-            9 => ['linear-gradient(145deg, #f8b7ff, #8b5cf6 55%, #65d7ff)', '50%', 100, 0, 0],
+            9 => ['linear-gradient(145deg, #d9b4ff, #8b5cf6 52%, #4c1d95)', '50%', 116, 0, 2],
             10 => ['linear-gradient(145deg, #ffe66d, #ff78bd 52%, #8b5cf6)', '50%', 100, 0, 0],
             11 => ['linear-gradient(145deg, #fff1a8, #ff7ab6 55%, #9d77ff)', '50%', 100, 0, 0],
             12 => ['linear-gradient(145deg, #b8f4ff, #7c83ff 52%, #ff92d0)', '50%', 100, 0, 0],
