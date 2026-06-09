@@ -584,6 +584,10 @@ button {
     display: none;
 }
 
+.mm-piece.has-image .mm-piece__name {
+    display: none;
+}
+
 .mm-piece__image {
     position: absolute;
     z-index: 1;
