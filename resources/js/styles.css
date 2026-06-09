@@ -860,6 +860,147 @@ button {
     transform: translateY(18px);
 }
 
+.mm-piece--star::before,
+.mm-piece--final::before {
+    width: 42px;
+    height: 42px;
+    background: #fff5b8;
+    clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 56%, 80% 92%, 50% 70%, 20% 92%, 32% 56%, 2% 35%, 39% 35%);
+}
+
+.mm-piece--star::after,
+.mm-piece--final::after {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    transform: translate(14px, -14px);
+}
+
+.mm-piece--comet::before {
+    width: 46px;
+    height: 18px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), #ffffff 42%, #fff5b8);
+    transform: rotate(-28deg);
+}
+
+.mm-piece--comet::after {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff5b8;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.32);
+    transform: translate(13px, -8px);
+}
+
+.mm-piece--cloud::before,
+.mm-piece--dream::before {
+    width: 44px;
+    height: 22px;
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow:
+        -12px 2px 0 -2px #ffffff,
+        10px -7px 0 1px #ffffff;
+}
+
+.mm-piece--cloud::after,
+.mm-piece--dream::after {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow:
+        13px -8px 0 -1px rgba(255, 255, 255, 0.7),
+        25px 2px 0 -2px rgba(255, 255, 255, 0.58);
+    transform: translate(-15px, 20px);
+}
+
+.mm-piece--bell::before {
+    width: 32px;
+    height: 34px;
+    border-radius: 17px 17px 10px 10px;
+    background: #fff5b8;
+    clip-path: polygon(50% 0, 82% 18%, 92% 78%, 100% 100%, 0 100%, 8% 78%, 18% 18%);
+}
+
+.mm-piece--bell::after {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffffff;
+    transform: translateY(19px);
+}
+
+.mm-piece--cupcake::before {
+    width: 38px;
+    height: 34px;
+    border-radius: 18px 18px 8px 8px;
+    background:
+        radial-gradient(circle at 50% 12%, #ff72b3 0 5px, transparent 6px),
+        linear-gradient(#ffffff 0 48%, #fff5b8 49% 100%);
+}
+
+.mm-piece--cupcake::after {
+    width: 30px;
+    height: 18px;
+    border-radius: 4px 4px 10px 10px;
+    background: repeating-linear-gradient(90deg, #ff72b3 0 5px, #ffffff 5px 10px);
+    transform: translateY(16px);
+}
+
+.mm-piece--diamond::before {
+    width: 38px;
+    height: 34px;
+    background: linear-gradient(145deg, #ffffff, #9ff3ff);
+    clip-path: polygon(50% 100%, 0 34%, 18% 0, 82% 0, 100% 34%);
+}
+
+.mm-piece--diamond::after {
+    width: 30px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(111, 79, 160, 0.4);
+    transform: translateY(-6px);
+}
+
+.mm-piece--garden::before {
+    width: 40px;
+    height: 30px;
+    border-radius: 0 0 20px 20px;
+    background:
+        radial-gradient(circle at 25% 18%, #ffffff 0 5px, transparent 6px),
+        radial-gradient(circle at 50% 10%, #fff5b8 0 5px, transparent 6px),
+        radial-gradient(circle at 75% 18%, #ffffff 0 5px, transparent 6px),
+        linear-gradient(#72d6a4 0 100%);
+}
+
+.mm-piece--garden::after {
+    width: 36px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    transform: translateY(18px);
+}
+
+.mm-piece--kingdom::before {
+    width: 42px;
+    height: 32px;
+    background:
+        linear-gradient(90deg, #ffffff 0 8px, transparent 8px 13px, #ffffff 13px 21px, transparent 21px 26px, #ffffff 26px 34px, transparent 34px),
+        linear-gradient(#fff5b8 0 100%);
+    clip-path: polygon(0 100%, 0 35%, 18% 35%, 18% 0, 35% 0, 35% 35%, 65% 35%, 65% 0, 82% 0, 82% 35%, 100% 35%, 100% 100%);
+}
+
+.mm-piece--kingdom::after {
+    width: 10px;
+    height: 14px;
+    border-radius: 10px 10px 0 0;
+    background: #7c3aed;
+    transform: translateY(10px);
+}
+
 .mm-actions {
     display: flex;
     justify-content: center;
