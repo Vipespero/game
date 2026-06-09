@@ -530,7 +530,8 @@ button {
 .mm-cell--seed,
 .mm-cell--flower,
 .mm-cell--bouquet,
-.mm-cell--plush {
+.mm-cell--plush,
+.mm-cell--image {
     border-color: transparent;
     background: transparent;
     box-shadow: none;

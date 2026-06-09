@@ -1001,7 +1001,7 @@ export default function MelodyMergePage({
 
                                     return (
                                         <button
-                                            className={`mm-cell ${item ? `mm-cell--filled mm-cell--${item.symbol}` : ''} ${selectedCell === index ? 'is-selected' : ''}`}
+                                            className={`mm-cell ${item ? `mm-cell--filled mm-cell--${item.symbol} ${item.imageUrl ? 'mm-cell--image' : ''}` : ''} ${selectedCell === index ? 'is-selected' : ''}`}
                                             data-cell-index={index}
                                             draggable={Boolean(cell)}
                                             key={index}
