@@ -635,7 +635,6 @@ export default function MelodyMergePage({
 
     const xpGoal = getPlayerLevel(playerLevel).xpRequired;
     const albumPercent = cardPool.length > 0 ? Math.round((collectedCards.length / cardPool.length) * 100) : 0;
-    const freeCells = board.filter((cell) => !cell).length;
     const savePayload = useMemo<MelodyGameSave>(() => ({
         board,
         energy,
@@ -1123,18 +1122,6 @@ export default function MelodyMergePage({
                             <span style={{ width: `${Math.min(100, (xp / xpGoal) * 100)}%` }} />
                         </div>
                     </div>
-
-                    <footer className="mm-footer">
-                        <span>{freeCells} espacios libres</span>
-                        <span>{mergeCount} fusiones</span>
-                        <span>{collectedCards.length}/{cardPool.length} cartas</span>
-                        <span>
-                            {saveStatus === 'saving' ? 'guardando' :
-                                saveStatus === 'saved' ? 'guardado' :
-                                    saveStatus === 'error' ? 'sin guardar' :
-                                        'auto'}
-                        </span>
-                    </footer>
 
                     {activeTab === 'merge' && (
                         <section className="mm-stage">
