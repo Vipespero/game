@@ -66,6 +66,8 @@ const makeItem = (level = 1): BoardItem => ({
     level,
 });
 
+const emptyBoard = (): Array<BoardItem | null> => Array.from({ length: boardSize }, () => null);
+
 const defaultBoard = () => {
     const next = emptyBoard();
     next[8] = makeItem(1);
