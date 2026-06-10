@@ -148,6 +148,37 @@ class MelodyGameTest extends TestCase
         $this->assertCount(3, $state['openedPacks'][0]['cards']);
     }
 
+    public function test_user_can_save_memory_as_active_tab(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->putJson(route('melody.save'), [
+                'state' => [
+                    'board' => array_fill(0, 25, null),
+                    'energy' => 80,
+                    'hearts' => 240,
+                    'xp' => 12,
+                    'playerLevel' => 2,
+                    'mergeCount' => 4,
+                    'openedPacks' => [],
+                    'activeTab' => 'memory',
+                    'claimedMissions' => [],
+                    'dailyRewardClaimedAt' => null,
+                    'lastSeenAt' => now()->toISOString(),
+                ],
+            ])
+            ->assertOk()
+            ->assertJson(['saved' => true]);
+
+        $state = $user->gameSave()
+            ->with(['boardItems', 'packs.cards', 'claimedMissions'])
+            ->firstOrFail()
+            ->toGameState();
+
+        $this->assertSame('memory', $state['activeTab']);
+    }
+
     public function test_inactive_cards_are_hidden_from_game_catalog(): void
     {
         $user = User::factory()->create();

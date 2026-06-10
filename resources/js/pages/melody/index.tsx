@@ -4,11 +4,13 @@ import { Head, router } from '@inertiajs/react';
 import {
     Album,
     Battery,
+    Brain,
     Crown,
     Gift,
     Heart,
     LogOut,
     PackageOpen,
+    RotateCcw,
     Scissors,
     Settings,
     Sparkles,
@@ -108,6 +110,8 @@ type PlayerLevelDefinition = {
     isActive: boolean;
 };
 
+type MelodyTab = 'merge' | 'album' | 'room' | 'memory';
+
 type PackReward = {
     id: string;
     label: string;
@@ -125,6 +129,13 @@ type SavedPackReward = {
     cards: string[];
 };
 
+type MemoryCard = {
+    id: string;
+    pairId: string;
+    item: MergeItemDefinition;
+    isMatched: boolean;
+};
+
 type MelodyGameSave = {
     board?: Array<BoardItem | null>;
     energy?: number;
@@ -133,7 +144,7 @@ type MelodyGameSave = {
     playerLevel?: number;
     mergeCount?: number;
     openedPacks?: SavedPackReward[];
-    activeTab?: 'merge' | 'album' | 'room';
+    activeTab?: MelodyTab;
     claimedMissions?: string[];
     dailyRewardClaimedAt?: string | null;
     lastSeenAt?: string | null;
@@ -341,7 +352,18 @@ const normalizePacks = (cardsById: Map<string, MelodyCard>, packs?: SavedPackRew
 };
 
 const normalizeTab = (tab?: string) => {
-    return tab === 'album' || tab === 'room' || tab === 'merge' ? tab : 'merge';
+    return tab === 'album' || tab === 'room' || tab === 'memory' || tab === 'merge' ? tab : 'merge';
+};
+
+const shuffle = <T,>(items: T[]) => {
+    const next = [...items];
+
+    for (let index = next.length - 1; index > 0; index -= 1) {
+        const target = Math.floor(Math.random() * (index + 1));
+        [next[index], next[target]] = [next[target], next[index]];
+    }
+
+    return next;
 };
 
 const dateKey = (date = new Date()) => date.toISOString().slice(0, 10);
@@ -473,7 +495,7 @@ export default function MelodyMergePage({
         y: number;
         item: BoardItem;
     } | null>(null);
-    const [activeTab, setActiveTab] = useState<'merge' | 'album' | 'room'>(() => normalizeTab(gameSave?.activeTab));
+    const [activeTab, setActiveTab] = useState<MelodyTab>(() => normalizeTab(gameSave?.activeTab));
     const [toastMessage, setToastMessage] = useState(
         offlineEnergyGain > 0
             ? `Recuperaste ${offlineEnergyGain} energia mientras no estabas.`
@@ -484,6 +506,30 @@ export default function MelodyMergePage({
     const didPointerDragRef = useRef(false);
     const didMountSaveRef = useRef(offlineEnergyGain > 0);
     const saveTimerRef = useRef<number | null>(null);
+    const memoryTimerRef = useRef<number | null>(null);
+    const memorySource = useMemo(
+        () => mergeItemPool.filter((item) => item.isActive).slice(0, 8),
+        [mergeItemPool],
+    );
+    const createMemoryDeck = useCallback(() => shuffle(memorySource.flatMap((item) => [
+        {
+            id: nanoid(),
+            pairId: `memory-${item.level}`,
+            item,
+            isMatched: false,
+        },
+        {
+            id: nanoid(),
+            pairId: `memory-${item.level}`,
+            item,
+            isMatched: false,
+        },
+    ])), [memorySource]);
+    const [memoryDeck, setMemoryDeck] = useState<MemoryCard[]>(() => createMemoryDeck());
+    const [flippedMemoryCards, setFlippedMemoryCards] = useState<string[]>([]);
+    const [memoryMatches, setMemoryMatches] = useState(0);
+    const [memoryMoves, setMemoryMoves] = useState(0);
+    const [memoryLocked, setMemoryLocked] = useState(false);
 
     const notify = useCallback((message: string) => {
         setToastMessage(message);
@@ -523,6 +569,26 @@ export default function MelodyMergePage({
 
         return () => window.clearInterval(timer);
     }, [maxEnergy]);
+
+    useEffect(() => {
+        if (memoryTimerRef.current) {
+            window.clearTimeout(memoryTimerRef.current);
+            memoryTimerRef.current = null;
+        }
+
+        setMemoryDeck(createMemoryDeck());
+        setFlippedMemoryCards([]);
+        setMemoryMatches(0);
+        setMemoryMoves(0);
+        setMemoryLocked(false);
+    }, [createMemoryDeck]);
+
+    useEffect(() => () => {
+        if (memoryTimerRef.current) {
+            window.clearTimeout(memoryTimerRef.current);
+            memoryTimerRef.current = null;
+        }
+    }, []);
 
     useEffect(() => {
         if (!toastMessage) return;
@@ -828,6 +894,82 @@ export default function MelodyMergePage({
         queuePack(premiumPack);
     }, [getPack, hearts, notify, queuePack]);
 
+    const resetMemoryGame = useCallback(() => {
+        if (memoryTimerRef.current) {
+            window.clearTimeout(memoryTimerRef.current);
+            memoryTimerRef.current = null;
+        }
+
+        setMemoryDeck(createMemoryDeck());
+        setFlippedMemoryCards([]);
+        setMemoryMatches(0);
+        setMemoryMoves(0);
+        setMemoryLocked(false);
+        notify('Nuevo tablero de Memory listo.');
+    }, [createMemoryDeck, notify]);
+
+    const handleMemoryCardClick = useCallback((cardId: string) => {
+        if (memoryLocked || flippedMemoryCards.includes(cardId)) {
+            return;
+        }
+
+        const selectedCard = memoryDeck.find((card) => card.id === cardId);
+
+        if (!selectedCard || selectedCard.isMatched || flippedMemoryCards.length >= 2) {
+            return;
+        }
+
+        const nextFlipped = [...flippedMemoryCards, cardId];
+        setFlippedMemoryCards(nextFlipped);
+
+        if (nextFlipped.length < 2) {
+            return;
+        }
+
+        const [firstCard, secondCard] = nextFlipped
+            .map((id) => memoryDeck.find((card) => card.id === id))
+            .filter(Boolean) as MemoryCard[];
+
+        setMemoryLocked(true);
+        setMemoryMoves((value) => value + 1);
+
+        if (memoryTimerRef.current) {
+            window.clearTimeout(memoryTimerRef.current);
+            memoryTimerRef.current = null;
+        }
+
+        memoryTimerRef.current = window.setTimeout(() => {
+            if (firstCard.pairId === secondCard.pairId) {
+                setMemoryDeck((deck) => deck.map((card) => (
+                    card.pairId === firstCard.pairId ? { ...card, isMatched: true } : card
+                )));
+                setMemoryMatches((value) => {
+                    const nextMatches = value + 1;
+
+                    if (nextMatches === memorySource.length) {
+                        const rewardHearts = 60;
+                        const rewardEnergy = 10;
+
+                        setHearts((current) => current + rewardHearts);
+                        setEnergy((current) => Math.min(maxEnergy, current + rewardEnergy));
+                        triggerFeedback();
+                        notify(`Memory completo: +${rewardHearts} corazones y +${rewardEnergy} energia.`);
+                    } else {
+                        notify(`Pareja encontrada: ${firstCard.item.name}.`);
+                    }
+
+                    return nextMatches;
+                });
+            } else {
+                notify('Intenta otra pareja.');
+            }
+
+            setFlippedMemoryCards([]);
+            setMemoryLocked(false);
+            memoryTimerRef.current = null;
+        }, 520);
+    }, [flippedMemoryCards, maxEnergy, memoryDeck, memoryLocked, memorySource.length, notify]);
+
     const claimMission = useCallback((missionId: string) => {
         const mission = missionDefinitions.find((item) => item.id === missionId);
 
@@ -926,6 +1068,7 @@ export default function MelodyMergePage({
             claimed: claimedMissions.includes(mission.id),
         };
     });
+    const memoryProgress = memorySource.length > 0 ? Math.round((memoryMatches / memorySource.length) * 100) : 0;
 
     return (
         <>
@@ -1149,6 +1292,54 @@ export default function MelodyMergePage({
                         </section>
                     )}
 
+                    {activeTab === 'memory' && (
+                        <section className="mm-memory">
+                            <div className="mm-memory__summary">
+                                <div>
+                                    <p className="mm-kicker">Memory</p>
+                                    <h2>{memoryProgress}% completo</h2>
+                                </div>
+                                <button onClick={resetMemoryGame} type="button">
+                                    <RotateCcw size={16} aria-hidden />
+                                    <span>{memoryMoves}</span>
+                                </button>
+                            </div>
+
+                            <div className="mm-memory__board" aria-label="Tablero de Memory">
+                                {memoryDeck.map((card) => {
+                                    const isFlipped = flippedMemoryCards.includes(card.id) || card.isMatched;
+
+                                    return (
+                                        <button
+                                            className={`mm-memory-card ${isFlipped ? 'is-flipped' : ''} ${card.isMatched ? 'is-matched' : ''}`}
+                                            disabled={memoryLocked || card.isMatched}
+                                            key={card.id}
+                                            onClick={() => handleMemoryCardClick(card.id)}
+                                            type="button"
+                                        >
+                                            <span className="mm-memory-card__back">
+                                                <Brain size={22} aria-hidden />
+                                            </span>
+                                            <span className="mm-memory-card__front">
+                                                <span className={`mm-piece mm-piece--${card.item.symbol} ${card.item.imageUrl ? 'has-image' : ''}`} style={pieceStyle(card.item)}>
+                                                    <span className="mm-piece__shine" />
+                                                    {card.item.imageUrl && <img alt={card.item.name} className="mm-piece__image" src={card.item.imageUrl} />}
+                                                    <span className="mm-piece__name">{card.item.name}</span>
+                                                </span>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="mm-memory__rewards">
+                                <span>{memoryMatches}/{memorySource.length} parejas</span>
+                                <span>+60 corazones</span>
+                                <span>+10 energia</span>
+                            </div>
+                        </section>
+                    )}
+
                     <nav className="mm-tabs" aria-label="Vistas">
                         <button className={activeTab === 'merge' ? 'is-active' : ''} onClick={() => setActiveTab('merge')} type="button">
                             <Wand2 size={19} aria-hidden />
@@ -1161,6 +1352,10 @@ export default function MelodyMergePage({
                         <button className={activeTab === 'room' ? 'is-active' : ''} onClick={() => setActiveTab('room')} type="button">
                             <Gift size={19} aria-hidden />
                             <span>Sala</span>
+                        </button>
+                        <button className={activeTab === 'memory' ? 'is-active' : ''} onClick={() => setActiveTab('memory')} type="button">
+                            <Brain size={19} aria-hidden />
+                            <span>Memory</span>
                         </button>
                     </nav>
 

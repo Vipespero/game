@@ -341,6 +341,7 @@ button {
 
 .mm-brand h1,
 .mm-album h2,
+.mm-memory h2,
 .mm-section-title h2 {
     margin: 0;
     font-size: 21px;
@@ -436,7 +437,7 @@ button {
 
 .mm-tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
     border-top: 1px solid rgba(255, 255, 255, 0.72);
     background:
@@ -468,7 +469,8 @@ button {
 
 .mm-stage,
 .mm-album,
-.mm-room {
+.mm-room,
+.mm-memory {
     min-height: 0;
     overflow: hidden;
     padding: 0 10px 10px;
@@ -476,13 +478,15 @@ button {
 }
 
 .mm-album,
-.mm-room {
+.mm-room,
+.mm-memory {
     overflow-y: auto;
 }
 
 .mm-stage::-webkit-scrollbar,
 .mm-album::-webkit-scrollbar,
-.mm-room::-webkit-scrollbar {
+.mm-room::-webkit-scrollbar,
+.mm-memory::-webkit-scrollbar {
     display: none;
 }
 
@@ -1392,6 +1396,132 @@ button {
 
 .mm-mission__meta strong {
     color: var(--mm-ink);
+}
+
+.mm-memory {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+}
+
+.mm-memory__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.mm-memory__summary button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 72px;
+    height: 38px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--mm-pink), var(--mm-lilac));
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 10px 20px rgba(255, 120, 180, 0.2);
+}
+
+.mm-memory__board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 7px;
+    width: 100%;
+    aspect-ratio: 1;
+    border: 3px solid rgba(255, 255, 255, 0.86);
+    border-radius: 20px;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(232, 246, 255, 0.72)),
+        repeating-linear-gradient(45deg, rgba(159, 230, 208, 0.14) 0 8px, transparent 8px 16px);
+    padding: 8px;
+    box-shadow:
+        inset 0 0 0 1px rgba(126, 84, 132, 0.08),
+        0 18px 34px rgba(120, 65, 132, 0.12);
+}
+
+.mm-memory-card {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 16px;
+    background: transparent;
+    perspective: 700px;
+}
+
+.mm-memory-card:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.mm-memory-card__back,
+.mm-memory-card__front {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: inherit;
+    backface-visibility: hidden;
+    transition: transform 220ms ease, opacity 180ms ease, box-shadow 180ms ease;
+}
+
+.mm-memory-card__back {
+    background:
+        radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.74) 0 9px, transparent 10px),
+        linear-gradient(145deg, #ff8fc5, #9ed8ff);
+    color: #ffffff;
+    box-shadow: 0 8px 16px rgba(120, 65, 132, 0.14);
+}
+
+.mm-memory-card__front {
+    background: rgba(255, 255, 255, 0.82);
+    transform: rotateY(180deg);
+}
+
+.mm-memory-card.is-flipped .mm-memory-card__back {
+    transform: rotateY(180deg);
+}
+
+.mm-memory-card.is-flipped .mm-memory-card__front {
+    transform: rotateY(0);
+}
+
+.mm-memory-card.is-matched .mm-memory-card__front {
+    box-shadow:
+        inset 0 0 0 3px rgba(159, 230, 208, 0.62),
+        0 0 0 2px rgba(255, 255, 255, 0.92);
+}
+
+.mm-memory-card .mm-piece {
+    width: 82%;
+    height: 82%;
+}
+
+.mm-memory__rewards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.mm-memory__rewards span {
+    display: grid;
+    min-height: 38px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--mm-muted);
+    font-size: 11px;
+    font-weight: 900;
+    text-align: center;
+    padding: 6px;
 }
 
 .mm-footer {
@@ -2675,6 +2805,7 @@ button {
     .mm-stage,
     .mm-album,
     .mm-room,
+    .mm-memory,
     .mm-progress {
         margin-right: 12px;
         margin-left: 12px;

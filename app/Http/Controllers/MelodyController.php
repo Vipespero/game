@@ -27,7 +27,7 @@ class MelodyController extends Controller
     private const FALLBACK_MAX_ITEM_LEVEL = 20;
     private const MAX_PACK_CARDS = 3;
     private const MAX_PACK_HISTORY = 120;
-    private const VALID_TABS = ['merge', 'album', 'room'];
+    private const VALID_TABS = ['merge', 'album', 'room', 'memory'];
     public function show(Request $request): Response
     {
         $gameSave = $request->user()
