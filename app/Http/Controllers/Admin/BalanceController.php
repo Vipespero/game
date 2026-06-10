@@ -86,7 +86,7 @@ class BalanceController extends Controller
             'packs.*.label' => ['required', 'string', 'max:80'],
             'packs.*.trigger_key' => ['required', Rule::in(self::TRIGGER_KEYS)],
             'packs.*.cost_hearts' => ['required', 'integer', 'min:0', 'max:999999'],
-            'packs.*.cards_count' => ['required', 'integer', 'min:1', 'max:10'],
+            'packs.*.cards_count' => ['required', 'integer', 'min:1', 'max:3'],
             'packs.*.sort_order' => ['required', 'integer', 'min:0', 'max:9999'],
             'packs.*.is_active' => ['required', 'boolean'],
 

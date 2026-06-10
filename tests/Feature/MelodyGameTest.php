@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Card;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -70,5 +71,98 @@ class MelodyGameTest extends TestCase
         $this->assertSame(80, $state['energy']);
         $this->assertSame('album', $state['activeTab']);
         $this->assertSame(['merge-20'], $state['claimedMissions']);
+    }
+
+    public function test_user_can_save_high_level_merge_items(): void
+    {
+        $user = User::factory()->create();
+        $board = array_fill(0, 25, null);
+        $board[0] = ['id' => 'final-item', 'level' => 20];
+
+        $this->actingAs($user)
+            ->putJson(route('melody.save'), [
+                'state' => [
+                    'board' => $board,
+                    'energy' => 80,
+                    'hearts' => 240,
+                    'xp' => 12,
+                    'playerLevel' => 2,
+                    'mergeCount' => 4,
+                    'openedPacks' => [],
+                    'activeTab' => 'merge',
+                    'claimedMissions' => [],
+                    'dailyRewardClaimedAt' => null,
+                    'lastSeenAt' => now()->toISOString(),
+                ],
+            ])
+            ->assertOk()
+            ->assertJson(['saved' => true]);
+
+        $state = $user->gameSave()
+            ->with(['boardItems', 'packs.cards', 'claimedMissions'])
+            ->firstOrFail()
+            ->toGameState();
+
+        $this->assertSame(20, $state['board'][0]['level']);
+    }
+
+    public function test_user_can_save_three_card_packs(): void
+    {
+        $user = User::factory()->create();
+        $board = array_fill(0, 25, null);
+
+        $this->actingAs($user)
+            ->putJson(route('melody.save'), [
+                'state' => [
+                    'board' => $board,
+                    'energy' => 80,
+                    'hearts' => 240,
+                    'xp' => 12,
+                    'playerLevel' => 2,
+                    'mergeCount' => 4,
+                    'openedPacks' => [
+                        [
+                            'id' => 'pack-three',
+                            'label' => 'Sobre normal',
+                            'cards' => [
+                                'card-1',
+                                'card-2',
+                                'card-3',
+                            ],
+                        ],
+                    ],
+                    'activeTab' => 'album',
+                    'claimedMissions' => [],
+                    'dailyRewardClaimedAt' => null,
+                    'lastSeenAt' => now()->toISOString(),
+                ],
+            ])
+            ->assertOk()
+            ->assertJson(['saved' => true]);
+
+        $state = $user->gameSave()
+            ->with(['boardItems', 'packs.cards', 'claimedMissions'])
+            ->firstOrFail()
+            ->toGameState();
+
+        $this->assertCount(3, $state['openedPacks'][0]['cards']);
+    }
+
+    public function test_inactive_cards_are_hidden_from_game_catalog(): void
+    {
+        $user = User::factory()->create();
+
+        Card::query()
+            ->where('external_id', 'card-1')
+            ->update(['is_active' => false]);
+
+        $this->actingAs($user)
+            ->get(route('melody'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('melody/index')
+                ->where('cards.0.id', 'card-2')
+                ->missing('cards.13'),
+            );
     }
 }

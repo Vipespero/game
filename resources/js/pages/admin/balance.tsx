@@ -356,7 +356,7 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                                         </Field>
                                         <div className="mm-admin__field-row">
                                             <Field label="Costo"><input min={0} onChange={(event) => setRow('packs', index, 'cost_hearts', numberValue(event.target.value))} type="number" value={pack.cost_hearts} /></Field>
-                                            <Field label="Cartas"><input min={1} max={10} onChange={(event) => setRow('packs', index, 'cards_count', numberValue(event.target.value))} type="number" value={pack.cards_count} /></Field>
+                                            <Field label="Cartas"><input min={1} max={3} onChange={(event) => setRow('packs', index, 'cards_count', numberValue(event.target.value))} type="number" value={pack.cards_count} /></Field>
                                         </div>
                                         <div className="mm-admin__field-row">
                                             <Field label="Orden"><input min={0} onChange={(event) => setRow('packs', index, 'sort_order', numberValue(event.target.value))} type="number" value={pack.sort_order} /></Field>

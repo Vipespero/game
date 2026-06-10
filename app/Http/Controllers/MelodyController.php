@@ -24,7 +24,8 @@ class MelodyController extends Controller
 {
     private const BOARD_SIZE = 25;
     private const MAX_ENERGY = 100;
-    private const MAX_ITEM_LEVEL = 10;
+    private const FALLBACK_MAX_ITEM_LEVEL = 20;
+    private const MAX_PACK_CARDS = 3;
     private const MAX_PACK_HISTORY = 120;
     private const VALID_TABS = ['merge', 'album', 'room'];
     public function show(Request $request): Response
@@ -50,6 +51,7 @@ class MelodyController extends Controller
     public function save(Request $request): JsonResponse
     {
         $gameConfig = $this->gameConfig();
+        $maxItemLevel = $this->maxItemLevel();
         $cardRules = ['string'];
 
         if (Schema::hasTable('cards')) {
@@ -61,7 +63,7 @@ class MelodyController extends Controller
             'state.board' => ['sometimes', 'array', 'size:'.self::BOARD_SIZE],
             'state.board.*' => ['nullable', 'array'],
             'state.board.*.id' => ['nullable', 'string', 'max:64'],
-            'state.board.*.level' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_ITEM_LEVEL],
+            'state.board.*.level' => ['nullable', 'integer', 'min:1', 'max:'.$maxItemLevel],
             'state.energy' => ['sometimes', 'integer', 'min:0', 'max:'.$gameConfig['maxEnergy']],
             'state.hearts' => ['sometimes', 'integer', 'min:0', 'max:999999'],
             'state.xp' => ['sometimes', 'integer', 'min:0', 'max:999999'],
@@ -71,7 +73,7 @@ class MelodyController extends Controller
             'state.openedPacks.*' => ['array'],
             'state.openedPacks.*.id' => ['required_with:state.openedPacks', 'string', 'max:64'],
             'state.openedPacks.*.label' => ['required_with:state.openedPacks', 'string', 'max:80'],
-            'state.openedPacks.*.cards' => ['required_with:state.openedPacks', 'array', 'min:1', 'max:3'],
+            'state.openedPacks.*.cards' => ['required_with:state.openedPacks', 'array', 'min:1', 'max:'.self::MAX_PACK_CARDS],
             'state.openedPacks.*.cards.*' => $cardRules,
             'state.activeTab' => ['sometimes', Rule::in(self::VALID_TABS)],
             'state.claimedMissions' => ['sometimes', 'array', 'max:12'],
@@ -117,7 +119,7 @@ class MelodyController extends Controller
             ->map(fn (array $pack): array => [
                 'id' => (string) $pack['id'],
                 'label' => (string) $pack['label'],
-                'cards' => array_values(array_slice($pack['cards'], 0, 3)),
+                'cards' => array_values(array_slice($pack['cards'], 0, self::MAX_PACK_CARDS)),
             ])
             ->all();
 
@@ -219,10 +221,20 @@ class MelodyController extends Controller
         }
 
         return Card::query()
+            ->where('is_active', true)
             ->orderBy('id')
             ->get()
             ->map(fn (Card $card): array => $card->toGameCard())
             ->all();
+    }
+
+    private function maxItemLevel(): int
+    {
+        if (! Schema::hasTable('merge_items')) {
+            return self::FALLBACK_MAX_ITEM_LEVEL;
+        }
+
+        return max(self::FALLBACK_MAX_ITEM_LEVEL, (int) MergeItem::query()->max('level'));
     }
 
     private function activeCardRarities(): array

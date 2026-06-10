@@ -633,7 +633,7 @@ export default function MelodyMergePage({
     }, [postSave, savePayload]);
 
     const queuePack = useCallback((pack: GamePackDefinition, labelOverride?: string) => {
-        const cardsCount = Math.max(1, Math.min(pack.cardsCount, 10));
+        const cardsCount = Math.max(1, Math.min(pack.cardsCount, 3));
         const packCards = Array.from({ length: cardsCount }, () => chooseCard(cardPool)).filter(Boolean) as MelodyCard[];
 
         if (packCards.length === 0) {
@@ -710,8 +710,8 @@ export default function MelodyMergePage({
     }, [dailyReward.energy, dailyReward.hearts, getPack, maxEnergy, notify, queuePack]);
 
     const advancePackCard = useCallback(() => {
-        setDismissedPackCards((value) => Math.min(value + 1, 3));
-    }, []);
+        setDismissedPackCards((value) => Math.min(value + 1, pendingPack?.cards.length ?? value + 1));
+    }, [pendingPack]);
 
     const addProgress = useCallback((itemLevel: number) => {
         const item = getMergeLevel(itemLevel);
