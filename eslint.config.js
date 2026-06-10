@@ -98,6 +98,7 @@ export default [
             '@stylistic': stylistic,
         },
         rules: {
+            curly: ['error', 'all'],
             '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
             '@stylistic/padding-line-between-statements': [
                 'error',
@@ -119,14 +120,5 @@ export default [
             'resources/js/wayfinder/**',
         ],
     },
-    prettier, // Turn off all rules that might conflict with Prettier
-    {
-        plugins: {
-            '@stylistic': stylistic,
-        },
-        rules: {
-            curly: ['error', 'all'],
-            '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
-        },
-    },
+    prettier,
 ];

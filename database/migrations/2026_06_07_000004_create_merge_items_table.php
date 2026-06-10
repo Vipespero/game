@@ -31,6 +31,7 @@ return new class extends Migration
 
     private function seedDefaults(): void
     {
+        $now = now();
         $items = [
             [1, 'Corona', 'crown', 'pochaco.png', 6, 1],
             [2, 'Flor', 'flower', 'pompompurin.png', 10, 2],
@@ -62,8 +63,8 @@ return new class extends Migration
             'xp' => $item[4],
             'hearts' => $item[5],
             'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at' => $now,
+            'updated_at' => $now,
         ], $items));
     }
 };

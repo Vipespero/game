@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { Heart, LoaderCircle, LockKeyhole, Sparkles, UserPlus } from 'lucide-react';
-import packImageUrl from '../../assets/sanrio_pack.png?url';
 
 type AuthMode = 'login' | 'register';
 
@@ -13,18 +12,8 @@ type LoginProps = {
     status?: string;
 };
 
-const cardImages = import.meta.glob('../../assets/cards/**/*.png', {
-    eager: true,
-    import: 'default',
-    query: '?url',
-}) as Record<string, string>;
-
 export default function LoginPage({ cardCount = 0, mode = 'login', canRegister = true, status }: LoginProps) {
     const [authMode, setAuthMode] = useState<AuthMode>(mode);
-    const [loadedAssets, setLoadedAssets] = useState(0);
-
-    const assetUrls = useMemo(() => [packImageUrl, ...Object.values(cardImages)], []);
-    const loadPercent = Math.round((loadedAssets / Math.max(assetUrls.length, 1)) * 100);
     const isRegister = authMode === 'register';
 
     const form = useForm({
@@ -34,36 +23,6 @@ export default function LoginPage({ cardCount = 0, mode = 'login', canRegister =
         password_confirmation: '',
         remember: true,
     });
-
-    useEffect(() => {
-        let cancelled = false;
-
-        assetUrls.forEach((url) => {
-            const image = new Image();
-            let settled = false;
-            const markLoaded = () => {
-                if (settled) return;
-                settled = true;
-
-                if (!cancelled) {
-                    setLoadedAssets((value) => Math.min(value + 1, assetUrls.length));
-                }
-            };
-
-            image.decoding = 'async';
-            image.onload = markLoaded;
-            image.onerror = markLoaded;
-            image.src = url;
-
-            if ('decode' in image) {
-                image.decode().then(markLoaded).catch(markLoaded);
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [assetUrls]);
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -88,17 +47,6 @@ export default function LoginPage({ cardCount = 0, mode = 'login', canRegister =
                         <div>
                             <p className="mm-kicker">Juego privado</p>
                             <h1>Melody Merge</h1>
-                        </div>
-                    </div>
-
-                    <div className="mm-auth__preview">
-                        <img alt="Sobre Sanrio" src={packImageUrl} />
-                        <div>
-                            <strong>{loadPercent}%</strong>
-                            <span>Cargando cartas y sobre</span>
-                        </div>
-                        <div className="mm-auth__progress">
-                            <span style={{ width: `${loadPercent}%` }} />
                         </div>
                     </div>
 

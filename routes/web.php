@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth')->group(function () {
     Route::get('/', [MelodyController::class, 'show'])->name('melody');
     Route::get('dashboard', [MelodyController::class, 'show'])->name('dashboard');
-    Route::put('melody/save', [MelodyController::class, 'save'])->name('melody.save');
+    Route::put('melody/save', [MelodyController::class, 'save'])
+        ->middleware('throttle:30,1')
+        ->name('melody.save');
 
     Route::get('admin', AdminDashboardController::class)
         ->middleware('admin')

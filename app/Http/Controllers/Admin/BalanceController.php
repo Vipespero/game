@@ -12,6 +12,7 @@ use App\Models\Mission;
 use App\Models\PlayerLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -98,33 +99,35 @@ class BalanceController extends Controller
             'playerLevels.*.is_active' => ['required', 'boolean'],
         ]);
 
-        foreach ($validated['settings'] as $setting) {
-            GameSetting::query()->where('key', $setting['key'])->update(['value' => (string) $setting['value']]);
-        }
+        DB::transaction(function () use ($validated): void {
+            foreach ($validated['settings'] as $setting) {
+                GameSetting::query()->where('key', $setting['key'])->update(['value' => (string) $setting['value']]);
+            }
 
-        foreach ($validated['rules'] as $rule) {
-            GameRule::query()->where('key', $rule['key'])->update(['value' => (string) $rule['value']]);
-        }
+            foreach ($validated['rules'] as $rule) {
+                GameRule::query()->where('key', $rule['key'])->update(['value' => (string) $rule['value']]);
+            }
 
-        foreach ($validated['rarities'] as $rarity) {
-            CardRarity::query()->whereKey($rarity['id'])->update(collect($rarity)->except('id')->all());
-        }
+            foreach ($validated['rarities'] as $rarity) {
+                CardRarity::query()->whereKey($rarity['id'])->update(collect($rarity)->except('id')->all());
+            }
 
-        foreach ($validated['missions'] as $mission) {
-            Mission::query()->whereKey($mission['id'])->update(collect($mission)->except('id')->all());
-        }
+            foreach ($validated['missions'] as $mission) {
+                Mission::query()->whereKey($mission['id'])->update(collect($mission)->except('id')->all());
+            }
 
-        foreach ($validated['mergeItems'] as $item) {
-            MergeItem::query()->whereKey($item['id'])->update(collect($item)->except('id')->all());
-        }
+            foreach ($validated['mergeItems'] as $item) {
+                MergeItem::query()->whereKey($item['id'])->update(collect($item)->except('id')->all());
+            }
 
-        foreach ($validated['packs'] as $pack) {
-            GamePack::query()->whereKey($pack['id'])->update(collect($pack)->except('id')->all());
-        }
+            foreach ($validated['packs'] as $pack) {
+                GamePack::query()->whereKey($pack['id'])->update(collect($pack)->except('id')->all());
+            }
 
-        foreach ($validated['playerLevels'] as $level) {
-            PlayerLevel::query()->whereKey($level['id'])->update(collect($level)->except('id')->all());
-        }
+            foreach ($validated['playerLevels'] as $level) {
+                PlayerLevel::query()->whereKey($level['id'])->update(collect($level)->except('id')->all());
+            }
+        });
 
         return to_route('admin.balance.edit');
     }

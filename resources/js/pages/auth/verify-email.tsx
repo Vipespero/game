@@ -1,10 +1,21 @@
+import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
+import { LoaderCircle } from 'lucide-react';
 
 type VerifyEmailProps = {
     status?: string;
 };
 
 export default function VerifyEmail({ status }: VerifyEmailProps) {
+    const [processing, setProcessing] = useState(false);
+
+    const resend = () => {
+        setProcessing(true);
+        router.post('/email/verification-notification', {}, {
+            onFinish: () => setProcessing(false),
+        });
+    };
+
     return (
         <>
             <Head title="Verificar email" />
@@ -18,8 +29,9 @@ export default function VerifyEmail({ status }: VerifyEmailProps) {
                         </div>
                     </div>
                     {status && <p className="mm-auth__status">{status}</p>}
-                    <button className="mm-auth__submit" onClick={() => router.post('/email/verification-notification')} type="button">
-                        Reenviar correo
+                    <button className="mm-auth__submit" disabled={processing} onClick={resend} type="button">
+                        {processing ? <LoaderCircle size={18} aria-hidden /> : null}
+                        <span>Reenviar correo</span>
                     </button>
                 </section>
             </main>

@@ -785,11 +785,11 @@ export default function MelodyMergePage({
 
         setHearts((value) => value + gainedHearts);
         setMergeCount((value) => value + 1);
-        setXp((value) => {
-            let nextXp = value + gainedXp;
+
+        setXp((currentXp) => {
+            let nextXp = currentXp + gainedXp;
             let nextLevel = playerLevel;
             let levelsGained = 0;
-
             let gainedEnergy = 0;
             let rewardPackTrigger: GamePackDefinition['triggerKey'] | null = null;
 
@@ -804,14 +804,14 @@ export default function MelodyMergePage({
 
             if (levelsGained > 0) {
                 setPlayerLevel(nextLevel);
-                setEnergy((current) => Math.min(maxEnergy, current + gainedEnergy));
+                setEnergy((prev) => Math.min(maxEnergy, prev + gainedEnergy));
                 const levelPack = getPack(rewardPackTrigger ?? 'level');
                 queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
                 notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
-                return nextXp;
+            } else {
+                notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
             }
 
-            notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
             return nextXp;
         });
     }, [getMergeLevel, getPack, getPlayerLevel, maxEnergy, notify, playerLevel, queuePack]);
@@ -859,15 +859,14 @@ export default function MelodyMergePage({
             return;
         }
 
-        const firstEmpty = board.findIndex((cell) => !cell);
-
-        if (firstEmpty === -1) {
-            notify('El tablero esta lleno. Fusiona para abrir espacio.');
-            return;
-        }
-
-        setEnergy((value) => value - 1);
         setBoard((current) => {
+            const firstEmpty = current.findIndex((cell) => !cell);
+
+            if (firstEmpty === -1) {
+                notify('El tablero esta lleno. Fusiona para abrir espacio.');
+                return current;
+            }
+
             const next = [...current];
             const generatedLevel = Math.random() * 100 < rules.magicBoxBonusChancePercent
                 ? rules.magicBoxBonusLevel
@@ -876,9 +875,11 @@ export default function MelodyMergePage({
             next[firstEmpty] = makeItem(level);
             return next;
         });
+
+        setEnergy((value) => value - 1);
         triggerFeedback();
         notify('La caja magica dejo una semilla.');
-    }, [board, energy, maxMergeItemLevel, notify, rules.magicBoxBonusChancePercent, rules.magicBoxBonusLevel, rules.magicBoxPrimaryLevel]);
+    }, [energy, maxMergeItemLevel, notify, rules.magicBoxBonusChancePercent, rules.magicBoxBonusLevel, rules.magicBoxPrimaryLevel]);
 
     const buyPack = useCallback(() => {
         const premiumPack = getPack('premium');
@@ -989,16 +990,19 @@ export default function MelodyMergePage({
             return;
         }
 
-        const cell = board[index];
-
         if (selectedCell === null) {
-            if (cell) setSelectedCell(index);
+            setBoard((current) => {
+                if (current[index]) {
+                    setSelectedCell(index);
+                }
+                return current;
+            });
             return;
         }
 
         mergeCells(selectedCell, index);
         setSelectedCell(null);
-    }, [board, mergeCells, selectedCell]);
+    }, [mergeCells, selectedCell]);
 
     const handlePointerDown = useCallback((index: number, event: PointerEvent<HTMLButtonElement>) => {
         const item = board[index];

@@ -14,6 +14,7 @@ use App\Models\PlayerLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -220,12 +221,14 @@ class MelodyController extends Controller
             return [];
         }
 
-        return Card::query()
-            ->where('is_active', true)
-            ->orderBy('id')
-            ->get()
-            ->map(fn (Card $card): array => $card->toGameCard())
-            ->all();
+        return Cache::remember('game.cards', 300, function (): array {
+            return Card::query()
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->get()
+                ->map(fn (Card $card): array => $card->toGameCard())
+                ->all();
+        });
     }
 
     private function maxItemLevel(): int
@@ -234,7 +237,9 @@ class MelodyController extends Controller
             return self::FALLBACK_MAX_ITEM_LEVEL;
         }
 
-        return max(self::FALLBACK_MAX_ITEM_LEVEL, (int) MergeItem::query()->max('level'));
+        return Cache::remember('game.max_item_level', 300, fn (): int =>
+            max(self::FALLBACK_MAX_ITEM_LEVEL, (int) MergeItem::query()->max('level'))
+        );
     }
 
     private function activeCardRarities(): array
@@ -243,12 +248,14 @@ class MelodyController extends Controller
             return [];
         }
 
-        return CardRarity::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn (CardRarity $rarity): array => $rarity->toGameRarity())
-            ->all();
+        return Cache::remember('game.card_rarities', 300, function (): array {
+            return CardRarity::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (CardRarity $rarity): array => $rarity->toGameRarity())
+                ->all();
+        });
     }
 
     private function activeMissions(): array
@@ -257,12 +264,14 @@ class MelodyController extends Controller
             return [];
         }
 
-        return Mission::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn (Mission $mission): array => $mission->toGameMission())
-            ->all();
+        return Cache::remember('game.missions', 300, function (): array {
+            return Mission::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (Mission $mission): array => $mission->toGameMission())
+                ->all();
+        });
     }
 
     private function activeGamePacks(): array
@@ -271,12 +280,14 @@ class MelodyController extends Controller
             return [];
         }
 
-        return GamePack::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn (GamePack $pack): array => $pack->toGamePack())
-            ->all();
+        return Cache::remember('game.packs', 300, function (): array {
+            return GamePack::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (GamePack $pack): array => $pack->toGamePack())
+                ->all();
+        });
     }
 
     private function activePlayerLevels(): array
@@ -285,12 +296,14 @@ class MelodyController extends Controller
             return [];
         }
 
-        return PlayerLevel::query()
-            ->where('is_active', true)
-            ->orderBy('level')
-            ->get()
-            ->map(fn (PlayerLevel $level): array => $level->toGameLevel())
-            ->all();
+        return Cache::remember('game.player_levels', 300, function (): array {
+            return PlayerLevel::query()
+                ->where('is_active', true)
+                ->orderBy('level')
+                ->get()
+                ->map(fn (PlayerLevel $level): array => $level->toGameLevel())
+                ->all();
+        });
     }
 
     private function activeMergeItems(): array
@@ -299,45 +312,51 @@ class MelodyController extends Controller
             return [];
         }
 
-        return MergeItem::query()
-            ->where('is_active', true)
-            ->orderBy('level')
-            ->get()
-            ->map(fn (MergeItem $item): array => $item->toGameItem())
-            ->all();
+        return Cache::remember('game.merge_items', 300, function (): array {
+            return MergeItem::query()
+                ->where('is_active', true)
+                ->orderBy('level')
+                ->get()
+                ->map(fn (MergeItem $item): array => $item->toGameItem())
+                ->all();
+        });
     }
 
     private function gameConfig(): array
     {
-        $settings = GameSetting::values([
-            'max_energy' => self::MAX_ENERGY,
-            'daily_reward_energy' => 30,
-            'daily_reward_hearts' => 120,
-        ]);
+        return Cache::remember('game.config', 300, function (): array {
+            $settings = GameSetting::values([
+                'max_energy' => self::MAX_ENERGY,
+                'daily_reward_energy' => 30,
+                'daily_reward_hearts' => 120,
+            ]);
 
-        return [
-            'maxEnergy' => max(1, $settings['max_energy']),
-            'dailyRewardEnergy' => max(0, $settings['daily_reward_energy']),
-            'dailyRewardHearts' => max(0, $settings['daily_reward_hearts']),
-        ];
+            return [
+                'maxEnergy' => max(1, $settings['max_energy']),
+                'dailyRewardEnergy' => max(0, $settings['daily_reward_energy']),
+                'dailyRewardHearts' => max(0, $settings['daily_reward_hearts']),
+            ];
+        });
     }
 
     private function gameRules(): array
     {
-        $rules = GameRule::values([
-            'magic_box_primary_level' => 1,
-            'magic_box_bonus_level' => 2,
-            'magic_box_bonus_chance_percent' => 18,
-            'merge_pack_min_level' => 5,
-            'merge_pack_chance_percent' => 8,
-        ]);
+        return Cache::remember('game.rules', 300, function (): array {
+            $rules = GameRule::values([
+                'magic_box_primary_level' => 1,
+                'magic_box_bonus_level' => 2,
+                'magic_box_bonus_chance_percent' => 18,
+                'merge_pack_min_level' => 5,
+                'merge_pack_chance_percent' => 8,
+            ]);
 
-        return [
-            'magicBoxPrimaryLevel' => max(1, $rules['magic_box_primary_level']),
-            'magicBoxBonusLevel' => max(1, $rules['magic_box_bonus_level']),
-            'magicBoxBonusChancePercent' => min(max(0, $rules['magic_box_bonus_chance_percent']), 100),
-            'mergePackMinLevel' => max(1, $rules['merge_pack_min_level']),
-            'mergePackChancePercent' => min(max(0, $rules['merge_pack_chance_percent']), 100),
-        ];
+            return [
+                'magicBoxPrimaryLevel' => max(1, $rules['magic_box_primary_level']),
+                'magicBoxBonusLevel' => max(1, $rules['magic_box_bonus_level']),
+                'magicBoxBonusChancePercent' => min(max(0, $rules['magic_box_bonus_chance_percent']), 100),
+                'mergePackMinLevel' => max(1, $rules['merge_pack_min_level']),
+                'mergePackChancePercent' => min(max(0, $rules['merge_pack_chance_percent']), 100),
+            ];
+        });
     }
 }
