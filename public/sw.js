@@ -1,5 +1,5 @@
-const CACHE_NAME = 'melody-merge-v2';
-const FONTS_CACHE = 'melody-fonts-v1';
+const CACHE_NAME = 'my-home-v1';
+const FONTS_CACHE = 'my-home-fonts-v1';
 
 const APP_SHELL = [
     '/',
