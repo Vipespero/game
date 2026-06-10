@@ -368,8 +368,117 @@ const shuffle = <T,>(items: T[]) => {
 
 const dateKey = (date = new Date()) => date.toISOString().slice(0, 10);
 
+const dailyMessages = [
+    'Eres mi persona favorita en todo el mundo.',
+    'Cada dia agradezco por tenerte en mi vida.',
+    'Tu sonrisa es mi cosa favorita.',
+    'Me haces querer ser mejor persona.',
+    'No hay nadie como tu, y eso me encanta.',
+    'Contigo todo es mas bonito.',
+    'Eres mi calma en medio del caos.',
+    'Me gusta todo de ti, sin excepciones.',
+    'Gracias por estar siempre ahi.',
+    'Tu felicidad es mi prioridad.',
+    'Eres mas fuerte de lo que crees.',
+    'Me inspire en ti para crear este juego.',
+    'Cada momento contigo vale oro.',
+    'Eres mi lugar seguro.',
+    'No necesito nada mas que tu.',
+    'Tu risa es mi sonido favorito.',
+    'Siempre voy a elegirte a ti.',
+    'Eres el mejor capitulo de mi historia.',
+    'Me haces sentir en casa.',
+    'Orgulloso de la mujer que eres.',
+    'Tu eres mi suerte.',
+    'Nunca me canso de ti.',
+    'Eres mi sol en dias nublados.',
+    'Mi corazon es tuyo, siempre.',
+    'La vida es mejor contigo.',
+    'Eres mi pensamiento favorito.',
+    'Tu existencia me hace feliz.',
+    'Gracias por ser tu.',
+    'Eres mi todo.',
+    'Te elijo hoy y siempre.',
+    'Tu amor me hace invencible.',
+];
+
+const getDailyMessage = (): string => {
+    const today = new Date();
+    const dayOfYear = Math.floor(
+        (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000,
+    );
+
+    return dailyMessages[dayOfYear % dailyMessages.length] ?? dailyMessages[0];
+};
+
 const canClaimDailyReward = (claimedAt?: string | null) => {
     return !claimedAt || claimedAt.slice(0, 10) !== dateKey();
+};
+
+let audioCtx: AudioContext | null = null;
+
+const getAudioCtx = (): AudioContext => {
+    if (!audioCtx) {
+        audioCtx = new AudioContext();
+    }
+
+    return audioCtx;
+};
+
+const playTone = (frequency: number, duration: number, type: OscillatorType = 'sine', volume = 0.12) => {
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = frequency;
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+    } catch {
+        /* audio not available */
+    }
+};
+
+const sfx = {
+    merge: () => {
+        playTone(523, 0.12, 'sine', 0.1);
+        setTimeout(() => playTone(659, 0.12, 'sine', 0.1), 60);
+    },
+    levelUp: () => {
+        playTone(523, 0.1, 'sine', 0.1);
+        setTimeout(() => playTone(659, 0.1, 'sine', 0.1), 80);
+        setTimeout(() => playTone(784, 0.15, 'sine', 0.12), 160);
+    },
+    packOpen: () => {
+        playTone(392, 0.08, 'triangle', 0.08);
+        setTimeout(() => playTone(523, 0.1, 'triangle', 0.08), 50);
+    },
+    cardReveal: () => {
+        playTone(880, 0.15, 'sine', 0.08);
+        setTimeout(() => playTone(1047, 0.2, 'sine', 0.06), 100);
+    },
+    magicBox: () => {
+        playTone(330, 0.12, 'triangle', 0.08);
+        setTimeout(() => playTone(440, 0.15, 'triangle', 0.08), 80);
+    },
+    claim: () => {
+        playTone(659, 0.1, 'sine', 0.1);
+        setTimeout(() => playTone(784, 0.12, 'sine', 0.1), 70);
+        setTimeout(() => playTone(988, 0.18, 'sine', 0.1), 140);
+    },
+    memoryMatch: () => {
+        playTone(784, 0.15, 'sine', 0.1);
+    },
+    memoryComplete: () => {
+        playTone(523, 0.1, 'sine', 0.1);
+        setTimeout(() => playTone(659, 0.1, 'sine', 0.1), 80);
+        setTimeout(() => playTone(784, 0.1, 'sine', 0.1), 160);
+        setTimeout(() => playTone(1047, 0.2, 'sine', 0.12), 240);
+    },
 };
 
 const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy: number, maxEnergy: number) => {
@@ -499,7 +608,7 @@ export default function MelodyMergePage({
     const [toastMessage, setToastMessage] = useState(
         offlineEnergyGain > 0
             ? `Recuperaste ${offlineEnergyGain} energia mientras no estabas.`
-            : `Hola ${auth?.user?.name ?? 'jugador'}, tu partida se guarda sola.`,
+            : getDailyMessage(),
     );
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(null);
@@ -760,6 +869,7 @@ export default function MelodyMergePage({
         setPackCardResults(nextResults);
         setIsPackOpened(true);
         setDismissedPackCards(0);
+        sfx.cardReveal();
     }, [collectedCards, duplicateHeartRewards, isPackOpened, notify, pendingPack]);
 
     const claimDailyReward = useCallback(() => {
@@ -770,6 +880,7 @@ export default function MelodyMergePage({
         setEnergy((value) => Math.min(maxEnergy, value + dailyReward.energy));
         setHearts((value) => value + dailyReward.hearts);
         triggerFeedback();
+        sfx.claim();
         queuePack(getPack('daily'));
         notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones.`);
     }, [dailyReward.energy, dailyReward.hearts, getPack, maxEnergy, notify, queuePack]);
@@ -807,6 +918,7 @@ export default function MelodyMergePage({
                 setEnergy((prev) => Math.min(maxEnergy, prev + gainedEnergy));
                 const levelPack = getPack(rewardPackTrigger ?? 'level');
                 queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
+                sfx.levelUp();
                 notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
             } else {
                 notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
@@ -843,6 +955,7 @@ export default function MelodyMergePage({
             next[to] = makeItem(newLevel);
             next[from] = null;
             triggerFeedback();
+            sfx.merge();
             addProgress(origin.level);
 
             if (newLevel >= rules.mergePackMinLevel && Math.random() * 100 < rules.mergePackChancePercent) {
@@ -878,6 +991,7 @@ export default function MelodyMergePage({
 
         setEnergy((value) => value - 1);
         triggerFeedback();
+        sfx.magicBox();
         notify('La caja magica dejo una semilla.');
     }, [energy, maxMergeItemLevel, notify, rules.magicBoxBonusChancePercent, rules.magicBoxBonusLevel, rules.magicBoxPrimaryLevel]);
 
@@ -891,6 +1005,7 @@ export default function MelodyMergePage({
 
         setHearts((value) => value - premiumPack.costHearts);
         triggerFeedback();
+        sfx.packOpen();
         queuePack(premiumPack);
     }, [getPack, hearts, notify, queuePack]);
 
@@ -953,8 +1068,10 @@ export default function MelodyMergePage({
                         setHearts((current) => current + rewardHearts);
                         setEnergy((current) => Math.min(maxEnergy, current + rewardEnergy));
                         triggerFeedback();
+                        sfx.memoryComplete();
                         notify(`Memory completo: +${rewardHearts} corazones y +${rewardEnergy} energia.`);
                     } else {
+                        sfx.memoryMatch();
                         notify(`Pareja encontrada: ${firstCard.item.name}.`);
                     }
 
@@ -981,6 +1098,7 @@ export default function MelodyMergePage({
         setHearts((value) => value + mission.reward.hearts);
         setEnergy((value) => Math.min(maxEnergy, value + mission.reward.energy));
         triggerFeedback();
+        sfx.claim();
         notify(`Mision completada: +${mission.reward.hearts} corazones${mission.reward.energy ? ` y +${mission.reward.energy} energia` : ''}.`);
     }, [claimedMissions, maxEnergy, missionDefinitions, notify]);
 
