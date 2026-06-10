@@ -12,7 +12,7 @@ import type {
     PlayerLevelDefinition,
 } from '@/types/game';
 
-export const boardSize = 25;
+export const boardSize = 30;
 
 export const fallbackGameConfig: GameConfig = {
     maxEnergy: 100,

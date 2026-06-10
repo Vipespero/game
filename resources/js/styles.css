@@ -147,10 +147,16 @@ button {
     outline: none;
     background: rgba(255, 255, 255, 0.78);
     color: var(--mm-ink);
+    color-scheme: light;
     font: inherit;
     font-size: 14px;
     font-weight: 800;
     padding: 0 13px;
+}
+
+.mm-auth__form input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    -webkit-text-fill-color: var(--mm-ink);
 }
 
 .mm-auth__form input:focus {
@@ -338,6 +344,11 @@ button {
     transform: scale(0.94);
 }
 
+.mm-logout.is-playing {
+    color: var(--mm-pink);
+    background: rgba(255, 114, 179, 0.12);
+}
+
 .mm-stat svg:first-child {
     color: var(--mm-pink);
 }
@@ -440,11 +451,11 @@ button {
 
 .mm-board {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     grid-template-rows: repeat(5, 1fr);
-    gap: 6px;
+    gap: 5px;
     width: 100%;
-    aspect-ratio: 1;
+    aspect-ratio: 6 / 5;
     border: 3px solid rgba(255, 255, 255, 0.86);
     border-radius: 20px;
     background:

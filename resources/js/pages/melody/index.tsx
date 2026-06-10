@@ -9,6 +9,7 @@ import {
     Gift,
     Heart,
     LogOut,
+    Music,
     PackageOpen,
     RotateCcw,
     Scissors,
@@ -20,6 +21,7 @@ import {
 import { nanoid } from 'nanoid';
 import packImageUrl from '../../assets/sanrio_pack.png?url';
 import { sfx } from '@/lib/sounds';
+import { music } from '@/lib/music';
 import {
     boardSize,
     fallbackGameConfig,
@@ -64,9 +66,9 @@ const makeItem = (level = 1): BoardItem => ({
 
 const defaultBoard = () => {
     const next = emptyBoard();
-    next[7] = makeItem(1);
-    next[12] = makeItem(1);
-    next[17] = makeItem(2);
+    next[8] = makeItem(1);
+    next[14] = makeItem(1);
+    next[21] = makeItem(2);
     return next;
 };
 
@@ -248,6 +250,7 @@ export default function MelodyMergePage({
         item: BoardItem;
     } | null>(null);
     const [activeTab, setActiveTab] = useState<MelodyTab>(() => normalizeTab(gameSave?.activeTab));
+    const [musicPlaying, setMusicPlaying] = useState(() => music.getState().playing);
     const [toastMessage, setToastMessage] = useState(
         offlineEnergyGain > 0
             ? `Recuperaste ${offlineEnergyGain} energia mientras no estabas.`
@@ -352,6 +355,12 @@ export default function MelodyMergePage({
     useEffect(() => {
         const timer = window.setTimeout(() => setShowSplash(false), 1800);
         return () => window.clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        music.load('/bg-music.mp3');
+        const unsub = music.subscribe((state) => setMusicPlaying(state.playing));
+        return unsub;
     }, []);
 
     useEffect(() => {
@@ -601,6 +610,8 @@ export default function MelodyMergePage({
     const mergeCells = useCallback((from: number, to: number) => {
         if (from === to) return;
 
+        let mergedLevel: number | null = null;
+
         setBoard((current) => {
             const origin = current[from];
             const target = current[to];
@@ -624,16 +635,21 @@ export default function MelodyMergePage({
             const newLevel = Math.min(origin.level + 1, maxMergeItemLevel);
             next[to] = makeItem(newLevel);
             next[from] = null;
+            mergedLevel = origin.level;
+            return next;
+        });
+
+        if (mergedLevel !== null) {
             triggerFeedback();
             sfx.merge();
-            addProgress(origin.level);
+            addProgress(mergedLevel);
+
+            const newLevel = Math.min(mergedLevel + 1, maxMergeItemLevel);
 
             if (newLevel >= rules.mergePackMinLevel && Math.random() * 100 < rules.mergePackChancePercent) {
                 queuePack(getPack('merge'));
             }
-
-            return next;
-        });
+        }
     }, [addProgress, getPack, maxMergeItemLevel, notify, queuePack, rules.mergePackChancePercent, rules.mergePackMinLevel]);
 
     const generateItem = useCallback(() => {
@@ -690,7 +706,7 @@ export default function MelodyMergePage({
         setMemoryMatches(0);
         setMemoryMoves(0);
         setMemoryLocked(false);
-        notify('Nuevo tablero de Memory listo.');
+        notify('Nuevo tablero de Memoria listo.');
     }, [createMemoryDeck, notify]);
 
     const handleMemoryCardClick = useCallback((cardId: string) => {
@@ -739,7 +755,7 @@ export default function MelodyMergePage({
                         setEnergy((current) => Math.min(maxEnergy, current + rewardEnergy));
                         triggerFeedback();
                         sfx.memoryComplete();
-                        notify(`Memory completo: +${rewardHearts} corazones y +${rewardEnergy} energia.`);
+                        notify(`Memoria completo: +${rewardHearts} corazones y +${rewardEnergy} energia.`);
                     } else {
                         sfx.memoryMatch();
                         notify(`Pareja encontrada: ${firstCard.item.name}.`);
@@ -904,6 +920,9 @@ export default function MelodyMergePage({
                                 <Crown size={15} aria-hidden />
                                 <span>{playerLevel}</span>
                             </div>
+                            <button className={`mm-logout ${musicPlaying ? 'is-playing' : ''}`} onClick={() => music.toggle()} type="button">
+                                <Music size={15} aria-hidden />
+                            </button>
                             <button className="mm-logout" onClick={() => router.post('/logout')} type="button">
                                 <LogOut size={15} aria-hidden />
                             </button>
@@ -1116,7 +1135,7 @@ export default function MelodyMergePage({
                         <section className="mm-memory">
                             <div className="mm-memory__summary">
                                 <div>
-                                    <p className="mm-kicker">Memory</p>
+                                    <p className="mm-kicker">Memoria</p>
                                     <h2>{memoryProgress}% completo</h2>
                                 </div>
                                 <button onClick={resetMemoryGame} type="button">
@@ -1125,7 +1144,7 @@ export default function MelodyMergePage({
                                 </button>
                             </div>
 
-                            <div className="mm-memory__board" aria-label="Tablero de Memory">
+                            <div className="mm-memory__board" aria-label="Tablero de Memoria">
                                 {memoryDeck.map((card) => {
                                     const isFlipped = flippedMemoryCards.includes(card.id) || card.isMatched;
 
@@ -1165,6 +1184,10 @@ export default function MelodyMergePage({
                             <Wand2 size={19} aria-hidden />
                             <span>Merge</span>
                         </button>
+                        <button className={activeTab === 'memory' ? 'is-active' : ''} onClick={() => setActiveTab('memory')} type="button">
+                            <Brain size={19} aria-hidden />
+                            <span>Memoria</span>
+                        </button>
                         <button className={activeTab === 'album' ? 'is-active' : ''} onClick={() => setActiveTab('album')} type="button">
                             <Album size={19} aria-hidden />
                             <span>Album</span>
@@ -1172,10 +1195,6 @@ export default function MelodyMergePage({
                         <button className={activeTab === 'room' ? 'is-active' : ''} onClick={() => setActiveTab('room')} type="button">
                             <Gift size={19} aria-hidden />
                             <span>Sala</span>
-                        </button>
-                        <button className={activeTab === 'memory' ? 'is-active' : ''} onClick={() => setActiveTab('memory')} type="button">
-                            <Brain size={19} aria-hidden />
-                            <span>Memory</span>
                         </button>
                     </nav>
 

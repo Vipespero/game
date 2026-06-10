@@ -23,7 +23,7 @@ use Inertia\Response;
 
 class MelodyController extends Controller
 {
-    private const BOARD_SIZE = 25;
+    private const BOARD_SIZE = 30;
     private const MAX_ENERGY = 100;
     private const FALLBACK_MAX_ITEM_LEVEL = 20;
     private const MAX_PACK_CARDS = 3;
