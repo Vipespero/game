@@ -1,5 +1,5 @@
-const CACHE_NAME = 'my-home-v1';
-const FONTS_CACHE = 'my-home-fonts-v1';
+const CACHE_NAME = 'my-home-v2';
+const FONTS_CACHE = 'my-home-fonts-v2';
 
 const APP_SHELL = [
     '/',
@@ -7,10 +7,10 @@ const APP_SHELL = [
     '/favicon.ico',
     '/favicon.svg',
     '/apple-touch-icon.png',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
-    '/icons/maskable-192.png',
-    '/icons/maskable-512.png',
+    '/icons/icon-v2-192.png',
+    '/icons/icon-v2-512.png',
+    '/icons/maskable-v2-192.png',
+    '/icons/maskable-v2-512.png',
 ];
 
 const HASHED_RE = /\/(js|css|images|fonts|assets)\/[^/]+-[a-f0-9]{6,}\.\w+$/;
