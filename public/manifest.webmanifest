@@ -1,7 +1,7 @@
 {
-    "name": "Melody Merge",
-    "short_name": "Melody",
-    "description": "Juego mobile de fusion y coleccion de cartas.",
+    "name": "My Home",
+    "short_name": "My Home",
+    "description": "Nuestro juego privado de fusion y cartas.",
     "id": "/",
     "start_url": "/?source=pwa",
     "scope": "/",

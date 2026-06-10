@@ -14,12 +14,14 @@ import {
     RotateCcw,
     Scissors,
     Settings,
+    SkipForward,
     Sparkles,
     Trophy,
     Wand2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import packImageUrl from '../../assets/sanrio_pack.png?url';
+import logoUrl from '../../assets/logo.png?url';
 import { sfx } from '@/lib/sounds';
 import { music } from '@/lib/music';
 import {
@@ -358,7 +360,7 @@ export default function MelodyMergePage({
     }, []);
 
     useEffect(() => {
-        music.load('/bg-music.mp3');
+        void music.init();
         const unsub = music.subscribe((state) => setMusicPlaying(state.playing));
         return unsub;
     }, []);
@@ -879,15 +881,15 @@ export default function MelodyMergePage({
 
     return (
         <>
-            <Head title="Melody Merge" />
+            <Head title="My Home" />
 
             <main className="mm-app">
                 {showSplash && (
                     <div className="mm-splash">
                         <div className="mm-splash__icon">
-                            <Sparkles size={32} aria-hidden />
+                            <img alt="My Home" className="mm-splash__logo" src={logoUrl} />
                         </div>
-                        <h1>Melody Merge</h1>
+                        <h1>My Home</h1>
                         <p>{getDailyMessage()}</p>
                         <div className="mm-splash__loader">
                             <span />
@@ -899,11 +901,11 @@ export default function MelodyMergePage({
                     <header className="mm-header">
                         <div className="mm-brand">
                             <div className="mm-brand__mark">
-                                <Sparkles size={18} aria-hidden />
+                                <img alt="My Home" className="mm-brand__logo" src={logoUrl} />
                             </div>
                             <div>
                                 <p className="mm-kicker">Juego privado</p>
-                                <h1>Melody Merge</h1>
+                                <h1>My Home</h1>
                             </div>
                         </div>
 
@@ -923,6 +925,11 @@ export default function MelodyMergePage({
                             <button className={`mm-logout ${musicPlaying ? 'is-playing' : ''}`} onClick={() => music.toggle()} type="button">
                                 <Music size={15} aria-hidden />
                             </button>
+                            {musicPlaying && (
+                                <button className="mm-logout" onClick={() => music.next()} type="button">
+                                    <SkipForward size={15} aria-hidden />
+                                </button>
+                            )}
                             <button className="mm-logout" onClick={() => router.post('/logout')} type="button">
                                 <LogOut size={15} aria-hidden />
                             </button>

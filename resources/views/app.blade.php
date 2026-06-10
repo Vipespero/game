@@ -8,8 +8,8 @@
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
-        <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'Melody Merge') }}">
-        <meta name="application-name" content="{{ config('app.name', 'Melody Merge') }}">
+        <meta name="apple-mobile-web-app-title" content="My Home">
+        <meta name="application-name" content="My Home">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -29,11 +29,11 @@
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: #fceef7;
             }
 
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: #120a18;
             }
         </style>
 
