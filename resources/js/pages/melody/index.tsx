@@ -597,6 +597,7 @@ export default function MelodyMergePage({
     const [dismissedPackCards, setDismissedPackCards] = useState(0);
     const [packCardResults, setPackCardResults] = useState<PackCardResult[]>([]);
     const [assetsReady, setAssetsReady] = useState(false);
+    const [showSplash, setShowSplash] = useState(true);
     const [selectedCell, setSelectedCell] = useState<number | null>(null);
     const [draggedCell, setDraggedCell] = useState<number | null>(null);
     const [touchDrag, setTouchDrag] = useState<{
@@ -706,6 +707,11 @@ export default function MelodyMergePage({
         const timer = window.setTimeout(() => setToastMessage(''), 2600);
         return () => window.clearTimeout(timer);
     }, [toastMessage]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setShowSplash(false), 1800);
+        return () => window.clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -1219,6 +1225,19 @@ export default function MelodyMergePage({
             <Head title="Melody Merge" />
 
             <main className="mm-app">
+                {showSplash && (
+                    <div className="mm-splash">
+                        <div className="mm-splash__icon">
+                            <Sparkles size={32} aria-hidden />
+                        </div>
+                        <h1>Melody Merge</h1>
+                        <p>{getDailyMessage()}</p>
+                        <div className="mm-splash__loader">
+                            <span />
+                        </div>
+                    </div>
+                )}
+
                 <section className="mm-shell" aria-label="Melody Merge">
                     <header className="mm-header">
                         <div className="mm-brand">

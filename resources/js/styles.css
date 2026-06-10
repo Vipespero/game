@@ -2616,6 +2616,103 @@ button {
     box-shadow: 0 14px 26px rgba(120, 65, 132, 0.2);
 }
 
+.mm-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 14px;
+    background:
+        radial-gradient(circle at 50% 30%, rgba(255, 230, 131, 0.3), transparent 50%),
+        linear-gradient(135deg, #ffe5f1 0%, #f7edff 48%, #e6f8ff 100%);
+    animation: mm-splash-out 400ms ease 1400ms both;
+}
+
+.mm-splash__icon {
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border: 3px solid #ffffff;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.9) 0 6px, transparent 7px),
+        linear-gradient(145deg, var(--mm-pink), var(--mm-lilac));
+    color: #ffffff;
+    box-shadow: 0 14px 32px rgba(255, 120, 180, 0.36);
+    animation: mm-splash-bounce 600ms ease-in-out;
+}
+
+.mm-splash h1 {
+    margin: 0;
+    color: var(--mm-ink);
+    font-size: 28px;
+    font-weight: 900;
+}
+
+.mm-splash p {
+    margin: 0;
+    max-width: 280px;
+    color: var(--mm-muted);
+    font-size: 13px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.mm-splash__loader {
+    width: 120px;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.mm-splash__loader span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--mm-pink), var(--mm-gold));
+    transform-origin: left;
+    animation: mm-splash-load 1400ms ease-in-out;
+}
+
+@keyframes mm-splash-bounce {
+    0% {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.08);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes mm-splash-load {
+    from {
+        transform: scaleX(0);
+    }
+
+    to {
+        transform: scaleX(1);
+    }
+}
+
+@keyframes mm-splash-out {
+    to {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .mm-magic-box,
     .mm-envelope,
@@ -2626,7 +2723,10 @@ button {
     .mm-reward-card,
     .mm-card-stack,
     .mm-daily-modal__panel,
-    .mm-card-viewer__panel {
+    .mm-card-viewer__panel,
+    .mm-splash,
+    .mm-splash__icon,
+    .mm-splash__loader span {
         animation: none;
     }
 }
