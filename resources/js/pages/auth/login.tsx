@@ -46,7 +46,7 @@ export default function LoginPage({ cardCount = 0, mode = 'login', canRegister =
                         </span>
                         <div>
                             <p className="mm-kicker">Juego privado</p>
-                            <h1>Melody Merge</h1>
+                            <h1>My Home</h1>
                         </div>
                     </div>
 

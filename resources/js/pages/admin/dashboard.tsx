@@ -57,7 +57,7 @@ export default function AdminDashboard({ stats, catalogReady, players }: AdminDa
                                 <ShieldCheck size={18} aria-hidden />
                             </div>
                             <div>
-                                <p className="mm-kicker">Melody Merge</p>
+                                <p className="mm-kicker">My Home</p>
                                 <h1>Admin</h1>
                             </div>
                         </div>

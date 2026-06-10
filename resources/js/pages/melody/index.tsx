@@ -897,7 +897,7 @@ export default function MelodyMergePage({
                     </div>
                 )}
 
-                <section className="mm-shell" aria-label="Melody Merge">
+                <section className="mm-shell" aria-label="My Home">
                     <header className="mm-header">
                         <div className="mm-brand">
                             <div className="mm-brand__mark">
