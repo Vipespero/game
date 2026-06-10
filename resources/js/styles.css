@@ -2495,6 +2495,59 @@ button {
     opacity: 0.4;
 }
 
+.mm-admin__edit-card audio {
+    width: 100%;
+    height: 40px;
+    border-radius: 10px;
+}
+
+.mm-admin__delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 0 10px;
+}
+
+.mm-admin__delete-btn:active {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.mm-admin__notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--mm-line);
+    border-radius: 12px;
+    background: var(--mm-cell-bg);
+    color: var(--mm-muted);
+    padding: 14px;
+}
+
+.mm-admin__notice strong {
+    display: block;
+    color: var(--mm-ink);
+    font-size: 14px;
+}
+
+.mm-admin__notice span {
+    display: block;
+    font-size: 12px;
+    line-height: 1.4;
+    margin-top: 2px;
+}
+
+.mm-admin__notice svg {
+    flex-shrink: 0;
+    color: var(--mm-pink);
+}
+
 .mm-admin__form {
     display: grid;
     gap: 12px;

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\BalanceController as AdminBalanceController;
 use App\Http\Controllers\Admin\CardController as AdminCardController;
+use App\Http\Controllers\Admin\MusicController as AdminMusicController;
 use App\Http\Controllers\MelodyController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,10 @@ Route::middleware('auth')->group(function () {
         Route::get('admin/cards/{card}/edit', [AdminCardController::class, 'edit'])->name('admin.cards.edit');
         Route::put('admin/cards/{card}', [AdminCardController::class, 'update'])->name('admin.cards.update');
         Route::delete('admin/cards/{card}', [AdminCardController::class, 'destroy'])->name('admin.cards.destroy');
+
+        Route::get('admin/music', [AdminMusicController::class, 'index'])->name('admin.music.index');
+        Route::post('admin/music', [AdminMusicController::class, 'store'])->name('admin.music.store');
+        Route::delete('admin/music', [AdminMusicController::class, 'destroy'])->name('admin.music.destroy');
     });
 });
 
