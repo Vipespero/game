@@ -592,6 +592,7 @@ export default function MelodyMergePage({
     const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(gameSave?.dailyRewardClaimedAt));
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
     const [selectedAlbumCard, setSelectedAlbumCard] = useState<MelodyCard | null>(null);
+    const [albumFilter, setAlbumFilter] = useState<CardRarity | 'all'>('all');
     const [isPackOpened, setIsPackOpened] = useState(false);
     const [dismissedPackCards, setDismissedPackCards] = useState(0);
     const [packCardResults, setPackCardResults] = useState<PackCardResult[]>([]);
@@ -744,6 +745,28 @@ export default function MelodyMergePage({
 
     const xpGoal = getPlayerLevel(playerLevel).xpRequired;
     const albumPercent = cardPool.length > 0 ? Math.round((collectedCards.length / cardPool.length) * 100) : 0;
+    const collectedIds = useMemo(() => new Set(collectedCards.map((card) => card.id)), [collectedCards]);
+    const filteredAlbumCards = useMemo(
+        () => albumFilter === 'all' ? cardPool : cardPool.filter((card) => card.rarity === albumFilter),
+        [albumFilter, cardPool],
+    );
+    const rarityStats = useMemo(() => {
+        const stats: Record<string, { owned: number; total: number }> = {};
+
+        cardPool.forEach((card) => {
+            if (!stats[card.rarity]) {
+                stats[card.rarity] = { owned: 0, total: 0 };
+            }
+
+            stats[card.rarity].total += 1;
+
+            if (collectedIds.has(card.id)) {
+                stats[card.rarity].owned += 1;
+            }
+        });
+
+        return stats;
+    }, [cardPool, collectedIds]);
     const savePayload = useMemo<MelodyGameSave>(() => ({
         board,
         energy,
@@ -1331,33 +1354,61 @@ export default function MelodyMergePage({
                                 </button>
                             </div>
 
-                            <div className="mm-card-grid">
-                                {cardPool.map((card) => {
-                                    const owned = collectedCards.some((ownedCard) => ownedCard.id === card.id);
+                            <div className="mm-album__filters">
+                                <button
+                                    className={albumFilter === 'all' ? 'is-active' : ''}
+                                    onClick={() => setAlbumFilter('all')}
+                                    type="button"
+                                >
+                                    Todas <span>{collectedCards.length}/{cardPool.length}</span>
+                                </button>
+                                {(['C', 'R', 'SR', 'SSR', 'UR', 'SECRET'] as const).map((rarity) => {
+                                    const stat = rarityStats[rarity];
 
-                                            return (
-                                                <button
-                                                    className={`mm-card ${owned ? 'is-owned' : ''} rarity-${card.rarity.toLowerCase()}`}
-                                                    disabled={!owned}
-                                                    key={card.id}
-                                                    onClick={() => setSelectedAlbumCard(card)}
-                                                    type="button"
-                                                >
-                                                    <div className="mm-card__thumb">
-                                                        {owned ? (
-                                                            <img alt={card.name} src={card.imageUrl} />
-                                                        ) : (
-                                                            <span>?</span>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <strong>{owned ? card.name : 'Carta oculta'}</strong>
-                                                        <span>{card.collection}</span>
-                                                    </div>
-                                                    <small>{card.rarity}</small>
-                                                </button>
-                                            );
-                                        })}
+                                    if (!stat) {
+                                        return null;
+                                    }
+
+                                    return (
+                                        <button
+                                            className={`${albumFilter === rarity ? 'is-active' : ''} rarity-${rarity.toLowerCase()}`}
+                                            key={rarity}
+                                            onClick={() => setAlbumFilter(rarity)}
+                                            type="button"
+                                        >
+                                            {rarity} <span>{stat.owned}/{stat.total}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="mm-card-grid">
+                                {filteredAlbumCards.map((card) => {
+                                    const owned = collectedIds.has(card.id);
+
+                                    return (
+                                        <button
+                                            className={`mm-card ${owned ? 'is-owned' : ''} rarity-${card.rarity.toLowerCase()}`}
+                                            disabled={!owned}
+                                            key={card.id}
+                                            onClick={() => setSelectedAlbumCard(card)}
+                                            type="button"
+                                        >
+                                            <div className="mm-card__thumb">
+                                                {owned ? (
+                                                    <img alt={card.name} src={card.imageUrl} />
+                                                ) : (
+                                                    <span>?</span>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <strong>{owned ? card.name : 'Carta oculta'}</strong>
+                                                <span>{card.collection}</span>
+                                            </div>
+                                            <small>{card.rarity}</small>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </section>
                     )}
