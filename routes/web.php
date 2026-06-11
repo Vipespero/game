@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\BalanceController as AdminBalanceController;
 use App\Http\Controllers\Admin\CardController as AdminCardController;
+use App\Http\Controllers\Admin\CollageController as AdminCollageController;
 use App\Http\Controllers\Admin\MusicController as AdminMusicController;
 use App\Http\Controllers\MelodyController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,10 @@ Route::middleware('auth')->group(function () {
         Route::get('admin/music', [AdminMusicController::class, 'index'])->name('admin.music.index');
         Route::post('admin/music', [AdminMusicController::class, 'store'])->name('admin.music.store');
         Route::delete('admin/music', [AdminMusicController::class, 'destroy'])->name('admin.music.destroy');
+
+        Route::get('admin/collage', [AdminCollageController::class, 'index'])->name('admin.collage.index');
+        Route::post('admin/collage', [AdminCollageController::class, 'store'])->name('admin.collage.store');
+        Route::delete('admin/collage/{collage}', [AdminCollageController::class, 'destroy'])->name('admin.collage.destroy');
     });
 });
 

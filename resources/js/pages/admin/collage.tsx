@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { Music, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { Image, ShieldCheck, Trash2, Upload } from 'lucide-react';
 
-type Track = {
+type CollagePhoto = {
+    id: number;
     filename: string;
+    label: string | null;
     url: string;
-    size: number;
+    piecesCount: number;
+    usedPieces: number;
+    canDelete: boolean;
 };
 
-type MusicPageProps = {
-    tracks: Track[];
+type CollagePageProps = {
+    photos: CollagePhoto[];
 };
 
-export default function AdminMusic({ tracks }: MusicPageProps) {
+export default function AdminCollage({ photos }: CollagePageProps) {
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
+    const [label, setLabel] = useState('');
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -26,29 +31,34 @@ export default function AdminMusic({ tracks }: MusicPageProps) {
 
         setUploading(true);
         const formData = new FormData();
-        formData.append('track', file);
+        formData.append('photo', file);
+        formData.append('label', label);
 
-        router.post('/admin/music', formData, {
+        router.post('/admin/collage', formData, {
             onFinish: () => {
                 setUploading(false);
                 setFile(null);
+                setLabel('');
             },
         });
     };
 
-    const remove = (filename: string) => {
-        if (window.confirm(`Eliminar ${filename}?`)) {
-            router.delete('/admin/music', {
-                data: { filename },
-            });
+    const remove = (photo: CollagePhoto) => {
+        if (!photo.canDelete) {
+            window.alert('Esta foto ya tiene piezas desbloqueadas y no se puede eliminar.');
+            return;
+        }
+
+        if (window.confirm(`Eliminar ${photo.label || photo.filename}?`)) {
+            router.delete(`/admin/collage/${photo.id}`);
         }
     };
 
     return (
         <>
-            <Head title="Musica" />
+            <Head title="Collage" />
             <main className="mm-admin">
-                <section className="mm-admin__shell" aria-label="Musica">
+                <section className="mm-admin__shell" aria-label="Collage">
                     <header className="mm-admin__header">
                         <div className="mm-brand">
                             <div className="mm-brand__mark">
@@ -56,18 +66,18 @@ export default function AdminMusic({ tracks }: MusicPageProps) {
                             </div>
                             <div>
                                 <p className="mm-kicker">Admin</p>
-                                <h1>Musica</h1>
+                                <h1>Collage</h1>
                             </div>
                         </div>
                         <div className="mm-admin__actions">
                             <button onClick={() => router.visit('/admin')} type="button">
                                 Panel
                             </button>
+                            <button onClick={() => router.visit('/admin/music')} type="button">
+                                Musica
+                            </button>
                             <button onClick={() => router.visit('/admin/balance')} type="button">
                                 Balance
-                            </button>
-                            <button onClick={() => router.visit('/admin/collage')} type="button">
-                                Collage
                             </button>
                         </div>
                     </header>
@@ -76,18 +86,27 @@ export default function AdminMusic({ tracks }: MusicPageProps) {
                         <div className="mm-admin__panel-head">
                             <div>
                                 <p className="mm-kicker">Subir</p>
-                                <h2>Agregar cancion</h2>
+                                <h2>Agregar foto</h2>
                                 <span className="mm-admin__hint">
-                                    Formatos: MP3, OGG, WAV, M4A. Maximo 10MB. Se reproduce en loop infinito con salto aleatorio.
+                                    Cada foto agrega 16 piezas nuevas al recuerdo. Formatos: JPG, PNG, WEBP. Maximo 12MB.
                                 </span>
                             </div>
                         </div>
 
                         <form className="mm-admin__form" onSubmit={submit}>
                             <label>
-                                <span>Archivo de audio</span>
+                                <span>Nombre opcional</span>
                                 <input
-                                    accept=".mp3,.ogg,.wav,.m4a,audio/*"
+                                    onChange={(event) => setLabel(event.target.value)}
+                                    placeholder="Nuestro viaje"
+                                    type="text"
+                                    value={label}
+                                />
+                            </label>
+                            <label>
+                                <span>Foto</span>
+                                <input
+                                    accept=".jpg,.jpeg,.png,.webp,image/*"
                                     onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                                     type="file"
                                 />
@@ -97,13 +116,9 @@ export default function AdminMusic({ tracks }: MusicPageProps) {
                                     {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
                                 </p>
                             )}
-                            <button
-                                className="mm-auth__submit"
-                                disabled={!file || uploading}
-                                type="submit"
-                            >
+                            <button className="mm-auth__submit" disabled={!file || uploading} type="submit">
                                 <Upload size={16} aria-hidden />
-                                <span>{uploading ? 'Subiendo...' : 'Subir cancion'}</span>
+                                <span>{uploading ? 'Subiendo...' : 'Subir foto'}</span>
                             </button>
                         </form>
                     </section>
@@ -111,44 +126,47 @@ export default function AdminMusic({ tracks }: MusicPageProps) {
                     <section className="mm-admin__panel">
                         <div className="mm-admin__panel-head">
                             <div>
-                                <p className="mm-kicker">Biblioteca</p>
-                                <h2>{tracks.length} canciones</h2>
+                                <p className="mm-kicker">Fotos</p>
+                                <h2>{photos.length} recuerdos</h2>
                                 <span className="mm-admin__hint">
-                                    Las canciones se reproducen en orden aleatorio. El juego escoge una al azar al iniciar y salta a otra diferente cuando termina.
+                                    Una foto no se puede eliminar si alguien ya desbloqueo al menos una pieza.
                                 </span>
                             </div>
                         </div>
 
-                        {tracks.length === 0 ? (
+                        {photos.length === 0 ? (
                             <div className="mm-admin__notice">
-                                <Music size={18} aria-hidden />
+                                <Image size={18} aria-hidden />
                                 <div>
-                                    <strong>Sin canciones</strong>
-                                    <span>Sube tu primera cancion para que suene de fondo en el juego.</span>
+                                    <strong>Sin fotos</strong>
+                                    <span>Sube una foto para que los sobres empiecen a revelar piezas del collage.</span>
                                 </div>
                             </div>
                         ) : (
                             <div className="mm-admin__list">
-                                {tracks.map((track, index) => (
-                                    <article className="mm-admin__edit-card" key={track.filename}>
+                                {photos.map((photo) => (
+                                    <article className="mm-admin__edit-card" key={photo.id}>
                                         <div className="mm-admin__card-head">
                                             <div>
-                                                <strong>{track.filename}</strong>
-                                                <span>{track.size} MB</span>
+                                                <strong>{photo.label || photo.filename}</strong>
+                                                <span>{photo.usedPieces}/{photo.piecesCount} piezas usadas</span>
                                             </div>
                                             <button
                                                 className="mm-admin__delete-btn"
-                                                onClick={() => remove(track.filename)}
+                                                disabled={!photo.canDelete}
+                                                onClick={() => remove(photo)}
                                                 type="button"
                                             >
                                                 <Trash2 size={14} aria-hidden />
                                                 Eliminar
                                             </button>
                                         </div>
-                                        <audio controls preload="none" src={track.url} />
-                                        <p className="mm-admin__hint">
-                                            Pista {index + 1} — se reproduce cuando el juego la escoge al azar.
-                                        </p>
+                                        <img alt={photo.label || photo.filename} className="mm-admin__photo-preview" src={photo.url} />
+                                        {!photo.canDelete && (
+                                            <p className="mm-admin__hint">
+                                                Protegida: ya hay avance guardado con esta foto.
+                                            </p>
+                                        )}
                                     </article>
                                 ))}
                             </div>

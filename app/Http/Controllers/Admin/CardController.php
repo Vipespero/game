@@ -7,6 +7,7 @@ use App\Models\Card;
 use App\Models\CardRarity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -46,6 +47,8 @@ class CardController extends Controller
     {
         Card::query()->create($this->validated($request));
 
+        $this->clearGameCache();
+
         return to_route('admin.cards.index');
     }
 
@@ -61,6 +64,8 @@ class CardController extends Controller
     {
         $card->update($this->validated($request, $card));
 
+        $this->clearGameCache();
+
         return to_route('admin.cards.index');
     }
 
@@ -68,7 +73,14 @@ class CardController extends Controller
     {
         $card->update(['is_active' => false]);
 
+        $this->clearGameCache();
+
         return to_route('admin.cards.index');
+    }
+
+    private function clearGameCache(): void
+    {
+        Cache::forget('game.cards');
     }
 
     private function validated(Request $request, ?Card $card = null): array

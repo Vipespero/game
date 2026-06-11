@@ -41,6 +41,9 @@ export default function AdminCards({ cards, catalogReady }: AdminCardsProps) {
                             <button onClick={() => router.visit('/admin')} type="button">
                                 Panel
                             </button>
+                            <button onClick={() => router.visit('/admin/collage')} type="button">
+                                Collage
+                            </button>
                         </div>
                     </header>
 

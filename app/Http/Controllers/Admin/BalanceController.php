@@ -12,6 +12,7 @@ use App\Models\Mission;
 use App\Models\PlayerLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -129,7 +130,25 @@ class BalanceController extends Controller
             }
         });
 
+        $this->clearGameCache();
+
         return to_route('admin.balance.edit');
+    }
+
+    private function clearGameCache(): void
+    {
+        foreach ([
+            'game.card_rarities',
+            'game.config',
+            'game.max_item_level',
+            'game.merge_items',
+            'game.missions',
+            'game.packs',
+            'game.player_levels',
+            'game.rules',
+        ] as $key) {
+            Cache::forget($key);
+        }
     }
 
     private function ready(): bool

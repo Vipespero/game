@@ -17,6 +17,21 @@ export type MelodyCard = {
     isActive: boolean;
 };
 
+export type CollagePhoto = {
+    id: number;
+    label: string;
+    url: string;
+    piecesCount: number;
+};
+
+export type CollagePieceReward = {
+    id: string;
+    photoId: number;
+    pieceIndex: number;
+    label: string;
+    imageUrl: string;
+};
+
 export type MergeItemDefinition = {
     level: number;
     name: string;
@@ -94,6 +109,7 @@ export type PackReward = {
     id: string;
     label: string;
     cards: MelodyCard[];
+    collagePieces?: CollagePieceReward[];
 };
 
 export type PackCardResult = {
@@ -122,6 +138,7 @@ export type MelodyGameSave = {
     playerLevel?: number;
     mergeCount?: number;
     openedPacks?: SavedPackReward[];
+    collagePieces?: string[];
     activeTab?: MelodyTab;
     claimedMissions?: string[];
     dailyRewardClaimedAt?: string | null;
@@ -131,6 +148,7 @@ export type MelodyGameSave = {
 export type MelodyMergePageProps = {
     cards: Array<Omit<MelodyCard, 'imageUrl'>>;
     cardRarities?: CardRarityDefinition[];
+    collagePhotos?: CollagePhoto[];
     gameConfig?: GameConfig;
     gamePacks?: GamePackDefinition[];
     gameRules?: GameRules;

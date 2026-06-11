@@ -55,6 +55,11 @@ class GameSave extends Model
         return $this->hasMany(GameSaveClaimedMission::class);
     }
 
+    public function collagePieces(): HasMany
+    {
+        return $this->hasMany(GameSaveCollagePiece::class);
+    }
+
     public function toGameState(): array
     {
         $board = array_fill(0, self::BOARD_SIZE, null);
@@ -91,6 +96,10 @@ class GameSave extends Model
             'activeTab' => $this->active_tab,
             'claimedMissions' => $this->claimedMissions
                 ->pluck('mission_id')
+                ->values()
+                ->all(),
+            'collagePieces' => $this->collagePieces
+                ->pluck('piece_id')
                 ->values()
                 ->all(),
             'dailyRewardClaimedAt' => $this->daily_reward_claimed_at?->toISOString(),

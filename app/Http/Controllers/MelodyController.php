@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Card;
 use App\Models\CardRarity;
+use App\Models\CollagePhoto;
 use App\Models\GamePack;
 use App\Models\GameRule;
 use App\Models\GameSave;
@@ -28,17 +29,19 @@ class MelodyController extends Controller
     private const FALLBACK_MAX_ITEM_LEVEL = 20;
     private const MAX_PACK_CARDS = 3;
     private const MAX_PACK_HISTORY = 120;
+    private const MAX_COLLAGE_PIECES = 480;
     private const VALID_TABS = ['merge', 'album', 'room', 'memory'];
     public function show(Request $request): Response
     {
         $gameSave = $request->user()
             ->gameSave()
-            ->with(['boardItems', 'packs.cards', 'claimedMissions'])
+            ->with(['boardItems', 'packs.cards', 'claimedMissions', 'collagePieces'])
             ->first();
 
         return Inertia::render('melody/index', [
             'cards' => $this->activeCards(),
             'cardRarities' => $this->activeCardRarities(),
+            'collagePhotos' => $this->collagePhotos(),
             'gameConfig' => $this->gameConfig(),
             'gamePacks' => $this->activeGamePacks(),
             'gameRules' => $this->gameRules(),
@@ -80,6 +83,8 @@ class MelodyController extends Controller
             'state.activeTab' => ['sometimes', Rule::in(self::VALID_TABS)],
             'state.claimedMissions' => ['sometimes', 'array', 'max:12'],
             'state.claimedMissions.*' => ['string', 'max:40'],
+            'state.collagePieces' => ['sometimes', 'array', 'max:'.self::MAX_COLLAGE_PIECES],
+            'state.collagePieces.*' => ['string', 'regex:/^[1-9][0-9]*:(0[0-9]|1[0-5])$/'],
             'state.dailyRewardClaimedAt' => ['nullable', 'date'],
             'state.lastSeenAt' => ['nullable', 'date'],
         ]);
@@ -104,6 +109,7 @@ class MelodyController extends Controller
             $this->syncBoard($gameSave, $state['board']);
             $this->syncPacks($gameSave, $state['openedPacks']);
             $this->syncClaimedMissions($gameSave, $state['claimedMissions']);
+            $this->syncCollagePieces($gameSave, $state['collagePieces']);
         });
 
         return response()->json([
@@ -135,6 +141,11 @@ class MelodyController extends Controller
             'openedPacks' => $openedPacks,
             'activeTab' => Arr::get($state, 'activeTab', 'merge'),
             'claimedMissions' => array_values(array_unique(Arr::get($state, 'claimedMissions', []))),
+            'collagePieces' => collect(Arr::get($state, 'collagePieces', []))
+                ->unique()
+                ->take(self::MAX_COLLAGE_PIECES)
+                ->values()
+                ->all(),
             'dailyRewardClaimedAt' => Arr::get($state, 'dailyRewardClaimedAt'),
             'lastSeenAt' => now()->toISOString(),
         ];
@@ -216,6 +227,19 @@ class MelodyController extends Controller
         );
     }
 
+    private function syncCollagePieces(GameSave $gameSave, array $pieces): void
+    {
+        $gameSave->collagePieces()->delete();
+
+        $gameSave->collagePieces()->createMany(
+            collect($pieces)
+                ->unique()
+                ->map(fn (string $pieceId): array => ['piece_id' => $pieceId])
+                ->values()
+                ->all(),
+        );
+    }
+
     private function activeCards(): array
     {
         if (! Schema::hasTable('cards')) {
@@ -230,6 +254,19 @@ class MelodyController extends Controller
                 ->map(fn (Card $card): array => $card->toGameCard())
                 ->all();
         });
+    }
+
+    private function collagePhotos(): array
+    {
+        if (! Schema::hasTable('collage_photos')) {
+            return [];
+        }
+
+        return CollagePhoto::query()
+            ->orderBy('id')
+            ->get()
+            ->map(fn (CollagePhoto $photo): array => $photo->toGameCollage())
+            ->all();
     }
 
     private function maxItemLevel(): int

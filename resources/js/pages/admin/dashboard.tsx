@@ -71,6 +71,9 @@ export default function AdminDashboard({ stats, catalogReady, players }: AdminDa
                             <button onClick={() => router.visit('/admin/music')} type="button">
                                 Musica
                             </button>
+                            <button onClick={() => router.visit('/admin/collage')} type="button">
+                                Collage
+                            </button>
                             <button onClick={() => router.visit('/')} type="button">
                                 Juego
                             </button>

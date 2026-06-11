@@ -178,6 +178,7 @@ export default function AdminBalance({ ready, settings, rules, rarities, mission
                         </div>
                         <div className="mm-admin__actions">
                             <button onClick={() => router.visit('/admin/cards')} type="button">Cartas</button>
+                            <button onClick={() => router.visit('/admin/collage')} type="button">Collage</button>
                             <button onClick={() => router.visit('/admin')} type="button">Panel</button>
                             <button onClick={() => router.reload()} type="button"><RefreshCcw size={15} aria-hidden /></button>
                         </div>

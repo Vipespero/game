@@ -416,6 +416,52 @@ button {
     transition: width 200ms ease;
 }
 
+.mm-save {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 21px;
+    border: 1px solid rgba(159, 230, 208, 0.34);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.56);
+    color: var(--mm-muted);
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 4px 8px;
+}
+
+.mm-save span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--mm-mint);
+    box-shadow: 0 0 0 3px rgba(159, 230, 208, 0.18);
+}
+
+.mm-save--saving span {
+    background: var(--mm-gold);
+    box-shadow: 0 0 0 3px rgba(245, 191, 77, 0.18);
+    animation: mm-save-pulse 720ms ease-in-out infinite;
+}
+
+.mm-save--error {
+    border-color: rgba(239, 68, 68, 0.22);
+    color: #cf407f;
+}
+
+.mm-save--error span {
+    background: #ff6b8f;
+    box-shadow: 0 0 0 3px rgba(255, 107, 143, 0.16);
+}
+
+@keyframes mm-save-pulse {
+    50% {
+        transform: scale(0.72);
+    }
+}
+
 .mm-tabs {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -522,6 +568,17 @@ button {
 .mm-cell.is-selected {
     outline: 3px solid rgba(255, 120, 180, 0.52);
     outline-offset: -3px;
+    box-shadow:
+        0 0 0 5px rgba(255, 120, 180, 0.12),
+        0 12px 22px rgba(120, 65, 132, 0.18);
+    animation: mm-cell-selected 920ms ease-in-out infinite;
+}
+
+@keyframes mm-cell-selected {
+    50% {
+        outline-color: rgba(245, 191, 77, 0.7);
+        transform: translateY(-1px);
+    }
 }
 
 .mm-piece {
@@ -1004,6 +1061,13 @@ button {
     animation: mm-magic-idle 2.8s ease-in-out infinite;
 }
 
+.mm-magic-box:disabled {
+    cursor: default;
+    filter: saturate(0.78);
+    opacity: 0.68;
+    animation: none;
+}
+
 @keyframes mm-magic-idle {
     0%,
     100% {
@@ -1038,6 +1102,18 @@ button {
 
 .mm-magic-box:active {
     transform: translateY(2px) scale(0.98);
+}
+
+.mm-magic-box small {
+    position: relative;
+    z-index: 1;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.94);
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 4px 8px;
 }
 
 .mm-magic-box__lid {
@@ -1124,6 +1200,134 @@ button {
 
 .mm-album__filters button.is-active span {
     opacity: 1;
+}
+
+.mm-collage {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 12px;
+    border: 1px solid var(--mm-border);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.78), transparent 34%),
+        linear-gradient(145deg, rgba(255, 211, 231, 0.62), rgba(159, 230, 208, 0.28));
+    padding: 10px;
+    box-shadow: 0 14px 28px rgba(120, 65, 132, 0.12);
+}
+
+.mm-collage__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mm-collage__head h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.mm-collage__head > span {
+    display: grid;
+    place-items: center;
+    min-width: 46px;
+    height: 30px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--mm-pink);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.mm-collage__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--mm-collage-columns), minmax(0, 1fr));
+    gap: 4px;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.82);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.62);
+    aspect-ratio: var(--mm-collage-columns) / var(--mm-collage-rows);
+}
+
+.mm-collage__piece {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 58px;
+    place-items: center;
+    overflow: hidden;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 211, 231, 0.7)),
+        repeating-linear-gradient(45deg, rgba(255, 114, 179, 0.12) 0 8px, rgba(169, 135, 255, 0.12) 8px 16px);
+    color: var(--mm-muted);
+}
+
+.mm-collage__piece:disabled {
+    opacity: 1;
+}
+
+.mm-collage__piece.is-owned {
+    background-image: var(--mm-collage-image);
+    background-position: var(--mm-collage-x) var(--mm-collage-y);
+    background-repeat: no-repeat;
+    background-size: calc(var(--mm-collage-columns) * 100%) calc(var(--mm-collage-rows) * 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+}
+
+.mm-collage__piece::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 45%, rgba(63, 37, 73, 0.2));
+    content: '';
+    opacity: 0;
+}
+
+.mm-collage__piece.is-owned::after {
+    opacity: 1;
+}
+
+.mm-collage__piece span {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--mm-muted);
+    font-size: 11px;
+    font-weight: 900;
+    box-shadow: 0 8px 14px rgba(120, 65, 132, 0.12);
+}
+
+.mm-collage__piece.is-owned span {
+    align-self: end;
+    justify-self: end;
+    margin: 5px;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--mm-pink);
+}
+
+.mm-collage__piece strong {
+    position: absolute;
+    right: 5px;
+    left: 5px;
+    top: 5px;
+    z-index: 1;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.84);
+    color: var(--mm-ink);
+    font-size: 8px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 4px 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .mm-card-grid {
@@ -1961,6 +2165,10 @@ button {
     background: linear-gradient(135deg, var(--mm-lilac), #8d6cd9);
 }
 
+.mm-reward-card--collage em {
+    background: linear-gradient(135deg, var(--mm-mint), var(--mm-blue));
+}
+
 .mm-reward-card strong {
     position: relative;
     z-index: 1;
@@ -2075,10 +2283,13 @@ button {
 }
 
 .mm-admin {
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
     background: var(--mm-bg);
     color: var(--mm-ink);
     padding: max(8px, env(safe-area-inset-top)) 8px max(12px, env(safe-area-inset-bottom));
@@ -2089,6 +2300,8 @@ button {
     gap: 10px;
     width: min(100%, 430px);
     margin: 0 auto;
+    padding-bottom: 18px;
+    touch-action: pan-y;
 }
 
 .mm-admin__header,
@@ -2501,6 +2714,15 @@ button {
     border-radius: 10px;
 }
 
+.mm-admin__photo-preview {
+    width: 100%;
+    max-height: 260px;
+    border: 2px solid rgba(255, 255, 255, 0.84);
+    border-radius: 14px;
+    object-fit: cover;
+    box-shadow: 0 12px 24px rgba(120, 65, 132, 0.14);
+}
+
 .mm-admin__delete-btn {
     display: inline-flex;
     align-items: center;
@@ -2697,7 +2919,7 @@ button {
     gap: 18px;
     padding: 28px;
     background: var(--mm-bg);
-    animation: mm-splash-out 420ms ease 3780ms both;
+    animation: mm-splash-out 320ms ease 2080ms both;
 }
 
 .mm-splash__icon {
@@ -2754,7 +2976,7 @@ button {
     border-radius: inherit;
     background: linear-gradient(90deg, var(--mm-pink), var(--mm-gold));
     transform-origin: left;
-    animation: mm-splash-load 3780ms ease-in-out;
+    animation: mm-splash-load 2080ms ease-in-out;
 }
 
 @keyframes mm-splash-bounce {
@@ -2801,6 +3023,8 @@ button {
     .mm-card-stack,
     .mm-daily-modal__panel,
     .mm-card-viewer__panel,
+    .mm-cell.is-selected,
+    .mm-save--saving span,
     .mm-splash,
     .mm-splash__icon,
     .mm-splash__loader span {

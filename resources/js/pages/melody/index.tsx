@@ -45,6 +45,8 @@ import {
 import type {
     BoardItem,
     CardRarity,
+    CollagePhoto,
+    CollagePieceReward,
     MelodyCard,
     MergeItemDefinition,
     CardRarityDefinition,
@@ -124,6 +126,28 @@ const shuffle = <T,>(items: T[]) => {
 };
 
 const dateKey = (date = new Date()) => date.toISOString().slice(0, 10);
+const collageColumns = 4;
+const collageRowCount = 4;
+
+const normalizeCollagePieces = (pieces?: string[]) => {
+    if (!Array.isArray(pieces)) {
+        return [];
+    }
+
+    return [...new Set(pieces)].filter((piece) => /^[1-9][0-9]*:(0[0-9]|1[0-5])$/.test(piece));
+};
+
+const collagePieceId = (photoId: number, pieceIndex: number) => `${photoId}:${String(pieceIndex).padStart(2, '0')}`;
+
+const chooseCollagePiece = (pieces: CollagePieceReward[], unlockedPieces: string[]) => {
+    const missingPieces = pieces.filter((piece) => !unlockedPieces.includes(piece.id));
+
+    if (missingPieces.length === 0) {
+        return null;
+    }
+
+    return missingPieces[Math.floor(Math.random() * missingPieces.length)];
+};
 
 const canClaimDailyReward = (claimedAt?: string | null) => {
     return !claimedAt || claimedAt.slice(0, 10) !== dateKey();
@@ -197,6 +221,7 @@ const triggerFeedback = () => {
 export default function MelodyMergePage({
     cards,
     cardRarities = [],
+    collagePhotos = [],
     gameConfig,
     gamePacks = [],
     gameRules,
@@ -270,6 +295,15 @@ export default function MelodyMergePage({
     );
     const getMergeLevel = useCallback((level: number) => getLevel(level, mergeItemPool), [mergeItemPool]);
     const cardsById = useMemo(() => new Map(cardPool.map((card) => [card.id, card])), [cardPool]);
+    const collagePiecePool = useMemo<CollagePieceReward[]>(() => collagePhotos.flatMap((photo) => (
+        Array.from({ length: photo.piecesCount }, (_, pieceIndex) => ({
+            id: collagePieceId(photo.id, pieceIndex),
+            photoId: photo.id,
+            pieceIndex,
+            label: photo.label,
+            imageUrl: photo.url,
+        }))
+    )), [collagePhotos]);
     const savedEnergy = Math.min(Math.max(initialGameSave?.energy ?? 84, 0), maxEnergy);
     const offlineEnergyGain = getOfflineEnergyGain(initialGameSave?.lastSeenAt, savedEnergy, maxEnergy);
     const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(initialGameSave?.board));
@@ -279,6 +313,7 @@ export default function MelodyMergePage({
     const [playerLevel, setPlayerLevel] = useState(Math.max(initialGameSave?.playerLevel ?? 1, 1));
     const [mergeCount, setMergeCount] = useState(Math.max(initialGameSave?.mergeCount ?? 0, 0));
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(cardsById, initialGameSave?.openedPacks));
+    const [collagePieces, setCollagePieces] = useState<string[]>(() => normalizeCollagePieces(initialGameSave?.collagePieces));
     const [claimedMissions, setClaimedMissions] = useState<string[]>(() => initialGameSave?.claimedMissions ?? []);
     const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(initialGameSave?.dailyRewardClaimedAt ?? null);
     const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(initialGameSave?.dailyRewardClaimedAt));
@@ -312,6 +347,12 @@ export default function MelodyMergePage({
     const saveTimerRef = useRef<number | null>(null);
     const memoryTimerRef = useRef<number | null>(null);
     const memoryResetTimerRef = useRef<number | null>(null);
+    const saveStatusLabel = {
+        error: 'Sin guardar',
+        idle: 'Guardado',
+        saved: 'Guardado',
+        saving: 'Guardando',
+    }[saveStatus];
     const memorySource = useMemo(
         () => mergeItemPool.filter((item) => item.isActive).slice(0, 8),
         [mergeItemPool],
@@ -428,9 +469,10 @@ export default function MelodyMergePage({
     }, [toastMessage]);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => setShowSplash(false), 4200);
+        const timer = window.setTimeout(() => setShowSplash(false), assetsReady ? 1300 : 2400);
+
         return () => window.clearTimeout(timer);
-    }, []);
+    }, [assetsReady]);
 
     useEffect(() => {
         void music.init(musicTracks);
@@ -443,6 +485,7 @@ export default function MelodyMergePage({
         const urls = [
             packImageUrl,
             ...cardPool.map((card) => card.imageUrl),
+            ...collagePhotos.map((photo) => photo.url),
             ...mergeItemPool.map((item) => item.imageUrl),
         ].filter(Boolean);
 
@@ -466,7 +509,7 @@ export default function MelodyMergePage({
         return () => {
             cancelled = true;
         };
-    }, [cardPool, mergeItemPool]);
+    }, [cardPool, collagePhotos, mergeItemPool]);
 
     const collectedCards = useMemo(() => {
         const unique = new Map<string, MelodyCard>();
@@ -481,6 +524,22 @@ export default function MelodyMergePage({
         () => albumFilter === 'all' ? cardPool : cardPool.filter((card) => card.rarity === albumFilter),
         [albumFilter, cardPool],
     );
+    const totalCollagePieces = collagePiecePool.length;
+    const collagePercent = totalCollagePieces > 0 ? Math.round((collagePieces.length / totalCollagePieces) * 100) : 0;
+    const collageTiles = collagePiecePool.map((piece) => {
+        const row = Math.floor(piece.pieceIndex / collageColumns);
+        const column = piece.pieceIndex % collageColumns;
+
+        return {
+            column,
+            imageUrl: piece.imageUrl,
+            index: piece.pieceIndex,
+            label: piece.label,
+            owned: collagePieces.includes(piece.id),
+            pieceId: piece.id,
+            row,
+        };
+    });
     const rarityStats = useMemo(() => {
         const stats: Record<string, { owned: number; total: number }> = {};
 
@@ -505,16 +564,19 @@ export default function MelodyMergePage({
         xp,
         playerLevel,
         mergeCount,
-        openedPacks: openedPacks.map((pack) => ({
-            id: pack.id,
-            label: pack.label,
-            cards: pack.cards.map((card) => card.id),
-        })),
+        openedPacks: openedPacks
+            .filter((pack) => pack.cards.length > 0)
+            .map((pack) => ({
+                id: pack.id,
+                label: pack.label,
+                cards: pack.cards.map((card) => card.id),
+            })),
+        collagePieces,
         activeTab,
         claimedMissions,
         dailyRewardClaimedAt,
         lastSeenAt: new Date().toISOString(),
-    }), [activeTab, board, claimedMissions, dailyRewardClaimedAt, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
+    }), [activeTab, board, claimedMissions, collagePieces, dailyRewardClaimedAt, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
 
     useEffect(() => {
         writeLocalSave(localSaveKey, savePayload);
@@ -566,11 +628,30 @@ export default function MelodyMergePage({
     }, [beaconSave, localSaveKey, savePayload]);
 
     const queuePack = useCallback((pack: GamePackDefinition, labelOverride?: string) => {
-        const cardsCount = Math.max(1, Math.min(pack.cardsCount, 3));
-        const packCards = Array.from({ length: cardsCount }, () => chooseCard(cardPool)).filter(Boolean) as MelodyCard[];
+        const rewardCount = Math.max(1, Math.min(pack.cardsCount, 3));
+        const packCards: MelodyCard[] = [];
+        const packCollagePieces: CollagePieceReward[] = [];
+        const plannedCollagePieces = [...collagePieces];
 
-        if (packCards.length === 0) {
-            notify('No hay cartas activas para abrir sobres.');
+        for (let index = 0; index < rewardCount; index += 1) {
+            const cardReward = chooseCard(cardPool);
+            const collageReward = chooseCollagePiece(collagePiecePool, plannedCollagePieces);
+            const preferCollage = Math.random() < 0.5;
+
+            if ((preferCollage && collageReward) || !cardReward) {
+                if (collageReward) {
+                    packCollagePieces.push(collageReward);
+                    plannedCollagePieces.push(collageReward.id);
+                }
+
+                continue;
+            }
+
+            packCards.push(cardReward);
+        }
+
+        if (packCards.length === 0 && packCollagePieces.length === 0) {
+            notify('No hay cartas ni piezas de collage disponibles para abrir sobres.');
             return;
         }
 
@@ -578,17 +659,19 @@ export default function MelodyMergePage({
             id: nanoid(),
             label: labelOverride ?? pack.label,
             cards: packCards,
+            collagePieces: packCollagePieces,
         });
         setIsPackOpened(false);
         setDismissedPackCards(0);
         setPackCardResults([]);
         notify(assetsReady ? `${labelOverride ?? pack.label}: toca el sobre para abrirlo.` : 'Preparando cartas para el sobre.');
-    }, [assetsReady, cardPool, notify]);
+    }, [assetsReady, cardPool, collagePiecePool, collagePieces, notify]);
 
     const revealPendingPack = useCallback(() => {
         if (!pendingPack || isPackOpened) return;
 
         const ownedIds = new Set(collectedCards.map((card) => card.id));
+        const newCollagePieces = pendingPack.collagePieces ?? [];
         const newCards: MelodyCard[] = [];
         const duplicatedCards: MelodyCard[] = [];
         const nextResults: PackCardResult[] = [];
@@ -615,13 +698,19 @@ export default function MelodyMergePage({
             const duplicateHearts = duplicatedCards.reduce((total, card) => total + duplicateHeartRewards[card.rarity], 0);
             setHearts((value) => value + duplicateHearts);
 
-            if (newCards.length > 0) {
-                notify(`${newCards.length} carta nueva y duplicadas +${duplicateHearts} corazones.`);
+            if (newCards.length > 0 || newCollagePieces.length > 0) {
+                notify(`${newCards.length} carta(s), ${newCollagePieces.length} pieza(s) y duplicadas +${duplicateHearts}.`);
             } else {
                 notify(`Cartas duplicadas convertidas en +${duplicateHearts} corazones.`);
             }
+        } else if (newCollagePieces.length > 0) {
+            notify(`${newCards.length} carta(s) y ${newCollagePieces.length} pieza(s) del recuerdo.`);
         } else {
             notify(`${newCards.length} cartas nuevas agregadas al album.`);
+        }
+
+        if (newCollagePieces.length > 0) {
+            setCollagePieces((pieces) => [...pieces, ...newCollagePieces.map((piece) => piece.id)]);
         }
 
         setOpenedPacks((packs) => [pendingPack, ...packs]);
@@ -1045,6 +1134,10 @@ export default function MelodyMergePage({
                         <div className="mm-progress__track">
                             <span style={{ width: `${Math.min(100, (xp / xpGoal) * 100)}%` }} />
                         </div>
+                        <div className={`mm-save mm-save--${saveStatus}`} role="status">
+                            <span />
+                            {saveStatusLabel}
+                        </div>
                     </div>
 
                     {activeTab === 'merge' && (
@@ -1109,12 +1202,13 @@ export default function MelodyMergePage({
                             )}
 
                             <div className="mm-actions">
-                                <button className="mm-magic-box" onClick={generateItem} type="button">
+                                <button className="mm-magic-box" disabled={energy <= 0} onClick={generateItem} type="button">
                                     <span className="mm-magic-box__lid" />
                                     <span className="mm-magic-box__body">
                                         <Wand2 size={22} aria-hidden />
                                     </span>
                                     <strong>Caja magica</strong>
+                                    <small>-1 energia</small>
                                 </button>
                             </div>
                         </section>
@@ -1132,6 +1226,40 @@ export default function MelodyMergePage({
                                     <span>{premiumPack.costHearts}</span>
                                 </button>
                             </div>
+
+                            <section className="mm-collage" aria-label="Recuerdo secreto">
+                                <div className="mm-collage__head">
+                                    <div>
+                                        <p className="mm-kicker">Recuerdo secreto</p>
+                                        <h2>{collagePieces.length}/{totalCollagePieces} piezas</h2>
+                                    </div>
+                                    <span>{collagePercent}%</span>
+                                </div>
+                                <div
+                                    className="mm-collage__grid"
+                                    style={{
+                                        '--mm-collage-columns': collageColumns,
+                                        '--mm-collage-rows': collageRowCount,
+                                    } as CSSProperties & Record<'--mm-collage-columns' | '--mm-collage-rows', number>}
+                                >
+                                    {collageTiles.map(({ column, imageUrl, index, label, owned, pieceId, row }) => (
+                                        <button
+                                            className={`mm-collage__piece ${owned ? 'is-owned' : ''}`}
+                                            disabled={!owned}
+                                            key={pieceId}
+                                            style={{
+                                                '--mm-collage-image': `url("${imageUrl}")`,
+                                                '--mm-collage-x': `${(column / (collageColumns - 1)) * 100}%`,
+                                                '--mm-collage-y': `${(row / (collageRowCount - 1)) * 100}%`,
+                                            } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string>}
+                                            type="button"
+                                        >
+                                            <span>{owned ? index + 1 : '?'}</span>
+                                            {owned && <strong>{label}</strong>}
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
 
                             <div className="mm-album__filters">
                                 <button
@@ -1379,6 +1507,14 @@ export default function MelodyMergePage({
                                                             </div>
                                                         );
                                                     })}
+                                                    {(pendingPack.collagePieces ?? []).map((piece) => (
+                                                        <div className="mm-reward-card mm-reward-card--collage is-new" key={`${pendingPack.id}-${piece.id}`}>
+                                                            <img alt={piece.label} src={piece.imageUrl} />
+                                                            <span>Pieza</span>
+                                                            <em>Nueva</em>
+                                                            <strong>{piece.label}</strong>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                                 <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
                                                     Guardar
