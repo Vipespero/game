@@ -136,10 +136,13 @@ export type MelodyMergePageProps = {
     gameRules?: GameRules;
     mergeItems?: MergeItemSource[];
     missions?: MissionDefinition[];
+    musicTracks?: string[];
     playerLevels?: PlayerLevelDefinition[];
     gameSave?: MelodyGameSave | null;
     auth?: {
         user?: {
+            email?: string;
+            id?: number;
             is_admin?: boolean;
             name?: string;
         } | null;

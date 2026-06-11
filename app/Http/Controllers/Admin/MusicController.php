@@ -11,7 +11,6 @@ use Inertia\Response;
 
 class MusicController extends Controller
 {
-    private const MUSIC_PATH = 'public/music';
     private const MAX_FILE_SIZE = 10240;
     private const ALLOWED_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a'];
 
@@ -35,11 +34,8 @@ class MusicController extends Controller
             return back()->withErrors(['track' => 'Formato no permitido. Usa MP3, OGG, WAV o M4A.']);
         }
 
-        $existingTracks = $this->getTrackFiles();
-        $nextNumber = count($existingTracks) + 1;
+        $nextNumber = $this->nextTrackNumber();
         $filename = 'track-'.str_pad($nextNumber, 2, '0', STR_PAD_LEFT).'.'.$extension;
-
-        $file->storeAs(self::MUSIC_PATH, 'public');
 
         $file->move(
             storage_path('app/public/music'),
@@ -91,5 +87,17 @@ class MusicController extends Controller
         $files = File::glob($directory.'/*.{mp3,ogg,wav,m4a}', GLOB_BRACE);
 
         return array_map(fn (string $path): string => basename($path), $files);
+    }
+
+    private function nextTrackNumber(): int
+    {
+        $numbers = collect($this->getTrackFiles())
+            ->map(function (string $file): int {
+                preg_match('/^track-(\d+)\./', $file, $matches);
+
+                return isset($matches[1]) ? (int) $matches[1] : 0;
+            });
+
+        return max(0, $numbers->max() ?? 0) + 1;
     }
 }

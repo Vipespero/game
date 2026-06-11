@@ -40,6 +40,7 @@ import {
     pieceStyle,
     chooseCard,
     getDailyMessage,
+    getSplashMessage,
 } from '@/lib/game-constants';
 import type {
     BoardItem,
@@ -146,6 +147,47 @@ const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy
 
 const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
+const readLocalSave = (key: string): MelodyGameSave | null => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    try {
+        const saved = window.localStorage.getItem(key);
+
+        if (!saved) {
+            return null;
+        }
+
+        return JSON.parse(saved) as MelodyGameSave;
+    } catch {
+        return null;
+    }
+};
+
+const writeLocalSave = (key: string, state: MelodyGameSave) => {
+    try {
+        window.localStorage.setItem(key, JSON.stringify(state));
+    } catch {
+        // Local storage can be unavailable in private browsing or low-storage modes.
+    }
+};
+
+const mostRecentSave = (serverSave: MelodyGameSave | null | undefined, localSave: MelodyGameSave | null) => {
+    if (!localSave) {
+        return serverSave ?? null;
+    }
+
+    if (!serverSave) {
+        return localSave;
+    }
+
+    const serverTime = serverSave.lastSeenAt ? new Date(serverSave.lastSeenAt).getTime() : 0;
+    const localTime = localSave.lastSeenAt ? new Date(localSave.lastSeenAt).getTime() : 0;
+
+    return localTime > serverTime ? localSave : serverSave;
+};
+
 const triggerFeedback = () => {
     if ('vibrate' in navigator) {
         navigator.vibrate(18);
@@ -160,10 +202,13 @@ export default function MelodyMergePage({
     gameRules,
     mergeItems = [],
     missions: configuredMissions = [],
+    musicTracks = [],
     playerLevels = [],
     gameSave,
     auth,
 }: MelodyMergePageProps) {
+    const localSaveKey = `melody-game-save:${auth?.user?.id ?? auth?.user?.email ?? 'guest'}`;
+    const initialGameSave = mostRecentSave(gameSave, readLocalSave(localSaveKey));
     const config = {
         ...fallbackGameConfig,
         ...gameConfig,
@@ -225,18 +270,18 @@ export default function MelodyMergePage({
     );
     const getMergeLevel = useCallback((level: number) => getLevel(level, mergeItemPool), [mergeItemPool]);
     const cardsById = useMemo(() => new Map(cardPool.map((card) => [card.id, card])), [cardPool]);
-    const savedEnergy = Math.min(Math.max(gameSave?.energy ?? 84, 0), maxEnergy);
-    const offlineEnergyGain = getOfflineEnergyGain(gameSave?.lastSeenAt, savedEnergy, maxEnergy);
-    const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(gameSave?.board));
+    const savedEnergy = Math.min(Math.max(initialGameSave?.energy ?? 84, 0), maxEnergy);
+    const offlineEnergyGain = getOfflineEnergyGain(initialGameSave?.lastSeenAt, savedEnergy, maxEnergy);
+    const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(initialGameSave?.board));
     const [energy, setEnergy] = useState(Math.min(savedEnergy + offlineEnergyGain, maxEnergy));
-    const [hearts, setHearts] = useState(Math.max(gameSave?.hearts ?? 120, 0));
-    const [xp, setXp] = useState(Math.max(gameSave?.xp ?? 0, 0));
-    const [playerLevel, setPlayerLevel] = useState(Math.max(gameSave?.playerLevel ?? 1, 1));
-    const [mergeCount, setMergeCount] = useState(Math.max(gameSave?.mergeCount ?? 0, 0));
-    const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(cardsById, gameSave?.openedPacks));
-    const [claimedMissions, setClaimedMissions] = useState<string[]>(() => gameSave?.claimedMissions ?? []);
-    const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(gameSave?.dailyRewardClaimedAt ?? null);
-    const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(gameSave?.dailyRewardClaimedAt));
+    const [hearts, setHearts] = useState(Math.max(initialGameSave?.hearts ?? 120, 0));
+    const [xp, setXp] = useState(Math.max(initialGameSave?.xp ?? 0, 0));
+    const [playerLevel, setPlayerLevel] = useState(Math.max(initialGameSave?.playerLevel ?? 1, 1));
+    const [mergeCount, setMergeCount] = useState(Math.max(initialGameSave?.mergeCount ?? 0, 0));
+    const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(cardsById, initialGameSave?.openedPacks));
+    const [claimedMissions, setClaimedMissions] = useState<string[]>(() => initialGameSave?.claimedMissions ?? []);
+    const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(initialGameSave?.dailyRewardClaimedAt ?? null);
+    const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(initialGameSave?.dailyRewardClaimedAt));
     const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
     const [selectedAlbumCard, setSelectedAlbumCard] = useState<MelodyCard | null>(null);
     const [albumFilter, setAlbumFilter] = useState<CardRarity | 'all'>('all');
@@ -253,7 +298,7 @@ export default function MelodyMergePage({
         y: number;
         item: BoardItem;
     } | null>(null);
-    const [activeTab, setActiveTab] = useState<MelodyTab>(() => normalizeTab(gameSave?.activeTab));
+    const [activeTab, setActiveTab] = useState<MelodyTab>(() => normalizeTab(initialGameSave?.activeTab));
     const [musicPlaying, setMusicPlaying] = useState(() => music.getState().playing);
     const [toastMessage, setToastMessage] = useState(
         offlineEnergyGain > 0
@@ -266,6 +311,7 @@ export default function MelodyMergePage({
     const didMountSaveRef = useRef(offlineEnergyGain > 0);
     const saveTimerRef = useRef<number | null>(null);
     const memoryTimerRef = useRef<number | null>(null);
+    const memoryResetTimerRef = useRef<number | null>(null);
     const memorySource = useMemo(
         () => mergeItemPool.filter((item) => item.isActive).slice(0, 8),
         [mergeItemPool],
@@ -295,12 +341,12 @@ export default function MelodyMergePage({
     }, []);
 
     const postSave = useCallback((state: MelodyGameSave, keepalive = false) => {
-        const body = JSON.stringify({ state });
+        const body = JSON.stringify({ state, _token: csrfToken() });
 
         setSaveStatus('saving');
 
         return fetch('/melody/save', {
-            method: 'PUT',
+            method: keepalive ? 'POST' : 'PUT',
             keepalive,
             headers: {
                 Accept: 'application/json',
@@ -321,6 +367,21 @@ export default function MelodyMergePage({
         });
     }, [notify]);
 
+    const beaconSave = useCallback((state: MelodyGameSave) => {
+        if (!navigator.sendBeacon) {
+            void postSave(state, true);
+
+            return;
+        }
+
+        const body = JSON.stringify({ state, _token: csrfToken() });
+        const blob = new Blob([body], { type: 'application/json' });
+
+        if (!navigator.sendBeacon('/melody/save', blob)) {
+            void postSave(state, true);
+        }
+    }, [postSave]);
+
     useEffect(() => {
         const timer = window.setInterval(() => {
             setEnergy((value) => Math.min(maxEnergy, value + 1));
@@ -335,6 +396,11 @@ export default function MelodyMergePage({
             memoryTimerRef.current = null;
         }
 
+        if (memoryResetTimerRef.current) {
+            window.clearTimeout(memoryResetTimerRef.current);
+            memoryResetTimerRef.current = null;
+        }
+
         setMemoryDeck(createMemoryDeck());
         setFlippedMemoryCards([]);
         setMemoryMatches(0);
@@ -347,6 +413,11 @@ export default function MelodyMergePage({
             window.clearTimeout(memoryTimerRef.current);
             memoryTimerRef.current = null;
         }
+
+        if (memoryResetTimerRef.current) {
+            window.clearTimeout(memoryResetTimerRef.current);
+            memoryResetTimerRef.current = null;
+        }
     }, []);
 
     useEffect(() => {
@@ -357,15 +428,15 @@ export default function MelodyMergePage({
     }, [toastMessage]);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => setShowSplash(false), 1800);
+        const timer = window.setTimeout(() => setShowSplash(false), 4200);
         return () => window.clearTimeout(timer);
     }, []);
 
     useEffect(() => {
-        void music.init();
+        void music.init(musicTracks);
         const unsub = music.subscribe((state) => setMusicPlaying(state.playing));
         return unsub;
-    }, []);
+    }, [musicTracks]);
 
     useEffect(() => {
         let cancelled = false;
@@ -446,6 +517,10 @@ export default function MelodyMergePage({
     }), [activeTab, board, claimedMissions, dailyRewardClaimedAt, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
 
     useEffect(() => {
+        writeLocalSave(localSaveKey, savePayload);
+    }, [localSaveKey, savePayload]);
+
+    useEffect(() => {
         if (!didMountSaveRef.current) {
             didMountSaveRef.current = true;
             return;
@@ -472,7 +547,8 @@ export default function MelodyMergePage({
                 window.clearTimeout(saveTimerRef.current);
             }
 
-            void postSave(savePayload, true);
+            writeLocalSave(localSaveKey, savePayload);
+            beaconSave(savePayload);
         };
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
@@ -487,7 +563,7 @@ export default function MelodyMergePage({
             window.removeEventListener('pagehide', saveBeforeLeaving);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [postSave, savePayload]);
+    }, [beaconSave, localSaveKey, savePayload]);
 
     const queuePack = useCallback((pack: GamePackDefinition, labelOverride?: string) => {
         const cardsCount = Math.max(1, Math.min(pack.cardsCount, 3));
@@ -705,6 +781,11 @@ export default function MelodyMergePage({
             memoryTimerRef.current = null;
         }
 
+        if (memoryResetTimerRef.current) {
+            window.clearTimeout(memoryResetTimerRef.current);
+            memoryResetTimerRef.current = null;
+        }
+
         setMemoryDeck(createMemoryDeck());
         setFlippedMemoryCards([]);
         setMemoryMatches(0);
@@ -760,6 +841,16 @@ export default function MelodyMergePage({
                         triggerFeedback();
                         sfx.memoryComplete();
                         notify(`Memoria completo: +${rewardHearts} corazones y +${rewardEnergy} energia.`);
+
+                        memoryResetTimerRef.current = window.setTimeout(() => {
+                            setMemoryDeck(createMemoryDeck());
+                            setFlippedMemoryCards([]);
+                            setMemoryMatches(0);
+                            setMemoryMoves(0);
+                            setMemoryLocked(false);
+                            memoryResetTimerRef.current = null;
+                            notify('Nueva ronda de Memoria lista.');
+                        }, 1500);
                     } else {
                         sfx.memoryMatch();
                         notify(`Pareja encontrada: ${firstCard.item.name}.`);
@@ -775,7 +866,7 @@ export default function MelodyMergePage({
             setMemoryLocked(false);
             memoryTimerRef.current = null;
         }, 520);
-    }, [flippedMemoryCards, maxEnergy, memoryDeck, memoryLocked, memorySource.length, notify]);
+    }, [createMemoryDeck, flippedMemoryCards, maxEnergy, memoryDeck, memoryLocked, memorySource.length, notify]);
 
     const claimMission = useCallback((missionId: string) => {
         const mission = missionDefinitions.find((item) => item.id === missionId);
@@ -892,7 +983,7 @@ export default function MelodyMergePage({
                             <img alt="My Home" className="mm-splash__logo" src={logoUrl} />
                         </div>
                         <h1>My Home</h1>
-                        <p>{getDailyMessage()}</p>
+                        <p>{getSplashMessage()}</p>
                         <div className="mm-splash__loader">
                             <span />
                         </div>

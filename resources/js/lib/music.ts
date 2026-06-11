@@ -6,7 +6,7 @@ type MusicState = {
     currentTrack: string;
 };
 
-const TRACKS = [
+const FALLBACK_TRACKS = [
     '/storage/music/track-01.mp3',
     '/storage/music/track-02.mp3',
     '/storage/music/track-03.mp3',
@@ -37,9 +37,20 @@ const TRACKS = [
     '/storage/music/track-08.m4a',
     '/storage/music/track-09.m4a',
     '/storage/music/track-10.m4a',
+    '/storage/music/track-01.wav',
+    '/storage/music/track-02.wav',
+    '/storage/music/track-03.wav',
+    '/storage/music/track-04.wav',
+    '/storage/music/track-05.wav',
+    '/storage/music/track-06.wav',
+    '/storage/music/track-07.wav',
+    '/storage/music/track-08.wav',
+    '/storage/music/track-09.wav',
+    '/storage/music/track-10.wav',
 ];
 
 let audio: HTMLAudioElement | null = null;
+let preloadAudio: HTMLAudioElement | null = null;
 let currentState: MusicState = { playing: false, volume: 0.35, currentTrack: '' };
 let listeners: Array<(state: MusicState) => void> = [];
 let availableTracks: string[] = [];
@@ -81,6 +92,28 @@ const pickRandomTrack = (): string => {
     return pool[Math.floor(Math.random() * pool.length)] ?? '';
 };
 
+const preloadTrack = (track: string) => {
+    if (!track) {
+        return;
+    }
+
+    if (!preloadAudio) {
+        preloadAudio = new Audio();
+        preloadAudio.preload = 'auto';
+    }
+
+    preloadAudio.src = track;
+    preloadAudio.load();
+};
+
+const preloadNextTrack = () => {
+    const next = pickRandomTrack();
+
+    if (next) {
+        preloadTrack(next);
+    }
+};
+
 const playTrack = (track: string) => {
     if (!audio || !track) {
         return;
@@ -88,6 +121,8 @@ const playTrack = (track: string) => {
 
     currentState.currentTrack = track;
     audio.src = track;
+    audio.load();
+    preloadNextTrack();
 
     if (currentState.playing) {
         audio.play().catch(() => undefined);
@@ -116,10 +151,16 @@ const getAudio = (): HTMLAudioElement => {
     return audio;
 };
 
-const probeTracks = async (): Promise<void> => {
+const normalizeTracks = (tracks?: string[]): string[] => {
+    const source = tracks && tracks.length > 0 ? tracks : FALLBACK_TRACKS;
+
+    return [...new Set(source.filter(Boolean))];
+};
+
+const probeTracks = async (tracks?: string[]): Promise<void> => {
     const found: string[] = [];
 
-    for (const track of TRACKS) {
+    for (const track of normalizeTracks(tracks)) {
         try {
             const response = await fetch(track, { method: 'HEAD' });
 
@@ -135,10 +176,10 @@ const probeTracks = async (): Promise<void> => {
 };
 
 export const music = {
-    async init() {
+    async init(tracks?: string[]) {
         getAudio();
         currentState = loadState();
-        await probeTracks();
+        await probeTracks(tracks);
 
         if (availableTracks.length > 0) {
             const track = currentState.currentTrack && availableTracks.includes(currentState.currentTrack)
@@ -149,6 +190,8 @@ export const music = {
 
             if (track) {
                 audio!.src = track;
+                audio!.load();
+                preloadNextTrack();
             }
 
             if (currentState.playing && track) {

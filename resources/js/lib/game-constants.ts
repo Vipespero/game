@@ -184,6 +184,13 @@ export const dailyMessages = [
     'Tu amor me hace invencible.',
 ];
 
+export const splashMessages = [
+    'Este juego es un rinconcito hecho para ti, para recordarte que eres amada, fuerte y capaz de llenar cualquier dia de luz.',
+    'Antes de empezar, respira: todo aqui fue pensado para sacarte una sonrisa y acompanarte un ratito bonito.',
+    'Que esta partida te recuerde lo especial que eres, incluso en los dias en que se te olvida mirar todo lo que vales.',
+    'Bienvenida a tu casita: un lugar pequeno, dulce y lleno de detalles para decirte que siempre voy a elegirte.',
+];
+
 export const getDailyMessage = (): string => {
     const today = new Date();
     const dayOfYear = Math.floor(
@@ -191,4 +198,13 @@ export const getDailyMessage = (): string => {
     );
 
     return dailyMessages[dayOfYear % dailyMessages.length] ?? dailyMessages[0];
+};
+
+export const getSplashMessage = (): string => {
+    const today = new Date();
+    const dayOfYear = Math.floor(
+        (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000,
+    );
+
+    return splashMessages[dayOfYear % splashMessages.length] ?? splashMessages[0];
 };

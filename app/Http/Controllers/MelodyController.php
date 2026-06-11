@@ -44,6 +44,7 @@ class MelodyController extends Controller
             'gameRules' => $this->gameRules(),
             'mergeItems' => $this->activeMergeItems(),
             'missions' => $this->activeMissions(),
+            'musicTracks' => $this->musicTracks(),
             'playerLevels' => $this->activePlayerLevels(),
             'gameSave' => $gameSave?->toGameState(),
         ]);
@@ -304,6 +305,20 @@ class MelodyController extends Controller
                 ->map(fn (PlayerLevel $level): array => $level->toGameLevel())
                 ->all();
         });
+    }
+
+    private function musicTracks(): array
+    {
+        $directory = storage_path('app/public/music');
+
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        return collect(glob($directory.'/*.{mp3,ogg,wav,m4a}', GLOB_BRACE) ?: [])
+            ->map(fn (string $path): string => '/storage/music/'.basename($path))
+            ->values()
+            ->all();
     }
 
     private function activeMergeItems(): array

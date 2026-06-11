@@ -13,6 +13,8 @@ Route::middleware('auth')->group(function () {
     Route::put('melody/save', [MelodyController::class, 'save'])
         ->middleware('throttle:30,1')
         ->name('melody.save');
+    Route::post('melody/save', [MelodyController::class, 'save'])
+        ->middleware('throttle:30,1');
 
     Route::get('admin', AdminDashboardController::class)
         ->middleware('admin')

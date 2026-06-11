@@ -34,7 +34,7 @@ class MelodyGameTest extends TestCase
     public function test_user_can_save_sanitized_game_state(): void
     {
         $user = User::factory()->create();
-        $board = array_fill(0, 25, null);
+        $board = array_fill(0, 30, null);
         $board[0] = ['id' => 'seed-one', 'level' => 1];
 
         $this->actingAs($user)
@@ -67,7 +67,7 @@ class MelodyGameTest extends TestCase
             ->firstOrFail()
             ->toGameState();
 
-        $this->assertCount(25, $state['board']);
+        $this->assertCount(30, $state['board']);
         $this->assertSame(80, $state['energy']);
         $this->assertSame('album', $state['activeTab']);
         $this->assertSame(['merge-20'], $state['claimedMissions']);
@@ -76,7 +76,7 @@ class MelodyGameTest extends TestCase
     public function test_user_can_save_high_level_merge_items(): void
     {
         $user = User::factory()->create();
-        $board = array_fill(0, 25, null);
+        $board = array_fill(0, 30, null);
         $board[0] = ['id' => 'final-item', 'level' => 20];
 
         $this->actingAs($user)
@@ -109,7 +109,7 @@ class MelodyGameTest extends TestCase
     public function test_user_can_save_three_card_packs(): void
     {
         $user = User::factory()->create();
-        $board = array_fill(0, 25, null);
+        $board = array_fill(0, 30, null);
 
         $this->actingAs($user)
             ->putJson(route('melody.save'), [
@@ -155,7 +155,7 @@ class MelodyGameTest extends TestCase
         $this->actingAs($user)
             ->putJson(route('melody.save'), [
                 'state' => [
-                    'board' => array_fill(0, 25, null),
+                    'board' => array_fill(0, 30, null),
                     'energy' => 80,
                     'hearts' => 240,
                     'xp' => 12,

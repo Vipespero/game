@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GameSave extends Model
 {
+    private const BOARD_SIZE = 30;
+
     protected $fillable = [
         'user_id',
         'energy',
@@ -55,7 +57,7 @@ class GameSave extends Model
 
     public function toGameState(): array
     {
-        $board = array_fill(0, 25, null);
+        $board = array_fill(0, self::BOARD_SIZE, null);
 
         $this->boardItems
             ->sortBy('position')
