@@ -2169,6 +2169,21 @@ button {
     background: linear-gradient(135deg, var(--mm-mint), var(--mm-blue));
 }
 
+.mm-reward-card--collage {
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 211, 231, 0.7)),
+        repeating-linear-gradient(45deg, rgba(255, 114, 179, 0.12) 0 8px, rgba(169, 135, 255, 0.12) 8px 16px);
+}
+
+.mm-reward-card--collage > .mm-reward-card__piece-bg {
+    position: absolute;
+    inset: 0;
+    background-image: var(--mm-collage-image);
+    background-position: var(--mm-collage-x) var(--mm-collage-y);
+    background-repeat: no-repeat;
+    background-size: calc(4 * 100%) calc(4 * 100%);
+}
+
 .mm-reward-card strong {
     position: relative;
     z-index: 1;

@@ -579,6 +579,21 @@ export default function MelodyMergePage({
     );
     const totalCollagePieces = collagePiecePool.length;
     const collagePercent = totalCollagePieces > 0 ? Math.round((collagePieces.length / totalCollagePieces) * 100) : 0;
+    const completedPhotoIds = useMemo(() => {
+        const completed = new Set<number>();
+
+        collagePhotos.forEach((photo) => {
+            const allPiecesOwned = Array.from({ length: photo.piecesCount }, (_, i) =>
+                collagePieces.includes(collagePieceId(photo.id, i)),
+            ).every(Boolean);
+
+            if (allPiecesOwned && photo.piecesCount > 0) {
+                completed.add(photo.id);
+            }
+        });
+
+        return completed;
+    }, [collagePieces, collagePhotos]);
     const collageTiles = collagePiecePool.map((piece) => {
         const row = Math.floor(piece.pieceIndex / collageColumns);
         const column = piece.pieceIndex % collageColumns;
@@ -589,7 +604,9 @@ export default function MelodyMergePage({
             index: piece.pieceIndex,
             label: piece.label,
             owned: collagePieces.includes(piece.id),
+            photoComplete: completedPhotoIds.has(piece.photoId),
             pieceId: piece.id,
+            photoId: piece.photoId,
             row,
         };
     });
@@ -805,6 +822,8 @@ export default function MelodyMergePage({
         setHearts((value) => value + gainedHearts);
         setMergeCount((value) => value + 1);
 
+        const levelUpRef: { current: { nextLevel: number; gainedEnergy: number; trigger: GamePackDefinition['triggerKey'] | null; count: number } | null } = { current: null };
+
         setXp((currentXp) => {
             let nextXp = currentXp + gainedXp;
             let nextLevel = playerLevel;
@@ -822,22 +841,28 @@ export default function MelodyMergePage({
             }
 
             if (levelsGained > 0) {
-                setPlayerLevel(nextLevel);
-                setEnergy((prev) => Math.min(maxEnergy, prev + gainedEnergy));
-                const levelPack = getPack(rewardPackTrigger ?? 'level');
-                queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
-                sfx.levelUp();
-                setShowConfetti(true);
-                setShowLevelUpFlash(true);
-                window.setTimeout(() => setShowConfetti(false), 2600);
-                window.setTimeout(() => setShowLevelUpFlash(false), 800);
-                notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
-            } else {
-                notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
+                levelUpRef.current = { nextLevel, gainedEnergy, trigger: rewardPackTrigger, count: levelsGained };
             }
 
             return nextXp;
         });
+
+        const result = levelUpRef.current;
+
+        if (result) {
+            setPlayerLevel(result.nextLevel);
+            setEnergy((prev) => Math.min(maxEnergy, prev + result.gainedEnergy));
+            const levelPack = getPack(result.trigger ?? 'level');
+            queuePack(levelPack, result.count > 1 ? `${levelPack.label} x${result.count}` : levelPack.label);
+            sfx.levelUp();
+            setShowConfetti(true);
+            setShowLevelUpFlash(true);
+            window.setTimeout(() => setShowConfetti(false), 2600);
+            window.setTimeout(() => setShowLevelUpFlash(false), 800);
+            notify(result.count > 1 ? `Subiste ${result.count} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
+        } else {
+            notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
+        }
     }, [getMergeLevel, getPack, getPlayerLevel, maxEnergy, notify, playerLevel, queuePack]);
 
     const mergeCells = useCallback((from: number, to: number) => {
@@ -1336,7 +1361,7 @@ export default function MelodyMergePage({
                                         '--mm-collage-rows': collageRowCount,
                                     } as CSSProperties & Record<'--mm-collage-columns' | '--mm-collage-rows', number>}
                                 >
-                                    {collageTiles.map(({ column, imageUrl, index, label, owned, pieceId, row }) => (
+                                    {collageTiles.map(({ column, imageUrl, index, label, owned, photoComplete, pieceId, row }) => (
                                         <button
                                             className={`mm-collage__piece ${owned ? 'is-owned' : ''}`}
                                             disabled={!owned}
@@ -1349,7 +1374,7 @@ export default function MelodyMergePage({
                                             type="button"
                                         >
                                             <span>{owned ? index + 1 : '?'}</span>
-                                            {owned && <strong>{label}</strong>}
+                                            {owned && photoComplete && <strong>{label}</strong>}
                                         </button>
                                     ))}
                                 </div>
@@ -1646,14 +1671,27 @@ export default function MelodyMergePage({
                                                             </div>
                                                         );
                                                     })}
-                                                    {(pendingPack.collagePieces ?? []).map((piece) => (
-                                                        <div className="mm-reward-card mm-reward-card--collage is-new" key={`${pendingPack.id}-${piece.id}`}>
-                                                            <img alt={piece.label} src={piece.imageUrl} />
-                                                            <span>Pieza</span>
-                                                            <em>Nueva</em>
-                                                            <strong>{piece.label}</strong>
-                                                        </div>
-                                                    ))}
+                                                    {(pendingPack.collagePieces ?? []).map((piece) => {
+                                                        const pieceCol = piece.pieceIndex % collageColumns;
+                                                        const pieceRow = Math.floor(piece.pieceIndex / collageColumns);
+
+                                                        return (
+                                                            <div
+                                                                className="mm-reward-card mm-reward-card--collage is-new"
+                                                                key={`${pendingPack.id}-${piece.id}`}
+                                                                style={{
+                                                                    '--mm-collage-image': `url("${piece.imageUrl}")`,
+                                                                    '--mm-collage-x': `${(pieceCol / (collageColumns - 1)) * 100}%`,
+                                                                    '--mm-collage-y': `${(pieceRow / (collageRowCount - 1)) * 100}%`,
+                                                                } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string>}
+                                                            >
+                                                                <span className="mm-reward-card__piece-bg" />
+                                                                <span>Pieza</span>
+                                                                <em>Nueva</em>
+                                                                <strong>Recuerdo secreto</strong>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                                 <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
                                                     Guardar
