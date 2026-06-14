@@ -35,6 +35,7 @@ export const sfx = {
         playTone(523, 0.1, 'sine', 0.1);
         setTimeout(() => playTone(659, 0.1, 'sine', 0.1), 80);
         setTimeout(() => playTone(784, 0.15, 'sine', 0.12), 160);
+        setTimeout(() => playTone(1047, 0.2, 'sine', 0.1), 260);
     },
     packOpen: () => {
         playTone(392, 0.08, 'triangle', 0.08);
@@ -61,5 +62,11 @@ export const sfx = {
         setTimeout(() => playTone(659, 0.1, 'sine', 0.1), 80);
         setTimeout(() => playTone(784, 0.1, 'sine', 0.1), 160);
         setTimeout(() => playTone(1047, 0.2, 'sine', 0.12), 240);
+        setTimeout(() => playTone(1319, 0.25, 'sine', 0.08), 360);
+    },
+    loveLetter: () => {
+        playTone(440, 0.15, 'sine', 0.06);
+        setTimeout(() => playTone(554, 0.15, 'sine', 0.06), 120);
+        setTimeout(() => playTone(659, 0.2, 'sine', 0.06), 240);
     },
 };

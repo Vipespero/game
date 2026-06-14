@@ -1,6 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { RefreshCcw, Save, ShieldCheck } from 'lucide-react';
+import { useState    } from 'react';
+import type {CSSProperties, FormEvent, ReactNode} from 'react';
 
 type SettingRow = { key: string; value: string | number };
 type RarityRow = { id: number; code: string; name: string; duplicate_hearts: number; sort_order: number; is_active: boolean };
@@ -86,7 +87,9 @@ const assetImages = import.meta.glob('../../assets/**/*.png', {
 
 const getAssetImage = (file?: string | null) => {
     if (!file) return '';
+
     if (file.startsWith('http') || file.startsWith('/')) return file;
+
     return assetImages[`../../assets/${file}`] ?? '';
 };
 

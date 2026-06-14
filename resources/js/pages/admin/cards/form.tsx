@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import type { FormEvent } from 'react';
 import { ShieldCheck } from 'lucide-react';
+import type { FormEvent } from 'react';
 
 type CardFormData = {
     external_id: string;
@@ -34,6 +34,7 @@ export default function CardForm({ card, rarities }: CardFormProps) {
 
         if (card) {
             form.put(`/admin/cards/${card.id}`);
+
             return;
         }
 

@@ -182,6 +182,15 @@ export const dailyMessages = [
     'Eres mi todo.',
     'Te elijo hoy y siempre.',
     'Tu amor me hace invencible.',
+    'Eres la mejor parte de mi dia.',
+    'Me haces falta cuando no estas.',
+    'Contigo aprendi lo que es amar de verdad.',
+    'Eres mi persona feliz.',
+    'No cambio nada de ti.',
+    'Tu abrazo es mi lugar favorito.',
+    'Cada dia contigo es una aventura.',
+    'Eres mi sueno hecho realidad.',
+    'Siempre estoy pensando en ti.',
 ];
 
 export const splashMessages = [
@@ -189,6 +198,8 @@ export const splashMessages = [
     'Antes de empezar, respira: todo aqui fue pensado para sacarte una sonrisa y acompanarte un ratito bonito.',
     'Que esta partida te recuerde lo especial que eres, incluso en los dias en que se te olvida mirar todo lo que vales.',
     'Bienvenida a tu casita: un lugar pequeno, dulce y lleno de detalles para decirte que siempre voy a elegirte.',
+    'Cada corazon, cada carta, cada fusion fue creada con todo mi amor para ti.',
+    'Este rinconcito es solo nuestro: un mundo pequeno donde todo esta pensado para hacerte sonreir.',
 ];
 
 export const getDailyMessage = (): string => {

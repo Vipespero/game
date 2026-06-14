@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, PointerEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
 import {
     Album,
     Battery,
     Brain,
+    ChevronLeft,
+    ChevronRight,
     Crown,
     Gift,
     Heart,
     LogOut,
+    Mail,
     Music,
     PackageOpen,
     RotateCcw,
@@ -20,10 +21,8 @@ import {
     Wand2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import packImageUrl from '../../assets/sanrio_pack.png?url';
-import logoUrl from '../../assets/logo.png?url';
-import { sfx } from '@/lib/sounds';
-import { music } from '@/lib/music';
+import type { CSSProperties, PointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     boardSize,
     fallbackGameConfig,
@@ -42,6 +41,8 @@ import {
     getDailyMessage,
     getSplashMessage,
 } from '@/lib/game-constants';
+import { music } from '@/lib/music';
+import { sfx } from '@/lib/sounds';
 import type {
     BoardItem,
     CardRarity,
@@ -63,6 +64,8 @@ import type {
     MelodyGameSave,
     MelodyMergePageProps,
 } from '@/types/game';
+import logoUrl from '../../assets/logo.png?url';
+import packImageUrl from '../../assets/sanrio_pack.png?url';
 
 const makeItem = (level = 1): BoardItem => ({
     id: nanoid(),
@@ -76,6 +79,7 @@ const defaultBoard = () => {
     next[8] = makeItem(1);
     next[14] = makeItem(1);
     next[21] = makeItem(2);
+
     return next;
 };
 
@@ -138,6 +142,47 @@ const normalizeCollagePieces = (pieces?: string[]) => {
 };
 
 const collagePieceId = (photoId: number, pieceIndex: number) => `${photoId}:${String(pieceIndex).padStart(2, '0')}`;
+
+const STREAK_KEY = 'mm-daily-streak';
+
+const readStreak = (): { count: number; lastDate: string } => {
+    try {
+        const saved = localStorage.getItem(STREAK_KEY);
+
+        if (saved) return JSON.parse(saved) as { count: number; lastDate: string };
+    } catch { /* ignore */ }
+
+    return { count: 0, lastDate: '' };
+};
+
+const updateStreak = (): number => {
+    const streak = readStreak();
+    const today = dateKey();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    if (streak.lastDate === today) {
+        return streak.count;
+    }
+
+    const newCount = streak.lastDate === yesterday ? streak.count + 1 : 1;
+
+    try { localStorage.setItem(STREAK_KEY, JSON.stringify({ count: newCount, lastDate: today })); } catch { /* ignore */ }
+
+    return newCount;
+};
+
+const loveLetterMessages = [
+    'Queria recordarte que eres la persona mas especial del mundo para mi. Cada dia a tu lado es un regalo.',
+    'No importa lo dificil que sea el dia, saber que te tengo a ti me hace todo mas llevadero.',
+    'Me encanta como te ries, como me miras, como haces que todo sea mejor solo con estar.',
+    'Gracias por ser mi companera, mi confidente y mi lugar favorito en el mundo.',
+    'Si pudiera elegir de nuevo, te eligiria a ti mil veces sin dudarlo.',
+    'Eres mi calma, mi alegria y la razon por la que sonrio sin motivo.',
+    'Cada momento contigo se siente como un sueño del que no quiero despertar.',
+    'Tu eres mi historia favorita, la que quiero seguir escribiendo por siempre.',
+    'Me haces creer en la magia, porque no hay otra forma de explicar lo que siento por ti.',
+    'Prometo estar ahi en los buenos y en los malos, porque contigo todo vale la pena.',
+];
 
 const chooseCollagePiece = (pieces: CollagePieceReward[], unlockedPieces: string[]) => {
     const missingPieces = pieces.filter((piece) => !unlockedPieces.includes(piece.id));
@@ -376,6 +421,11 @@ export default function MelodyMergePage({
     const [memoryMatches, setMemoryMatches] = useState(0);
     const [memoryMoves, setMemoryMoves] = useState(0);
     const [memoryLocked, setMemoryLocked] = useState(false);
+    const [showConfetti, setShowConfetti] = useState(false);
+    const [showLevelUpFlash, setShowLevelUpFlash] = useState(false);
+    const [loveLetterIndex, setLoveLetterIndex] = useState(() => Math.floor(Math.random() * loveLetterMessages.length));
+    const [dailyStreak, setDailyStreak] = useState(() => readStreak().count);
+    const [sparklePosition, setSparklePosition] = useState<{ x: number; y: number } | null>(null);
 
     const notify = useCallback((message: string) => {
         setToastMessage(message);
@@ -465,6 +515,7 @@ export default function MelodyMergePage({
         if (!toastMessage) return;
 
         const timer = window.setTimeout(() => setToastMessage(''), 2600);
+
         return () => window.clearTimeout(timer);
     }, [toastMessage]);
 
@@ -477,6 +528,7 @@ export default function MelodyMergePage({
     useEffect(() => {
         void music.init(musicTracks);
         const unsub = music.subscribe((state) => setMusicPlaying(state.playing));
+
         return unsub;
     }, [musicTracks]);
 
@@ -514,6 +566,7 @@ export default function MelodyMergePage({
     const collectedCards = useMemo(() => {
         const unique = new Map<string, MelodyCard>();
         openedPacks.forEach((pack) => pack.cards.forEach((card) => unique.set(card.id, card)));
+
         return [...unique.values()];
     }, [openedPacks]);
 
@@ -585,6 +638,7 @@ export default function MelodyMergePage({
     useEffect(() => {
         if (!didMountSaveRef.current) {
             didMountSaveRef.current = true;
+
             return;
         }
 
@@ -652,6 +706,7 @@ export default function MelodyMergePage({
 
         if (packCards.length === 0 && packCollagePieces.length === 0) {
             notify('No hay cartas ni piezas de collage disponibles para abrir sobres.');
+
             return;
         }
 
@@ -683,6 +738,7 @@ export default function MelodyMergePage({
                     status: 'duplicate',
                     bonusHearts: duplicateHeartRewards[card.rarity],
                 });
+
                 return;
             }
 
@@ -727,10 +783,14 @@ export default function MelodyMergePage({
         setShowDailyReward(false);
         setEnergy((value) => Math.min(maxEnergy, value + dailyReward.energy));
         setHearts((value) => value + dailyReward.hearts);
+        const newStreak = updateStreak();
+        setDailyStreak(newStreak);
+        setShowConfetti(true);
+        window.setTimeout(() => setShowConfetti(false), 2600);
         triggerFeedback();
         sfx.claim();
         queuePack(getPack('daily'));
-        notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones.`);
+        notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones. Racha: ${newStreak} dias.`);
     }, [dailyReward.energy, dailyReward.hearts, getPack, maxEnergy, notify, queuePack]);
 
     const advancePackCard = useCallback(() => {
@@ -767,6 +827,10 @@ export default function MelodyMergePage({
                 const levelPack = getPack(rewardPackTrigger ?? 'level');
                 queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
                 sfx.levelUp();
+                setShowConfetti(true);
+                setShowLevelUpFlash(true);
+                window.setTimeout(() => setShowConfetti(false), 2600);
+                window.setTimeout(() => setShowLevelUpFlash(false), 800);
                 notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
             } else {
                 notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
@@ -793,11 +857,13 @@ export default function MelodyMergePage({
                 next[to] = origin;
                 next[from] = null;
                 notify('Objeto movido.');
+
                 return next;
             }
 
             if (origin.level !== target.level) {
                 notify('Solo se fusionan objetos iguales.');
+
                 return current;
             }
 
@@ -805,6 +871,7 @@ export default function MelodyMergePage({
             next[to] = makeItem(newLevel);
             next[from] = null;
             mergedLevel = origin.level;
+
             return next;
         });
 
@@ -812,6 +879,14 @@ export default function MelodyMergePage({
             triggerFeedback();
             sfx.merge();
             addProgress(mergedLevel);
+
+            const targetCell = document.querySelector(`[data-cell-index="${to}"]`);
+
+            if (targetCell) {
+                const rect = targetCell.getBoundingClientRect();
+                setSparklePosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+                window.setTimeout(() => setSparklePosition(null), 750);
+            }
 
             const newLevel = Math.min(mergedLevel + 1, maxMergeItemLevel);
 
@@ -824,6 +899,7 @@ export default function MelodyMergePage({
     const generateItem = useCallback(() => {
         if (energy <= 0) {
             notify('La caja magica necesita energia.');
+
             return;
         }
 
@@ -832,6 +908,7 @@ export default function MelodyMergePage({
 
             if (firstEmpty === -1) {
                 notify('El tablero esta lleno. Fusiona para abrir espacio.');
+
                 return current;
             }
 
@@ -841,6 +918,7 @@ export default function MelodyMergePage({
                 : rules.magicBoxPrimaryLevel;
             const level = Math.min(Math.max(1, generatedLevel), maxMergeItemLevel);
             next[firstEmpty] = makeItem(level);
+
             return next;
         });
 
@@ -855,6 +933,7 @@ export default function MelodyMergePage({
 
         if (hearts < premiumPack.costHearts) {
             notify(`Necesitas ${premiumPack.costHearts} corazones para comprar un sobre.`);
+
             return;
         }
 
@@ -929,6 +1008,8 @@ export default function MelodyMergePage({
                         setEnergy((current) => Math.min(maxEnergy, current + rewardEnergy));
                         triggerFeedback();
                         sfx.memoryComplete();
+                        setShowConfetti(true);
+                        window.setTimeout(() => setShowConfetti(false), 2600);
                         notify(`Memoria completo: +${rewardHearts} corazones y +${rewardEnergy} energia.`);
 
                         memoryResetTimerRef.current = window.setTimeout(() => {
@@ -975,6 +1056,7 @@ export default function MelodyMergePage({
     const handleCellClick = useCallback((index: number) => {
         if (didPointerDragRef.current) {
             didPointerDragRef.current = false;
+
             return;
         }
 
@@ -983,8 +1065,10 @@ export default function MelodyMergePage({
                 if (current[index]) {
                     setSelectedCell(index);
                 }
+
                 return current;
             });
+
             return;
         }
 
@@ -1066,6 +1150,16 @@ export default function MelodyMergePage({
             <Head title="My Home" />
 
             <main className="mm-app">
+                <div className="mm-floating-hearts" aria-hidden>
+                    <span>&#10084;</span>
+                    <span>&#128150;</span>
+                    <span>&#10084;</span>
+                    <span>&#128156;</span>
+                    <span>&#10084;</span>
+                    <span>&#128150;</span>
+                    <span>&#128156;</span>
+                    <span>&#10084;</span>
+                </div>
                 {showSplash && (
                     <div className="mm-splash">
                         <div className="mm-splash__icon">
@@ -1327,8 +1421,40 @@ export default function MelodyMergePage({
                                 <span className="mm-room__rug" />
                                 <span className="mm-room__shelf" />
                                 <span className="mm-room__bed" />
+                                <span className="mm-room__pillow" />
+                                <span className="mm-room__lamp" />
+                                <div className="mm-room__stars" aria-hidden>
+                                    <span />
+                                    <span />
+                                    <span />
+                                </div>
                                 {collectedCards.length >= 3 && <span className="mm-room__plush" />}
                                 {collectedCards.length >= 6 && <span className="mm-room__poster" />}
+                                {collectedCards.length >= 10 && <span className="mm-room__cat" />}
+                            </div>
+
+                            <div className="mm-love-letter">
+                                <div className="mm-love-letter__header">
+                                    <Mail size={17} aria-hidden />
+                                    <h2>Carta para ti</h2>
+                                    {dailyStreak > 0 && (
+                                        <span className="mm-streak">
+                                            <span className="mm-streak__fire" aria-hidden>&#128293;</span>
+                                            {dailyStreak} dia{dailyStreak !== 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="mm-love-letter__message">
+                                    <p>{loveLetterMessages[loveLetterIndex]}</p>
+                                </div>
+                                <div className="mm-love-letter__nav">
+                                    <button onClick={() => { sfx.loveLetter(); setLoveLetterIndex((i) => (i - 1 + loveLetterMessages.length) % loveLetterMessages.length); }} type="button">
+                                        <ChevronLeft size={18} aria-hidden />
+                                    </button>
+                                    <button onClick={() => { sfx.loveLetter(); setLoveLetterIndex((i) => (i + 1) % loveLetterMessages.length); }} type="button">
+                                        <ChevronRight size={18} aria-hidden />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="mm-missions">
@@ -1404,6 +1530,13 @@ export default function MelodyMergePage({
                                 <span>+60 corazones</span>
                                 <span>+10 energia</span>
                             </div>
+
+                            {memoryMatches === memorySource.length && memorySource.length > 0 && (
+                                <div className="mm-memory-complete">
+                                    <h3>Todas las parejas encontradas</h3>
+                                    <p>Recompensas reclamadas. Preparando nueva ronda...</p>
+                                </div>
+                            )}
                         </section>
                     )}
 
@@ -1441,6 +1574,12 @@ export default function MelodyMergePage({
                                 </span>
                                 <p className="mm-kicker">Recompensa diaria</p>
                                 <h2>Regalo listo</h2>
+                                {dailyStreak > 0 && (
+                                    <span className="mm-streak">
+                                        <span className="mm-streak__fire" aria-hidden>&#128293;</span>
+                                        Racha: {dailyStreak} dia{dailyStreak !== 1 ? 's' : ''} seguidos
+                                    </span>
+                                )}
                                 <div className="mm-daily-modal__rewards">
                                     <span>+{dailyReward.energy} energia</span>
                                     <span>+{dailyReward.hearts} corazones</span>
@@ -1541,6 +1680,26 @@ export default function MelodyMergePage({
                                 </button>
                             </div>
                         </div>
+                    )}
+
+                    {showConfetti && (
+                        <div className="mm-confetti" aria-hidden>
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <span className="mm-confetti__piece" key={i} />
+                            ))}
+                        </div>
+                    )}
+
+                    {sparklePosition && (
+                        <div className="mm-sparkle-burst" aria-hidden style={{ left: sparklePosition.x, top: sparklePosition.y }}>
+                            {Array.from({ length: 8 }, (_, i) => (
+                                <span className="mm-sparkle-burst__particle" key={i} />
+                            ))}
+                        </div>
+                    )}
+
+                    {showLevelUpFlash && (
+                        <div className="mm-level-up-flash" aria-hidden />
                     )}
                 </section>
             </main>

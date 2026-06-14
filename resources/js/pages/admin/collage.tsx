@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { Image, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 type CollagePhoto = {
     id: number;
@@ -46,6 +46,7 @@ export default function AdminCollage({ photos }: CollagePageProps) {
     const remove = (photo: CollagePhoto) => {
         if (!photo.canDelete) {
             window.alert('Esta foto ya tiene piezas desbloqueadas y no se puede eliminar.');
+
             return;
         }
 

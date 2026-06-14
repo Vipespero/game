@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { Music, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 type Track = {
     filename: string;

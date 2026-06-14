@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
+import { useState } from 'react';
 
 type VerifyEmailProps = {
     status?: string;

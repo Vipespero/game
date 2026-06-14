@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { Heart, LoaderCircle, LockKeyhole, Sparkles, UserPlus } from 'lucide-react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 type AuthMode = 'login' | 'register';
 
@@ -29,6 +29,7 @@ export default function LoginPage({ cardCount = 0, mode = 'login', canRegister =
 
         if (isRegister) {
             form.post('/register');
+
             return;
         }
 
