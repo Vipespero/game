@@ -371,6 +371,7 @@ export default function MelodyMergePage({
     const [mergeCount, setMergeCount] = useState(Math.max(initialGameSave?.mergeCount ?? 0, 0));
     const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(cardsById, initialGameSave?.openedPacks));
     const [collagePieces, setCollagePieces] = useState<string[]>(() => normalizeCollagePieces(initialGameSave?.collagePieces));
+    const [activeCollageIndex, setActiveCollageIndex] = useState(0);
     const [claimedMissions, setClaimedMissions] = useState<string[]>(() => initialGameSave?.claimedMissions ?? []);
     const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(initialGameSave?.dailyRewardClaimedAt ?? null);
     const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(initialGameSave?.dailyRewardClaimedAt));
@@ -592,6 +593,11 @@ export default function MelodyMergePage({
     );
     const totalCollagePieces = collagePiecePool.length;
     const collagePercent = totalCollagePieces > 0 ? Math.round((collagePieces.length / totalCollagePieces) * 100) : 0;
+    const safeActiveCollageIndex = Math.min(activeCollageIndex, Math.max(collagePhotos.length - 1, 0));
+    const activeCollagePhoto = collagePhotos[safeActiveCollageIndex] ?? null;
+    const activeCollageOwnedCount = activeCollagePhoto
+        ? Array.from({ length: activeCollagePhoto.piecesCount }, (_, i) => collagePieces.includes(collagePieceId(activeCollagePhoto.id, i))).filter(Boolean).length
+        : 0;
     const completedPhotoIds = useMemo(() => {
         const completed = new Set<number>();
 
@@ -607,22 +613,25 @@ export default function MelodyMergePage({
 
         return completed;
     }, [collagePieces, collagePhotos]);
-    const collageTiles = collagePiecePool.map((piece) => {
-        const row = Math.floor(piece.pieceIndex / collageColumns);
-        const column = piece.pieceIndex % collageColumns;
+    const collageTiles = activeCollagePhoto
+        ? Array.from({ length: activeCollagePhoto.piecesCount }, (_, pieceIndex) => {
+            const row = Math.floor(pieceIndex / collageColumns);
+            const column = pieceIndex % collageColumns;
+            const pieceId = collagePieceId(activeCollagePhoto.id, pieceIndex);
 
-        return {
-            column,
-            imageUrl: piece.imageUrl,
-            index: piece.pieceIndex,
-            label: piece.label,
-            owned: collagePieces.includes(piece.id),
-            photoComplete: completedPhotoIds.has(piece.photoId),
-            pieceId: piece.id,
-            photoId: piece.photoId,
-            row,
-        };
-    });
+            return {
+                column,
+                imageUrl: activeCollagePhoto.url,
+                index: pieceIndex,
+                label: activeCollagePhoto.label,
+                owned: collagePieces.includes(pieceId),
+                photoComplete: completedPhotoIds.has(activeCollagePhoto.id),
+                pieceId,
+                photoId: activeCollagePhoto.id,
+                row,
+            };
+        })
+        : [];
     const rarityStats = useMemo(() => {
         const stats: Record<string, { owned: number; total: number }> = {};
 
@@ -1356,10 +1365,32 @@ export default function MelodyMergePage({
                                 <div className="mm-collage__head">
                                     <div>
                                         <p className="mm-kicker">Recuerdo secreto</p>
-                                        <h2>{collagePieces.length}/{totalCollagePieces} piezas</h2>
+                                        <h2>{activeCollagePhoto ? `${activeCollageOwnedCount}/${activeCollagePhoto.piecesCount}` : `0/${totalCollagePieces}`} piezas</h2>
                                     </div>
                                     <span>{collagePercent}%</span>
                                 </div>
+                                {activeCollagePhoto && (
+                                    <div className="mm-collage__nav">
+                                        <button
+                                            disabled={collagePhotos.length <= 1}
+                                            onClick={() => setActiveCollageIndex((index) => (index - 1 + collagePhotos.length) % collagePhotos.length)}
+                                            type="button"
+                                        >
+                                            <ChevronLeft size={16} aria-hidden />
+                                        </button>
+                                        <div>
+                                            <strong>{activeCollagePhoto.label}</strong>
+                                            <span>{safeActiveCollageIndex + 1}/{collagePhotos.length} · {completedPhotoIds.has(activeCollagePhoto.id) ? 'Completo' : `${activeCollagePhoto.piecesCount - activeCollageOwnedCount} faltantes`}</span>
+                                        </div>
+                                        <button
+                                            disabled={collagePhotos.length <= 1}
+                                            onClick={() => setActiveCollageIndex((index) => (index + 1) % collagePhotos.length)}
+                                            type="button"
+                                        >
+                                            <ChevronRight size={16} aria-hidden />
+                                        </button>
+                                    </div>
+                                )}
                                 <div
                                     className="mm-collage__grid"
                                     style={{

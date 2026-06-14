@@ -1241,6 +1241,54 @@ button {
     font-weight: 900;
 }
 
+.mm-collage__nav {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    align-items: center;
+    gap: 8px;
+}
+
+.mm-collage__nav button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--mm-pink);
+    box-shadow: 0 6px 14px rgba(120, 65, 132, 0.12);
+}
+
+.mm-collage__nav button:disabled {
+    opacity: 0.45;
+}
+
+.mm-collage__nav div {
+    display: grid;
+    min-width: 0;
+    justify-items: center;
+    gap: 2px;
+    text-align: center;
+}
+
+.mm-collage__nav strong {
+    overflow: hidden;
+    max-width: 100%;
+    color: var(--mm-ink);
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mm-collage__nav span {
+    color: var(--mm-muted);
+    font-size: 10px;
+    font-weight: 800;
+}
+
 .mm-collage__grid {
     display: grid;
     grid-template-columns: repeat(var(--mm-collage-columns), minmax(0, 1fr));
