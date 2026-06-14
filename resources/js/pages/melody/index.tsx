@@ -142,6 +142,18 @@ const normalizeCollagePieces = (pieces?: string[]) => {
 };
 
 const collagePieceId = (photoId: number, pieceIndex: number) => `${photoId}:${String(pieceIndex).padStart(2, '0')}`;
+const collagePieceStyle = (piece: CollagePieceReward) => {
+    const pieceCol = piece.pieceIndex % collageColumns;
+    const pieceRow = Math.floor(piece.pieceIndex / collageColumns);
+
+    return {
+        '--mm-collage-image': `url("${piece.imageUrl}")`,
+        '--mm-collage-x': `${(pieceCol / (collageColumns - 1)) * 100}%`,
+        '--mm-collage-y': `${(pieceRow / (collageRowCount - 1)) * 100}%`,
+        '--mm-collage-columns': collageColumns,
+        '--mm-collage-rows': collageRowCount,
+    } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string> & Record<'--mm-collage-columns' | '--mm-collage-rows', number>;
+};
 
 const STREAK_KEY = 'mm-daily-streak';
 
@@ -812,7 +824,9 @@ export default function MelodyMergePage({
     }, [dailyReward.energy, dailyReward.hearts, getPack, maxEnergy, notify, queuePack]);
 
     const advancePackCard = useCallback(() => {
-        setDismissedPackCards((value) => Math.min(value + 1, pendingPack?.cards.length ?? value + 1));
+        const rewardCount = (pendingPack?.cards.length ?? 0) + (pendingPack?.collagePieces?.length ?? 0);
+
+        setDismissedPackCards((value) => Math.min(value + 1, rewardCount || value + 1));
     }, [pendingPack]);
 
     const addProgress = useCallback((itemLevel: number) => {
@@ -1155,6 +1169,12 @@ export default function MelodyMergePage({
         };
     });
     const memoryProgress = memorySource.length > 0 ? Math.round((memoryMatches / memorySource.length) * 100) : 0;
+    const packRevealItems = pendingPack
+        ? [
+            ...pendingPack.cards.map((card) => ({ type: 'card' as const, card })),
+            ...(pendingPack.collagePieces ?? []).map((piece) => ({ type: 'collage' as const, piece })),
+        ]
+        : [];
 
     return (
         <>
@@ -1621,22 +1641,42 @@ export default function MelodyMergePage({
                                     </>
                                 ) : (
                                     <>
-                                        {dismissedPackCards < pendingPack.cards.length ? (
+                                        {dismissedPackCards < packRevealItems.length ? (
                                             <button className="mm-card-stack" onClick={advancePackCard} type="button">
-                                                {pendingPack.cards.map((card, index) => (
-                                                    <span
-                                                        className={`mm-stack-card rarity-${card.rarity.toLowerCase()} ${
-                                                            index < dismissedPackCards ? 'is-dismissed' :
-                                                                index === dismissedPackCards ? 'is-active' :
-                                                                    'is-waiting'
-                                                        }`}
-                                                        key={`${pendingPack.id}-stack-${card.id}-${index}`}
-                                                        style={{ '--stack-index': index } as CSSProperties & Record<'--stack-index', number>}
-                                                    >
-                                                        <img alt={card.name} src={card.imageUrl} />
-                                                        <small>{card.rarity}</small>
-                                                    </span>
-                                                ))}
+                                                {packRevealItems.map((reward, index) => {
+                                                    const revealState = index < dismissedPackCards ? 'is-dismissed' :
+                                                        index === dismissedPackCards ? 'is-active' :
+                                                            'is-waiting';
+                                                    const stackStyle = { '--stack-index': index } as CSSProperties & Record<'--stack-index', number>;
+
+                                                    if (reward.type === 'collage') {
+                                                        return (
+                                                            <span
+                                                                className={`mm-stack-card mm-stack-card--collage ${revealState}`}
+                                                                key={`${pendingPack.id}-stack-${reward.piece.id}-${index}`}
+                                                                style={{
+                                                                    ...stackStyle,
+                                                                    ...collagePieceStyle(reward.piece),
+                                                                }}
+                                                            >
+                                                                <div className="mm-reward-card__piece-bg" />
+                                                                <small>Pieza</small>
+                                                                <strong>Recuerdo secreto</strong>
+                                                            </span>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <span
+                                                            className={`mm-stack-card rarity-${reward.card.rarity.toLowerCase()} ${revealState}`}
+                                                            key={`${pendingPack.id}-stack-${reward.card.id}-${index}`}
+                                                            style={stackStyle}
+                                                        >
+                                                            <img alt={reward.card.name} src={reward.card.imageUrl} />
+                                                            <small>{reward.card.rarity}</small>
+                                                        </span>
+                                                    );
+                                                })}
                                             </button>
                                         ) : (
                                             <>
@@ -1657,29 +1697,18 @@ export default function MelodyMergePage({
                                                             </div>
                                                         );
                                                     })}
-                                                    {(pendingPack.collagePieces ?? []).map((piece) => {
-                                                        const pieceCol = piece.pieceIndex % collageColumns;
-                                                        const pieceRow = Math.floor(piece.pieceIndex / collageColumns);
-
-                                                        return (
-                                                            <div
-                                                                className="mm-reward-card mm-reward-card--collage is-new"
-                                                                key={`${pendingPack.id}-${piece.id}`}
-                                                                style={{
-                                                                    '--mm-collage-image': `url("${piece.imageUrl}")`,
-                                                                    '--mm-collage-x': `${(pieceCol / (collageColumns - 1)) * 100}%`,
-                                                                    '--mm-collage-y': `${(pieceRow / (collageRowCount - 1)) * 100}%`,
-                                                                    '--mm-collage-columns': collageColumns,
-                                                                    '--mm-collage-rows': collageRowCount,
-                                                                } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string> & Record<'--mm-collage-columns' | '--mm-collage-rows', number>}
-                                                            >
-                                                                <div className="mm-reward-card__piece-bg" />
-                                                                <span>Pieza</span>
-                                                                <em>Nueva</em>
-                                                                <strong>Recuerdo secreto</strong>
-                                                            </div>
-                                                        );
-                                                    })}
+                                                    {(pendingPack.collagePieces ?? []).map((piece) => (
+                                                        <div
+                                                            className="mm-reward-card mm-reward-card--collage is-new"
+                                                            key={`${pendingPack.id}-${piece.id}`}
+                                                            style={collagePieceStyle(piece)}
+                                                        >
+                                                            <div className="mm-reward-card__piece-bg" />
+                                                            <span>Pieza</span>
+                                                            <em>Nueva</em>
+                                                            <strong>Recuerdo secreto</strong>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                                 <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
                                                     Guardar
