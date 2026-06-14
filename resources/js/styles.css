@@ -2170,18 +2170,37 @@ button {
 }
 
 .mm-reward-card--collage {
+    align-content: normal;
+    gap: 6px;
+    min-height: 188px;
     background:
         linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 211, 231, 0.7)),
         repeating-linear-gradient(45deg, rgba(255, 114, 179, 0.12) 0 8px, rgba(169, 135, 255, 0.12) 8px 16px);
 }
 
 .mm-reward-card--collage > .mm-reward-card__piece-bg {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    border-radius: 12px;
     background-image: var(--mm-collage-image);
     background-position: var(--mm-collage-x) var(--mm-collage-y);
     background-repeat: no-repeat;
-    background-size: calc(4 * 100%) calc(4 * 100%);
+    background-size: calc(var(--mm-collage-columns) * 100%) calc(var(--mm-collage-rows) * 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+        0 8px 16px rgba(120, 65, 132, 0.14);
+}
+
+.mm-reward-card--collage > span {
+    align-self: end;
+}
+
+.mm-reward-card--collage > strong {
+    align-self: end;
 }
 
 .mm-reward-card strong {

@@ -426,6 +426,7 @@ export default function MelodyMergePage({
     const [loveLetterIndex, setLoveLetterIndex] = useState(() => Math.floor(Math.random() * loveLetterMessages.length));
     const [dailyStreak, setDailyStreak] = useState(() => readStreak().count);
     const [sparklePosition, setSparklePosition] = useState<{ x: number; y: number } | null>(null);
+    const [justMergedCell, setJustMergedCell] = useState<number | null>(null);
 
     const notify = useCallback((message: string) => {
         setToastMessage(message);
@@ -822,104 +823,89 @@ export default function MelodyMergePage({
         setHearts((value) => value + gainedHearts);
         setMergeCount((value) => value + 1);
 
-        const levelUpRef: { current: { nextLevel: number; gainedEnergy: number; trigger: GamePackDefinition['triggerKey'] | null; count: number } | null } = { current: null };
+        let nextXp = xp + gainedXp;
+        let nextLevel = playerLevel;
+        let levelsGained = 0;
+        let gainedEnergy = 0;
+        let rewardPackTrigger: GamePackDefinition['triggerKey'] | null = null;
 
-        setXp((currentXp) => {
-            let nextXp = currentXp + gainedXp;
-            let nextLevel = playerLevel;
-            let levelsGained = 0;
-            let gainedEnergy = 0;
-            let rewardPackTrigger: GamePackDefinition['triggerKey'] | null = null;
+        while (nextXp >= getPlayerLevel(nextLevel).xpRequired) {
+            const levelDefinition = getPlayerLevel(nextLevel);
+            nextXp -= levelDefinition.xpRequired;
+            gainedEnergy += levelDefinition.rewardEnergy;
+            rewardPackTrigger = levelDefinition.rewardPackTrigger ?? rewardPackTrigger;
+            nextLevel += 1;
+            levelsGained += 1;
+        }
 
-            while (nextXp >= getPlayerLevel(nextLevel).xpRequired) {
-                const levelDefinition = getPlayerLevel(nextLevel);
-                nextXp -= levelDefinition.xpRequired;
-                gainedEnergy += levelDefinition.rewardEnergy;
-                rewardPackTrigger = levelDefinition.rewardPackTrigger ?? rewardPackTrigger;
-                nextLevel += 1;
-                levelsGained += 1;
-            }
+        setXp(nextXp);
 
-            if (levelsGained > 0) {
-                levelUpRef.current = { nextLevel, gainedEnergy, trigger: rewardPackTrigger, count: levelsGained };
-            }
-
-            return nextXp;
-        });
-
-        const result = levelUpRef.current;
-
-        if (result) {
-            setPlayerLevel(result.nextLevel);
-            setEnergy((prev) => Math.min(maxEnergy, prev + result.gainedEnergy));
-            const levelPack = getPack(result.trigger ?? 'level');
-            queuePack(levelPack, result.count > 1 ? `${levelPack.label} x${result.count}` : levelPack.label);
+        if (levelsGained > 0) {
+            setPlayerLevel(nextLevel);
+            setEnergy((prev) => Math.min(maxEnergy, prev + gainedEnergy));
+            const levelPack = getPack(rewardPackTrigger ?? 'level');
+            queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
             sfx.levelUp();
             setShowConfetti(true);
             setShowLevelUpFlash(true);
             window.setTimeout(() => setShowConfetti(false), 2600);
             window.setTimeout(() => setShowLevelUpFlash(false), 800);
-            notify(result.count > 1 ? `Subiste ${result.count} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
+            notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
         } else {
             notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
         }
-    }, [getMergeLevel, getPack, getPlayerLevel, maxEnergy, notify, playerLevel, queuePack]);
+    }, [getMergeLevel, getPack, getPlayerLevel, maxEnergy, notify, playerLevel, queuePack, xp]);
 
     const mergeCells = useCallback((from: number, to: number) => {
         if (from === to) return;
 
-        let mergedLevel: number | null = null;
+        const origin = board[from];
+        const target = board[to];
 
-        setBoard((current) => {
-            const origin = current[from];
-            const target = current[to];
+        if (!origin) return;
 
-            if (!origin) return current;
-
-            const next = [...current];
-
-            if (!target) {
-                next[to] = origin;
-                next[from] = null;
-                notify('Objeto movido.');
-
-                return next;
-            }
-
-            if (origin.level !== target.level) {
-                notify('Solo se fusionan objetos iguales.');
-
-                return current;
-            }
-
-            const newLevel = Math.min(origin.level + 1, maxMergeItemLevel);
-            next[to] = makeItem(newLevel);
+        if (!target) {
+            const next = [...board];
+            next[to] = origin;
             next[from] = null;
-            mergedLevel = origin.level;
+            setBoard(next);
+            notify('Objeto movido.');
 
-            return next;
-        });
-
-        if (mergedLevel !== null) {
-            triggerFeedback();
-            sfx.merge();
-            addProgress(mergedLevel);
-
-            const targetCell = document.querySelector(`[data-cell-index="${to}"]`);
-
-            if (targetCell) {
-                const rect = targetCell.getBoundingClientRect();
-                setSparklePosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-                window.setTimeout(() => setSparklePosition(null), 750);
-            }
-
-            const newLevel = Math.min(mergedLevel + 1, maxMergeItemLevel);
-
-            if (newLevel >= rules.mergePackMinLevel && Math.random() * 100 < rules.mergePackChancePercent) {
-                queuePack(getPack('merge'));
-            }
+            return;
         }
-    }, [addProgress, getPack, maxMergeItemLevel, notify, queuePack, rules.mergePackChancePercent, rules.mergePackMinLevel]);
+
+        if (origin.level !== target.level) {
+            notify('Solo se fusionan objetos iguales.');
+
+            return;
+        }
+
+        const mergedLevel = origin.level;
+        const newLevel = Math.min(mergedLevel + 1, maxMergeItemLevel);
+        const next = [...board];
+
+        next[to] = makeItem(newLevel);
+        next[from] = null;
+        setBoard(next);
+
+        triggerFeedback();
+        sfx.merge();
+        addProgress(mergedLevel);
+        setJustMergedCell(to);
+        window.setTimeout(() => setJustMergedCell(null), 420);
+
+        const targetCell = document.querySelector(`[data-cell-index="${to}"]`);
+
+        if (targetCell) {
+            const rect = targetCell.getBoundingClientRect();
+            setSparklePosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+            window.setTimeout(() => setSparklePosition(null), 750);
+        }
+
+        if (newLevel >= rules.mergePackMinLevel && Math.random() * 100 < rules.mergePackChancePercent) {
+            queuePack(getPack('merge'));
+        }
+    }, [addProgress, board, getPack, maxMergeItemLevel, notify, queuePack, rules.mergePackChancePercent, rules.mergePackMinLevel]);
 
     const generateItem = useCallback(() => {
         if (energy <= 0) {
@@ -1267,7 +1253,7 @@ export default function MelodyMergePage({
 
                                     return (
                                         <button
-                                            className={`mm-cell ${item ? `mm-cell--filled mm-cell--${item.symbol} ${item.imageUrl ? 'mm-cell--image' : ''}` : ''} ${selectedCell === index ? 'is-selected' : ''}`}
+                                            className={`mm-cell ${item ? `mm-cell--filled mm-cell--${item.symbol} ${item.imageUrl ? 'mm-cell--image' : ''}` : ''} ${selectedCell === index ? 'is-selected' : ''} ${justMergedCell === index ? 'mm-cell--just-merged' : ''}`}
                                             data-cell-index={index}
                                             draggable={Boolean(cell)}
                                             key={index}
@@ -1683,9 +1669,11 @@ export default function MelodyMergePage({
                                                                     '--mm-collage-image': `url("${piece.imageUrl}")`,
                                                                     '--mm-collage-x': `${(pieceCol / (collageColumns - 1)) * 100}%`,
                                                                     '--mm-collage-y': `${(pieceRow / (collageRowCount - 1)) * 100}%`,
-                                                                } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string>}
+                                                                    '--mm-collage-columns': collageColumns,
+                                                                    '--mm-collage-rows': collageRowCount,
+                                                                } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string> & Record<'--mm-collage-columns' | '--mm-collage-rows', number>}
                                                             >
-                                                                <span className="mm-reward-card__piece-bg" />
+                                                                <div className="mm-reward-card__piece-bg" />
                                                                 <span>Pieza</span>
                                                                 <em>Nueva</em>
                                                                 <strong>Recuerdo secreto</strong>
