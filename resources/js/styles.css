@@ -278,28 +278,31 @@ button {
 }
 
 .mm-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: repeat(2, auto);
     align-items: center;
-    justify-content: space-between;
-    gap: 5px;
-    padding: 6px 7px 4px;
+    column-gap: 8px;
+    row-gap: 4px;
+    padding: 7px 9px 5px;
 }
 
 .mm-brand {
+    grid-row: 1 / 3;
     display: flex;
     align-items: center;
     min-width: 0;
-    gap: 5px;
+    gap: 7px;
 }
 
 .mm-brand__mark {
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
+    width: 50px;
+    height: 50px;
     flex: 0 0 auto;
     border: 2px solid #ffffff;
-    border-radius: 10px;
+    border-radius: 15px;
     background:
         radial-gradient(
             circle at 32% 28%,
@@ -339,15 +342,26 @@ button {
 }
 
 .mm-brand h1 {
-    font-size: 16px;
+    font-size: 17px;
     white-space: nowrap;
+}
+
+.mm-header__controls {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: stretch;
+    grid-template-rows: repeat(2, 1fr);
+    gap: 4px;
+    min-width: 0;
 }
 
 .mm-stats {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     flex: 0 0 auto;
-    gap: 2px;
+    gap: 5px;
     white-space: nowrap;
 }
 
@@ -356,26 +370,33 @@ button {
     align-items: center;
     justify-content: center;
     gap: 3px;
-    min-width: 33px;
-    height: 25px;
+    min-width: 48px;
+    height: 29px;
     border: 1px solid var(--mm-border);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--mm-surface);
     color: var(--mm-ink);
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 900;
 }
 
 .mm-logout {
     display: grid;
     place-items: center;
-    width: 25px;
-    height: 25px;
+    width: 34px;
+    height: 34px;
     border: 1px solid var(--mm-border);
-    border-radius: 8px;
+    border-radius: 11px;
     background: var(--mm-surface);
     color: var(--mm-muted);
     box-shadow: 0 7px 16px rgba(120, 65, 132, 0.08);
+}
+
+.mm-header__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
 }
 
 .mm-logout:active {
@@ -444,10 +465,10 @@ button {
 .mm-save-icon {
     display: grid;
     place-items: center;
-    width: 25px;
-    height: 25px;
+    width: 34px;
+    height: 34px;
     border: 1px solid rgba(159, 230, 208, 0.42);
-    border-radius: 8px;
+    border-radius: 11px;
     background: rgba(159, 230, 208, 0.16);
     color: #38a887;
 }
@@ -1835,6 +1856,18 @@ button {
     background: rgba(159, 230, 208, 0.32);
 }
 
+.mm-blocks__board > button.is-drop-preview {
+    opacity: 0.72;
+    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline-offset: -2px;
+    transform: scale(0.94);
+}
+
+.mm-blocks__board > button.is-invalid-drop {
+    background: rgba(255, 107, 143, 0.28);
+    box-shadow: inset 0 0 0 2px rgba(207, 64, 127, 0.42);
+}
+
 .mm-blocks__board > button:active:not(.is-filled) {
     transform: scale(0.88);
 }
@@ -1935,20 +1968,23 @@ button {
     position: fixed;
     z-index: 150;
     display: grid;
-    place-items: center;
-    width: 76px;
-    height: 76px;
-    border: 2px solid rgba(255, 255, 255, 0.9);
-    border-radius: 18px;
-    background: rgba(255, 248, 252, 0.88);
-    box-shadow: 0 18px 34px rgba(83, 34, 81, 0.24);
-    transform: translate(-50%, -115%);
-    backdrop-filter: blur(6px);
+    grid-template-columns: repeat(4, 30px);
+    grid-template-rows: repeat(4, 30px);
+    gap: 2px;
+    width: 126px;
+    height: 126px;
+    opacity: 0.72;
+    filter: drop-shadow(0 10px 12px rgba(83, 34, 81, 0.24));
+    transform: translate(-50%, -112%);
 }
 
-.mm-blocks__drag-preview .mm-blocks__piece-grid {
-    grid-template-columns: repeat(4, 13px);
-    grid-template-rows: repeat(4, 13px);
+.mm-blocks__drag-preview.can-drop {
+    opacity: 0.42;
+}
+
+.mm-blocks__drag-preview > span {
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 7px;
 }
 
 .mm-blocks__reward svg {
@@ -4254,33 +4290,38 @@ button {
     }
 
     .mm-header {
-        gap: 3px;
-        padding: 5px 5px 3px;
+        column-gap: 5px;
+        row-gap: 3px;
+        padding: 5px 6px 4px;
     }
 
     .mm-brand h1 {
-        font-size: 14px;
+        font-size: 15px;
     }
 
     .mm-brand__mark {
-        width: 27px;
-        height: 27px;
+        width: 44px;
+        height: 44px;
     }
 
     .mm-stats {
-        gap: 1px;
+        gap: 3px;
     }
 
     .mm-stat {
-        min-width: 30px;
-        height: 24px;
-        font-size: 9px;
+        min-width: 43px;
+        height: 27px;
+        font-size: 10px;
     }
 
     .mm-logout,
     .mm-save-icon {
-        width: 24px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .mm-header__actions {
+        gap: 4px;
     }
 
     .mm-stage,

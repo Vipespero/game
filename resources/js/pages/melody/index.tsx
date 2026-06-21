@@ -18,7 +18,6 @@ import {
     Save,
     Scissors,
     Settings,
-    SkipForward,
     Sparkles,
     Trophy,
     Wand2,
@@ -730,6 +729,7 @@ export default function MelodyMergePage({
         string | null
     >(null);
     const [blockDrag, setBlockDrag] = useState<{
+        anchor: number | null;
         piece: BlockPiece;
         x: number;
         y: number;
@@ -1581,6 +1581,7 @@ export default function MelodyMergePage({
             blockDidDragRef.current = false;
             setSelectedBlockPieceId(piece.id);
             setBlockDrag({
+                anchor: null,
                 piece,
                 x: event.clientX,
                 y: event.clientY,
@@ -1597,10 +1598,18 @@ export default function MelodyMergePage({
             }
 
             blockDidDragRef.current = true;
+            const target = document
+                .elementFromPoint(event.clientX, event.clientY)
+                ?.closest<HTMLElement>('[data-block-index]');
+            const anchor = target
+                ? Number(target.dataset.blockIndex)
+                : Number.NaN;
+
             setBlockDrag((drag) =>
                 drag
                     ? {
                           ...drag,
+                          anchor: Number.isInteger(anchor) ? anchor : null,
                           x: event.clientX,
                           y: event.clientY,
                       }
@@ -1610,29 +1619,19 @@ export default function MelodyMergePage({
         [blockDrag],
     );
 
-    const handleBlockPointerEnd = useCallback(
-        (event: PointerEvent<HTMLButtonElement>) => {
-            if (!blockDrag) {
-                return;
+    const handleBlockPointerEnd = useCallback(() => {
+        if (!blockDrag) {
+            return;
+        }
+
+        if (blockDidDragRef.current) {
+            if (blockDrag.anchor !== null) {
+                placeBlockPiece(blockDrag.anchor, blockDrag.piece.id);
             }
+        }
 
-            if (blockDidDragRef.current) {
-                const target = document
-                    .elementFromPoint(event.clientX, event.clientY)
-                    ?.closest<HTMLElement>('[data-block-index]');
-                const anchor = target
-                    ? Number(target.dataset.blockIndex)
-                    : Number.NaN;
-
-                if (Number.isInteger(anchor)) {
-                    placeBlockPiece(anchor, blockDrag.piece.id);
-                }
-            }
-
-            setBlockDrag(null);
-        },
-        [blockDrag, placeBlockPiece],
-    );
+        setBlockDrag(null);
+    }, [blockDrag, placeBlockPiece]);
 
     const handleMemoryCardClick = useCallback(
         (cardId: string) => {
@@ -1911,6 +1910,14 @@ export default function MelodyMergePage({
     const blockGameOver =
         blockPieces.length > 0 &&
         !blockPieces.some((piece) => canBlockPieceFit(blockBoard, piece));
+    const blockDragIndexes =
+        blockDrag?.anchor !== null && blockDrag
+            ? blockPlacementIndexes(blockDrag.piece, blockDrag.anchor)
+            : [];
+    const blockDragCanPlace =
+        blockDrag?.anchor !== null && blockDrag
+            ? canPlaceBlock(blockBoard, blockDrag.piece, blockDrag.anchor)
+            : false;
     const packRevealItems = pendingPack
         ? [
               ...pendingPack.cards.map((card) => ({
@@ -1967,109 +1974,102 @@ export default function MelodyMergePage({
                                 />
                             </div>
                             <div>
-                                <h1>my Home</h1>
+                                <h1>My Home</h1>
                             </div>
                         </div>
 
-                        <div className="mm-stats" aria-label="Progreso">
-                            <div className="mm-stat">
-                                <Battery size={15} aria-hidden />
-                                <span>{energy}</span>
+                        <div className="mm-header__controls">
+                            <div className="mm-stats" aria-label="Progreso">
+                                <div className="mm-stat">
+                                    <Battery size={16} aria-hidden />
+                                    <span>{energy}</span>
+                                </div>
+                                <div className="mm-stat">
+                                    <Heart size={16} aria-hidden />
+                                    <span>{hearts}</span>
+                                </div>
+                                <div className="mm-stat">
+                                    <Crown size={16} aria-hidden />
+                                    <span>{playerLevel}</span>
+                                </div>
                             </div>
-                            <div className="mm-stat">
-                                <Heart size={15} aria-hidden />
-                                <span>{hearts}</span>
-                            </div>
-                            <div className="mm-stat">
-                                <Crown size={15} aria-hidden />
-                                <span>{playerLevel}</span>
-                            </div>
-                            <button
-                                aria-label={
-                                    musicPlaying
-                                        ? 'Pausar música'
-                                        : 'Reproducir música'
-                                }
-                                className={`mm-logout ${musicPlaying ? 'is-playing' : ''}`}
-                                onClick={() => music.toggle()}
-                                title={
-                                    musicPlaying
-                                        ? 'Pausar música'
-                                        : 'Reproducir música'
-                                }
-                                type="button"
-                            >
-                                <Music size={15} aria-hidden />
-                            </button>
-                            {musicPlaying && (
+                            <div className="mm-header__actions">
                                 <button
-                                    aria-label="Siguiente canción"
-                                    className="mm-logout"
-                                    onClick={() => music.next()}
-                                    title="Siguiente canción"
+                                    aria-label={
+                                        musicPlaying
+                                            ? 'Pausar música'
+                                            : 'Reproducir música'
+                                    }
+                                    className={`mm-logout ${musicPlaying ? 'is-playing' : ''}`}
+                                    onClick={() => music.toggle()}
+                                    title={
+                                        musicPlaying
+                                            ? 'Pausar música'
+                                            : 'Reproducir música'
+                                    }
                                     type="button"
                                 >
-                                    <SkipForward size={15} aria-hidden />
+                                    <Music size={17} aria-hidden />
                                 </button>
-                            )}
-                            <button
-                                aria-label="Cerrar sesión"
-                                className="mm-logout"
-                                onClick={() => router.post('/logout')}
-                                title="Cerrar sesión"
-                                type="button"
-                            >
-                                <LogOut size={15} aria-hidden />
-                            </button>
-                            <button
-                                aria-label="Configuración"
-                                className="mm-logout"
-                                onClick={() =>
-                                    router.visit('/settings/profile')
-                                }
-                                title="Configuración"
-                                type="button"
-                            >
-                                <Settings size={15} aria-hidden />
-                            </button>
-                            {auth?.user?.is_admin && (
                                 <button
-                                    aria-label="Administración"
+                                    aria-label="Cerrar sesión"
                                     className="mm-logout"
-                                    onClick={() => router.visit('/admin')}
-                                    title="Administración"
+                                    onClick={() => router.post('/logout')}
+                                    title="Cerrar sesión"
                                     type="button"
                                 >
-                                    <Crown size={15} aria-hidden />
+                                    <LogOut size={17} aria-hidden />
                                 </button>
-                            )}
-                            <button
-                                aria-label={
-                                    saveStatus === 'error'
-                                        ? 'Reintentar guardado'
-                                        : saveStatus === 'saving'
-                                          ? 'Guardando'
-                                          : 'Partida guardada'
-                                }
-                                className={`mm-save-icon mm-save-icon--${saveStatus}`}
-                                disabled={saveStatus !== 'error'}
-                                onClick={() => void postSave(savePayload)}
-                                title={
-                                    saveStatus === 'error'
-                                        ? 'Reintentar guardado'
-                                        : saveStatus === 'saving'
-                                          ? 'Guardando'
-                                          : 'Partida guardada'
-                                }
-                                type="button"
-                            >
-                                {saveStatus === 'error' ||
-                                saveStatus === 'saving' ? (
-                                    <RefreshCw size={15} aria-hidden />
-                                ) : (
-                                    <Save size={15} aria-hidden />
+                                <button
+                                    aria-label="Configuración"
+                                    className="mm-logout"
+                                    onClick={() =>
+                                        router.visit('/settings/profile')
+                                    }
+                                    title="Configuración"
+                                    type="button"
+                                >
+                                    <Settings size={17} aria-hidden />
+                                </button>
+                                {auth?.user?.is_admin && (
+                                    <button
+                                        aria-label="Administración"
+                                        className="mm-logout"
+                                        onClick={() => router.visit('/admin')}
+                                        title="Administración"
+                                        type="button"
+                                    >
+                                        <Crown size={17} aria-hidden />
+                                    </button>
                                 )}
-                            </button>
+                                <button
+                                    aria-label={
+                                        saveStatus === 'error'
+                                            ? 'Reintentar guardado'
+                                            : saveStatus === 'saving'
+                                              ? 'Guardando'
+                                              : 'Partida guardada'
+                                    }
+                                    className={`mm-save-icon mm-save-icon--${saveStatus}`}
+                                    disabled={saveStatus !== 'error'}
+                                    onClick={() => void postSave(savePayload)}
+                                    title={
+                                        saveStatus === 'error'
+                                            ? 'Reintentar guardado'
+                                            : saveStatus === 'saving'
+                                              ? 'Guardando'
+                                              : 'Partida guardada'
+                                    }
+                                    type="button"
+                                >
+                                    {saveStatus === 'error' ||
+                                    saveStatus === 'saving' ? (
+                                        <RefreshCw size={17} aria-hidden />
+                                    ) : (
+                                        <Save size={17} aria-hidden />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </header>
 
@@ -2604,7 +2604,7 @@ export default function MelodyMergePage({
                                     return (
                                         <button
                                             aria-label={`Casilla ${index + 1}${cell ? ' ocupada' : ' vacía'}`}
-                                            className={`${cell ? `is-filled color-${cell}` : ''} ${canUseAnchor ? 'can-place' : ''}`}
+                                            className={`${cell ? `is-filled color-${cell}` : ''} ${canUseAnchor ? 'can-place' : ''} ${blockDragCanPlace && blockDragIndexes.includes(index) ? `is-drop-preview color-${blockDrag?.piece.color ?? 1}` : ''} ${blockDrag?.anchor === index && !blockDragCanPlace ? 'is-invalid-drop' : ''}`}
                                             data-block-index={index}
                                             disabled={blockGameOver}
                                             key={index}
@@ -2633,9 +2633,13 @@ export default function MelodyMergePage({
                             </div>
 
                             <p className="mm-blocks__hint">
-                                {selectedBlockPiece
-                                    ? 'Ahora toca una casilla donde quieras colocarla.'
-                                    : 'Elige una figura. Completa filas o columnas para limpiarlas.'}
+                                {blockDrag
+                                    ? blockDragCanPlace
+                                        ? 'Suelta para colocar la figura.'
+                                        : 'Busca una zona iluminada donde pueda caber.'
+                                    : selectedBlockPiece
+                                      ? 'Toca una casilla o arrastra la figura al tablero.'
+                                      : 'Arrastra una figura al tablero. Completa filas o columnas.'}
                             </p>
 
                             <div
@@ -2716,48 +2720,24 @@ export default function MelodyMergePage({
 
                             {blockDrag && (
                                 <div
-                                    className="mm-blocks__drag-preview"
+                                    className={`mm-blocks__drag-preview ${blockDragCanPlace ? 'can-drop' : ''}`}
                                     style={{
                                         left: blockDrag.x,
                                         top: blockDrag.y,
                                     }}
                                 >
-                                    <span className="mm-blocks__piece-grid">
-                                        {(() => {
-                                            const occupied = new Set(
-                                                getBlockShape(
-                                                    blockDrag.piece.shapeId,
-                                                ).cells.map(
-                                                    ([row, column]) =>
-                                                        `${row}:${column}`,
-                                                ),
-                                            );
-
-                                            return Array.from(
-                                                { length: 16 },
-                                                (_, cellIndex) => {
-                                                    const row = Math.floor(
-                                                        cellIndex / 4,
-                                                    );
-                                                    const column =
-                                                        cellIndex % 4;
-
-                                                    return (
-                                                        <span
-                                                            className={
-                                                                occupied.has(
-                                                                    `${row}:${column}`,
-                                                                )
-                                                                    ? `is-filled color-${blockDrag.piece.color}`
-                                                                    : ''
-                                                            }
-                                                            key={cellIndex}
-                                                        />
-                                                    );
-                                                },
-                                            );
-                                        })()}
-                                    </span>
+                                    {getBlockShape(
+                                        blockDrag.piece.shapeId,
+                                    ).cells.map(([row, column]) => (
+                                        <span
+                                            className={`is-filled color-${blockDrag.piece.color}`}
+                                            key={`${row}:${column}`}
+                                            style={{
+                                                gridColumn: column + 1,
+                                                gridRow: row + 1,
+                                            }}
+                                        />
+                                    ))}
                                 </div>
                             )}
 
