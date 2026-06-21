@@ -226,9 +226,9 @@ export const mergeChain: MergeItemSource[] = [
     },
     {
         level: 10,
-        name: 'Legendario',
+        name: 'Zapatos',
         symbol: 'rainbow',
-        imagePath: null,
+        imagePath: 'zapatos.png',
         backgroundStyle:
             'linear-gradient(145deg, #ffe66d, #ff78bd 52%, #8b5cf6)',
         borderRadius: '50%',
