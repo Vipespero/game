@@ -43,7 +43,7 @@ return new class extends Migration
             [8, 'Ramo', 'bouquet', 'Mymelodyrosa.png', 166, 42],
             [9, 'Palacio', 'palace', 'Gengar.png', 248, 62],
             [10, 'Zapatos', 'rainbow', 'zapatos.png', 360, 90],
-            [11, 'Estrella', 'star', null, 510, 128],
+            [11, 'Talismán', 'star', 'talisman.png', 510, 128],
             [12, 'Cometa', 'comet', null, 706, 178],
             [13, 'Nube', 'cloud', null, 958, 240],
             [14, 'Campana', 'bell', null, 1278, 320],

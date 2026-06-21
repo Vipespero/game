@@ -241,9 +241,9 @@ export const mergeChain: MergeItemSource[] = [
     },
     {
         level: 11,
-        name: 'Estrella',
+        name: 'Talismán',
         symbol: 'star',
-        imagePath: null,
+        imagePath: 'talisman.png',
         backgroundStyle:
             'linear-gradient(145deg, #fff1a8, #ff7ab6 55%, #9d77ff)',
         borderRadius: '50%',
