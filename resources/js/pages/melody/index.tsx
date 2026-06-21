@@ -14,6 +14,8 @@ import {
     Music,
     PackageOpen,
     RotateCcw,
+    RefreshCw,
+    Save,
     Scissors,
     Settings,
     SkipForward,
@@ -678,12 +680,6 @@ export default function MelodyMergePage({
     const saveTimerRef = useRef<number | null>(null);
     const memoryTimerRef = useRef<number | null>(null);
     const memoryResetTimerRef = useRef<number | null>(null);
-    const saveStatusLabel = {
-        error: 'Sin guardar',
-        idle: 'Guardado',
-        saved: 'Guardado',
-        saving: 'Guardando',
-    }[saveStatus];
     const memorySource = useMemo(
         () => mergeItemPool.filter((item) => item.isActive).slice(0, 8),
         [mergeItemPool],
@@ -733,6 +729,12 @@ export default function MelodyMergePage({
     const [selectedBlockPieceId, setSelectedBlockPieceId] = useState<
         string | null
     >(null);
+    const [blockDrag, setBlockDrag] = useState<{
+        piece: BlockPiece;
+        x: number;
+        y: number;
+    } | null>(null);
+    const blockDidDragRef = useRef(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [showLevelUpFlash, setShowLevelUpFlash] = useState(false);
     const [loveLetterIndex, setLoveLetterIndex] = useState(() =>
@@ -1474,10 +1476,8 @@ export default function MelodyMergePage({
     }, [notify]);
 
     const placeBlockPiece = useCallback(
-        (anchor: number) => {
-            const piece = blockPieces.find(
-                (item) => item.id === selectedBlockPieceId,
-            );
+        (anchor: number, pieceId = selectedBlockPieceId) => {
+            const piece = blockPieces.find((item) => item.id === pieceId);
 
             if (!piece) {
                 notify('Elige una figura y luego toca el tablero.');
@@ -1574,6 +1574,64 @@ export default function MelodyMergePage({
             notify,
             selectedBlockPieceId,
         ],
+    );
+
+    const handleBlockPointerDown = useCallback(
+        (piece: BlockPiece, event: PointerEvent<HTMLButtonElement>) => {
+            blockDidDragRef.current = false;
+            setSelectedBlockPieceId(piece.id);
+            setBlockDrag({
+                piece,
+                x: event.clientX,
+                y: event.clientY,
+            });
+            event.currentTarget.setPointerCapture(event.pointerId);
+        },
+        [],
+    );
+
+    const handleBlockPointerMove = useCallback(
+        (event: PointerEvent<HTMLButtonElement>) => {
+            if (!blockDrag) {
+                return;
+            }
+
+            blockDidDragRef.current = true;
+            setBlockDrag((drag) =>
+                drag
+                    ? {
+                          ...drag,
+                          x: event.clientX,
+                          y: event.clientY,
+                      }
+                    : null,
+            );
+        },
+        [blockDrag],
+    );
+
+    const handleBlockPointerEnd = useCallback(
+        (event: PointerEvent<HTMLButtonElement>) => {
+            if (!blockDrag) {
+                return;
+            }
+
+            if (blockDidDragRef.current) {
+                const target = document
+                    .elementFromPoint(event.clientX, event.clientY)
+                    ?.closest<HTMLElement>('[data-block-index]');
+                const anchor = target
+                    ? Number(target.dataset.blockIndex)
+                    : Number.NaN;
+
+                if (Number.isInteger(anchor)) {
+                    placeBlockPiece(anchor, blockDrag.piece.id);
+                }
+            }
+
+            setBlockDrag(null);
+        },
+        [blockDrag, placeBlockPiece],
     );
 
     const handleMemoryCardClick = useCallback(
@@ -1909,8 +1967,7 @@ export default function MelodyMergePage({
                                 />
                             </div>
                             <div>
-                                <p className="mm-kicker">Juego privado</p>
-                                <h1>My Home</h1>
+                                <h1>my Home</h1>
                             </div>
                         </div>
 
@@ -1986,6 +2043,33 @@ export default function MelodyMergePage({
                                     <Crown size={15} aria-hidden />
                                 </button>
                             )}
+                            <button
+                                aria-label={
+                                    saveStatus === 'error'
+                                        ? 'Reintentar guardado'
+                                        : saveStatus === 'saving'
+                                          ? 'Guardando'
+                                          : 'Partida guardada'
+                                }
+                                className={`mm-save-icon mm-save-icon--${saveStatus}`}
+                                disabled={saveStatus !== 'error'}
+                                onClick={() => void postSave(savePayload)}
+                                title={
+                                    saveStatus === 'error'
+                                        ? 'Reintentar guardado'
+                                        : saveStatus === 'saving'
+                                          ? 'Guardando'
+                                          : 'Partida guardada'
+                                }
+                                type="button"
+                            >
+                                {saveStatus === 'error' ||
+                                saveStatus === 'saving' ? (
+                                    <RefreshCw size={15} aria-hidden />
+                                ) : (
+                                    <Save size={15} aria-hidden />
+                                )}
+                            </button>
                         </div>
                     </header>
 
@@ -2002,13 +2086,6 @@ export default function MelodyMergePage({
                                     width: `${Math.min(100, (xp / xpGoal) * 100)}%`,
                                 }}
                             />
-                        </div>
-                        <div
-                            className={`mm-save mm-save--${saveStatus}`}
-                            role="status"
-                        >
-                            <span />
-                            {saveStatusLabel}
                         </div>
                     </div>
 
@@ -2528,6 +2605,7 @@ export default function MelodyMergePage({
                                         <button
                                             aria-label={`Casilla ${index + 1}${cell ? ' ocupada' : ' vacía'}`}
                                             className={`${cell ? `is-filled color-${cell}` : ''} ${canUseAnchor ? 'can-place' : ''}`}
+                                            data-block-index={index}
                                             disabled={blockGameOver}
                                             key={index}
                                             onClick={() =>
@@ -2578,11 +2656,30 @@ export default function MelodyMergePage({
                                             aria-label="Seleccionar figura"
                                             className={`${selectedBlockPieceId === piece.id ? 'is-selected' : ''} ${canBlockPieceFit(blockBoard, piece) ? '' : 'cannot-fit'}`}
                                             key={piece.id}
-                                            onClick={() =>
+                                            onClick={() => {
+                                                if (blockDidDragRef.current) {
+                                                    blockDidDragRef.current = false;
+
+                                                    return;
+                                                }
+
                                                 setSelectedBlockPieceId(
                                                     piece.id,
+                                                );
+                                            }}
+                                            onPointerCancel={
+                                                handleBlockPointerEnd
+                                            }
+                                            onPointerDown={(event) =>
+                                                handleBlockPointerDown(
+                                                    piece,
+                                                    event,
                                                 )
                                             }
+                                            onPointerMove={
+                                                handleBlockPointerMove
+                                            }
+                                            onPointerUp={handleBlockPointerEnd}
                                             type="button"
                                         >
                                             <span className="mm-blocks__piece-grid">
@@ -2616,6 +2713,53 @@ export default function MelodyMergePage({
                                     );
                                 })}
                             </div>
+
+                            {blockDrag && (
+                                <div
+                                    className="mm-blocks__drag-preview"
+                                    style={{
+                                        left: blockDrag.x,
+                                        top: blockDrag.y,
+                                    }}
+                                >
+                                    <span className="mm-blocks__piece-grid">
+                                        {(() => {
+                                            const occupied = new Set(
+                                                getBlockShape(
+                                                    blockDrag.piece.shapeId,
+                                                ).cells.map(
+                                                    ([row, column]) =>
+                                                        `${row}:${column}`,
+                                                ),
+                                            );
+
+                                            return Array.from(
+                                                { length: 16 },
+                                                (_, cellIndex) => {
+                                                    const row = Math.floor(
+                                                        cellIndex / 4,
+                                                    );
+                                                    const column =
+                                                        cellIndex % 4;
+
+                                                    return (
+                                                        <span
+                                                            className={
+                                                                occupied.has(
+                                                                    `${row}:${column}`,
+                                                                )
+                                                                    ? `is-filled color-${blockDrag.piece.color}`
+                                                                    : ''
+                                                            }
+                                                            key={cellIndex}
+                                                        />
+                                                    );
+                                                },
+                                            );
+                                        })()}
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="mm-blocks__reward">
                                 <Heart size={15} aria-hidden />
