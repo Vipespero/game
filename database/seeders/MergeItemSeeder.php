@@ -21,7 +21,7 @@ class MergeItemSeeder extends Seeder
             [9, 'Palacio', 'palace', 'Gengar.png', 'linear-gradient(145deg, #d9b4ff, #8b5cf6 52%, #4c1d95)', '50%', 116, 0, 2, 248, 62],
             [10, 'Zapatos', 'rainbow', 'zapatos.png', 'linear-gradient(145deg, #ffe66d, #ff78bd 52%, #8b5cf6)', '50%', 100, 0, 0, 360, 90],
             [11, 'Talismán', 'star', 'talisman.png', 'linear-gradient(145deg, #fff1a8, #ff7ab6 55%, #9d77ff)', '50%', 100, 0, 0, 510, 128],
-            [12, 'Cometa', 'comet', null, 'linear-gradient(145deg, #b8f4ff, #7c83ff 52%, #ff92d0)', '50%', 100, 0, 0, 706, 178],
+            [12, 'Joker', 'comet', 'joker.png', 'linear-gradient(145deg, #b8f4ff, #7c83ff 52%, #ff92d0)', '50%', 100, 0, 0, 706, 178],
             [13, 'Nube', 'cloud', null, 'linear-gradient(145deg, #fef3ff, #a5d8ff 52%, #f0abfc)', '50%', 100, 0, 0, 958, 240],
             [14, 'Campana', 'bell', null, 'linear-gradient(145deg, #fff0a6, #ffbd59 52%, #ff7ab6)', '50%', 100, 0, 0, 1278, 320],
             [15, 'Cupcake', 'cupcake', null, 'linear-gradient(145deg, #ffd6e8, #ff8cc6 52%, #b794f4)', '50%', 100, 0, 0, 1680, 420],

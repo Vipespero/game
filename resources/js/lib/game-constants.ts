@@ -256,9 +256,9 @@ export const mergeChain: MergeItemSource[] = [
     },
     {
         level: 12,
-        name: 'Cometa',
+        name: 'Joker',
         symbol: 'comet',
-        imagePath: null,
+        imagePath: 'joker.png',
         backgroundStyle:
             'linear-gradient(145deg, #b8f4ff, #7c83ff 52%, #ff92d0)',
         borderRadius: '50%',

@@ -44,7 +44,7 @@ return new class extends Migration
             [9, 'Palacio', 'palace', 'Gengar.png', 248, 62],
             [10, 'Zapatos', 'rainbow', 'zapatos.png', 360, 90],
             [11, 'Talismán', 'star', 'talisman.png', 510, 128],
-            [12, 'Cometa', 'comet', null, 706, 178],
+            [12, 'Joker', 'comet', 'joker.png', 706, 178],
             [13, 'Nube', 'cloud', null, 958, 240],
             [14, 'Campana', 'bell', null, 1278, 320],
             [15, 'Cupcake', 'cupcake', null, 1680, 420],
