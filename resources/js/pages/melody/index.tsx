@@ -30,7 +30,6 @@ import {
     fallbackMissions,
     fallbackGamePacks,
     fallbackDuplicateHeartRewards,
-    fallbackMergeItems,
     fallbackPlayerLevels,
     mergeChain,
     getAssetImage,
@@ -46,16 +45,10 @@ import { sfx } from '@/lib/sounds';
 import type {
     BoardItem,
     CardRarity,
-    CollagePhoto,
     CollagePieceReward,
     MelodyCard,
     MergeItemDefinition,
-    CardRarityDefinition,
-    GameConfig,
-    GameRules,
     GamePackDefinition,
-    MissionDefinition,
-    PlayerLevelDefinition,
     MelodyTab,
     PackReward,
     PackCardResult,
@@ -72,7 +65,8 @@ const makeItem = (level = 1): BoardItem => ({
     level,
 });
 
-const emptyBoard = (): Array<BoardItem | null> => Array.from({ length: boardSize }, () => null);
+const emptyBoard = (): Array<BoardItem | null> =>
+    Array.from({ length: boardSize }, () => null);
 
 const defaultBoard = () => {
     const next = emptyBoard();
@@ -95,27 +89,42 @@ const normalizeBoard = (board?: Array<BoardItem | null>) => {
 
         return {
             id: cell.id || nanoid(),
-            level: Math.min(Math.max(1, Math.round(cell.level)), mergeChain.length),
+            level: Math.min(
+                Math.max(1, Math.round(cell.level)),
+                mergeChain.length,
+            ),
         };
     });
 };
 
-const normalizePacks = (cardsById: Map<string, MelodyCard>, packs?: SavedPackReward[]) => {
+const normalizePacks = (
+    cardsById: Map<string, MelodyCard>,
+    packs?: SavedPackReward[],
+) => {
     if (!Array.isArray(packs)) {
         return [];
     }
 
-    return packs.map((pack) => ({
-        id: pack.id || nanoid(),
-        label: pack.label || 'Sobre guardado',
-        cards: Array.isArray(pack.cards)
-            ? pack.cards.map((cardId) => cardsById.get(cardId)).filter(Boolean) as MelodyCard[]
-            : [],
-    })).filter((pack) => pack.cards.length > 0);
+    return packs
+        .map((pack) => ({
+            id: pack.id || nanoid(),
+            label: pack.label || 'Sobre guardado',
+            cards: Array.isArray(pack.cards)
+                ? (pack.cards
+                      .map((cardId) => cardsById.get(cardId))
+                      .filter(Boolean) as MelodyCard[])
+                : [],
+        }))
+        .filter((pack) => pack.cards.length > 0);
 };
 
 const normalizeTab = (tab?: string) => {
-    return tab === 'album' || tab === 'room' || tab === 'memory' || tab === 'merge' ? tab : 'merge';
+    return tab === 'album' ||
+        tab === 'room' ||
+        tab === 'memory' ||
+        tab === 'merge'
+        ? tab
+        : 'merge';
 };
 
 const shuffle = <T,>(items: T[]) => {
@@ -132,16 +141,20 @@ const shuffle = <T,>(items: T[]) => {
 const dateKey = (date = new Date()) => date.toISOString().slice(0, 10);
 const collageColumns = 4;
 const collageRowCount = 4;
+const maxSavedPackHistory = 120;
 
 const normalizeCollagePieces = (pieces?: string[]) => {
     if (!Array.isArray(pieces)) {
         return [];
     }
 
-    return [...new Set(pieces)].filter((piece) => /^[1-9][0-9]*:(0[0-9]|1[0-5])$/.test(piece));
+    return [...new Set(pieces)].filter((piece) =>
+        /^[1-9][0-9]*:(0[0-9]|1[0-5])$/.test(piece),
+    );
 };
 
-const collagePieceId = (photoId: number, pieceIndex: number) => `${photoId}:${String(pieceIndex).padStart(2, '0')}`;
+const collagePieceId = (photoId: number, pieceIndex: number) =>
+    `${photoId}:${String(pieceIndex).padStart(2, '0')}`;
 const collagePieceStyle = (piece: CollagePieceReward) => {
     const pieceCol = piece.pieceIndex % collageColumns;
     const pieceRow = Math.floor(piece.pieceIndex / collageColumns);
@@ -152,7 +165,12 @@ const collagePieceStyle = (piece: CollagePieceReward) => {
         '--mm-collage-y': `${(pieceRow / (collageRowCount - 1)) * 100}%`,
         '--mm-collage-columns': collageColumns,
         '--mm-collage-rows': collageRowCount,
-    } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string> & Record<'--mm-collage-columns' | '--mm-collage-rows', number>;
+    } as CSSProperties &
+        Record<
+            '--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y',
+            string
+        > &
+        Record<'--mm-collage-columns' | '--mm-collage-rows', number>;
 };
 
 const STREAK_KEY = 'mm-daily-streak';
@@ -161,8 +179,11 @@ const readStreak = (): { count: number; lastDate: string } => {
     try {
         const saved = localStorage.getItem(STREAK_KEY);
 
-        if (saved) return JSON.parse(saved) as { count: number; lastDate: string };
-    } catch { /* ignore */ }
+        if (saved)
+            return JSON.parse(saved) as { count: number; lastDate: string };
+    } catch {
+        /* ignore */
+    }
 
     return { count: 0, lastDate: '' };
 };
@@ -170,7 +191,9 @@ const readStreak = (): { count: number; lastDate: string } => {
 const updateStreak = (): number => {
     const streak = readStreak();
     const today = dateKey();
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000)
+        .toISOString()
+        .slice(0, 10);
 
     if (streak.lastDate === today) {
         return streak.count;
@@ -178,26 +201,38 @@ const updateStreak = (): number => {
 
     const newCount = streak.lastDate === yesterday ? streak.count + 1 : 1;
 
-    try { localStorage.setItem(STREAK_KEY, JSON.stringify({ count: newCount, lastDate: today })); } catch { /* ignore */ }
+    try {
+        localStorage.setItem(
+            STREAK_KEY,
+            JSON.stringify({ count: newCount, lastDate: today }),
+        );
+    } catch {
+        /* ignore */
+    }
 
     return newCount;
 };
 
 const loveLetterMessages = [
-    'Queria recordarte que eres la persona mas especial del mundo para mi. Cada dia a tu lado es un regalo.',
-    'No importa lo dificil que sea el dia, saber que te tengo a ti me hace todo mas llevadero.',
-    'Me encanta como te ries, como me miras, como haces que todo sea mejor solo con estar.',
-    'Gracias por ser mi companera, mi confidente y mi lugar favorito en el mundo.',
-    'Si pudiera elegir de nuevo, te eligiria a ti mil veces sin dudarlo.',
-    'Eres mi calma, mi alegria y la razon por la que sonrio sin motivo.',
+    'Quería recordarte que eres la persona más especial del mundo para mí. Cada día a tu lado es un regalo.',
+    'No importa lo difícil que sea el día, saber que te tengo a ti me hace todo más llevadero.',
+    'Me encanta cómo te ríes, cómo me miras, cómo haces que todo sea mejor solo con estar.',
+    'Gracias por ser mi compañera, mi confidente y mi lugar favorito en el mundo.',
+    'Si pudiera elegir de nuevo, te elegiría a ti mil veces sin dudarlo.',
+    'Eres mi calma, mi alegría y la razón por la que sonrío sin motivo.',
     'Cada momento contigo se siente como un sueño del que no quiero despertar.',
-    'Tu eres mi historia favorita, la que quiero seguir escribiendo por siempre.',
+    'Tú eres mi historia favorita, la que quiero seguir escribiendo por siempre.',
     'Me haces creer en la magia, porque no hay otra forma de explicar lo que siento por ti.',
-    'Prometo estar ahi en los buenos y en los malos, porque contigo todo vale la pena.',
+    'Prometo estar ahí en los buenos y en los malos, porque contigo todo vale la pena.',
 ];
 
-const chooseCollagePiece = (pieces: CollagePieceReward[], unlockedPieces: string[]) => {
-    const missingPieces = pieces.filter((piece) => !unlockedPieces.includes(piece.id));
+const chooseCollagePiece = (
+    pieces: CollagePieceReward[],
+    unlockedPieces: string[],
+) => {
+    const missingPieces = pieces.filter(
+        (piece) => !unlockedPieces.includes(piece.id),
+    );
 
     if (missingPieces.length === 0) {
         return null;
@@ -210,7 +245,11 @@ const canClaimDailyReward = (claimedAt?: string | null) => {
     return !claimedAt || claimedAt.slice(0, 10) !== dateKey();
 };
 
-const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy: number, maxEnergy: number) => {
+const getOfflineEnergyGain = (
+    lastSeenAt: string | null | undefined,
+    savedEnergy: number,
+    maxEnergy: number,
+) => {
     if (!lastSeenAt || savedEnergy >= maxEnergy) {
         return 0;
     }
@@ -226,7 +265,9 @@ const getOfflineEnergyGain = (lastSeenAt: string | null | undefined, savedEnergy
     return Math.max(0, Math.min(maxEnergy - savedEnergy, minutesAway));
 };
 
-const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+const csrfToken = () =>
+    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+        ?.content ?? '';
 
 const readLocalSave = (key: string): MelodyGameSave | null => {
     if (typeof window === 'undefined') {
@@ -254,7 +295,10 @@ const writeLocalSave = (key: string, state: MelodyGameSave) => {
     }
 };
 
-const mostRecentSave = (serverSave: MelodyGameSave | null | undefined, localSave: MelodyGameSave | null) => {
+const mostRecentSave = (
+    serverSave: MelodyGameSave | null | undefined,
+    localSave: MelodyGameSave | null,
+) => {
     if (!localSave) {
         return serverSave ?? null;
     }
@@ -263,8 +307,12 @@ const mostRecentSave = (serverSave: MelodyGameSave | null | undefined, localSave
         return localSave;
     }
 
-    const serverTime = serverSave.lastSeenAt ? new Date(serverSave.lastSeenAt).getTime() : 0;
-    const localTime = localSave.lastSeenAt ? new Date(localSave.lastSeenAt).getTime() : 0;
+    const serverTime = serverSave.lastSeenAt
+        ? new Date(serverSave.lastSeenAt).getTime()
+        : 0;
+    const localTime = localSave.lastSeenAt
+        ? new Date(localSave.lastSeenAt).getTime()
+        : 0;
 
     return localTime > serverTime ? localSave : serverSave;
 };
@@ -290,7 +338,10 @@ export default function MelodyMergePage({
     auth,
 }: MelodyMergePageProps) {
     const localSaveKey = `melody-game-save:${auth?.user?.id ?? auth?.user?.email ?? 'guest'}`;
-    const initialGameSave = mostRecentSave(gameSave, readLocalSave(localSaveKey));
+    const initialGameSave = mostRecentSave(
+        gameSave,
+        readLocalSave(localSaveKey),
+    );
     const config = {
         ...fallbackGameConfig,
         ...gameConfig,
@@ -305,13 +356,21 @@ export default function MelodyMergePage({
         hearts: Math.max(0, config.dailyRewardHearts),
     };
     const levelDefinitions = useMemo(
-        () => playerLevels.length > 0 ? playerLevels : fallbackPlayerLevels,
+        () => (playerLevels.length > 0 ? playerLevels : fallbackPlayerLevels),
         [playerLevels],
     );
-    const getPlayerLevel = useCallback((level: number) => {
-        return levelDefinitions.find((item) => item.level === level)
-            ?? fallbackPlayerLevels[Math.min(Math.max(level, 1), fallbackPlayerLevels.length) - 1];
-    }, [levelDefinitions]);
+    const getPlayerLevel = useCallback(
+        (level: number) => {
+            return (
+                levelDefinitions.find((item) => item.level === level) ??
+                fallbackPlayerLevels[
+                    Math.min(Math.max(level, 1), fallbackPlayerLevels.length) -
+                        1
+                ]
+            );
+        },
+        [levelDefinitions],
+    );
     const duplicateHeartRewards = useMemo<Record<CardRarity, number>>(() => {
         const rewards = { ...fallbackDuplicateHeartRewards };
 
@@ -322,22 +381,38 @@ export default function MelodyMergePage({
         return rewards;
     }, [cardRarities]);
     const missionDefinitions = useMemo(
-        () => configuredMissions.length > 0 ? configuredMissions : fallbackMissions,
+        () =>
+            configuredMissions.length > 0
+                ? configuredMissions
+                : fallbackMissions,
         [configuredMissions],
     );
     const packDefinitions = useMemo(
-        () => gamePacks.length > 0 ? gamePacks : fallbackGamePacks,
+        () => (gamePacks.length > 0 ? gamePacks : fallbackGamePacks),
         [gamePacks],
     );
-    const getPack = useCallback((triggerKey: GamePackDefinition['triggerKey']) => {
-        return packDefinitions.find((pack) => pack.triggerKey === triggerKey)
-            ?? (fallbackGamePacks.find((pack) => pack.triggerKey === triggerKey) as GamePackDefinition);
-    }, [packDefinitions]);
+    const getPack = useCallback(
+        (triggerKey: GamePackDefinition['triggerKey']) => {
+            return (
+                packDefinitions.find(
+                    (pack) => pack.triggerKey === triggerKey,
+                ) ??
+                (fallbackGamePacks.find(
+                    (pack) => pack.triggerKey === triggerKey,
+                ) as GamePackDefinition)
+            );
+        },
+        [packDefinitions],
+    );
     const premiumPack = getPack('premium');
-    const cardPool = useMemo<MelodyCard[]>(() => cards.map((card) => ({
-        ...card,
-        imageUrl: getCardImage(card.imagePath),
-    })), [cards]);
+    const cardPool = useMemo<MelodyCard[]>(
+        () =>
+            cards.map((card) => ({
+                ...card,
+                imageUrl: getCardImage(card.imagePath),
+            })),
+        [cards],
+    );
     const mergeItemPool = useMemo<MergeItemDefinition[]>(() => {
         const source = mergeItems.length > 0 ? mergeItems : mergeChain;
 
@@ -347,40 +422,85 @@ export default function MelodyMergePage({
         }));
     }, [mergeItems]);
     const maxMergeItemLevel = useMemo(
-        () => Math.max(...mergeItemPool.map((item) => item.level), mergeChain.length),
+        () =>
+            Math.max(
+                ...mergeItemPool.map((item) => item.level),
+                mergeChain.length,
+            ),
         [mergeItemPool],
     );
-    const getMergeLevel = useCallback((level: number) => getLevel(level, mergeItemPool), [mergeItemPool]);
-    const cardsById = useMemo(() => new Map(cardPool.map((card) => [card.id, card])), [cardPool]);
-    const collagePiecePool = useMemo<CollagePieceReward[]>(() => collagePhotos.flatMap((photo) => (
-        Array.from({ length: photo.piecesCount }, (_, pieceIndex) => ({
-            id: collagePieceId(photo.id, pieceIndex),
-            photoId: photo.id,
-            pieceIndex,
-            label: photo.label,
-            imageUrl: photo.url,
-        }))
-    )), [collagePhotos]);
-    const savedEnergy = Math.min(Math.max(initialGameSave?.energy ?? 84, 0), maxEnergy);
-    const offlineEnergyGain = getOfflineEnergyGain(initialGameSave?.lastSeenAt, savedEnergy, maxEnergy);
-    const [board, setBoard] = useState<Array<BoardItem | null>>(() => normalizeBoard(initialGameSave?.board));
-    const [energy, setEnergy] = useState(Math.min(savedEnergy + offlineEnergyGain, maxEnergy));
-    const [hearts, setHearts] = useState(Math.max(initialGameSave?.hearts ?? 120, 0));
+    const getMergeLevel = useCallback(
+        (level: number) => getLevel(level, mergeItemPool),
+        [mergeItemPool],
+    );
+    const cardsById = useMemo(
+        () => new Map(cardPool.map((card) => [card.id, card])),
+        [cardPool],
+    );
+    const collagePiecePool = useMemo<CollagePieceReward[]>(
+        () =>
+            collagePhotos.flatMap((photo) =>
+                Array.from({ length: photo.piecesCount }, (_, pieceIndex) => ({
+                    id: collagePieceId(photo.id, pieceIndex),
+                    photoId: photo.id,
+                    pieceIndex,
+                    label: photo.label,
+                    imageUrl: photo.url,
+                })),
+            ),
+        [collagePhotos],
+    );
+    const savedEnergy = Math.min(
+        Math.max(initialGameSave?.energy ?? 84, 0),
+        maxEnergy,
+    );
+    const offlineEnergyGain = getOfflineEnergyGain(
+        initialGameSave?.lastSeenAt,
+        savedEnergy,
+        maxEnergy,
+    );
+    const [board, setBoard] = useState<Array<BoardItem | null>>(() =>
+        normalizeBoard(initialGameSave?.board),
+    );
+    const [energy, setEnergy] = useState(
+        Math.min(savedEnergy + offlineEnergyGain, maxEnergy),
+    );
+    const [hearts, setHearts] = useState(
+        Math.max(initialGameSave?.hearts ?? 120, 0),
+    );
     const [xp, setXp] = useState(Math.max(initialGameSave?.xp ?? 0, 0));
-    const [playerLevel, setPlayerLevel] = useState(Math.max(initialGameSave?.playerLevel ?? 1, 1));
-    const [mergeCount, setMergeCount] = useState(Math.max(initialGameSave?.mergeCount ?? 0, 0));
-    const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() => normalizePacks(cardsById, initialGameSave?.openedPacks));
-    const [collagePieces, setCollagePieces] = useState<string[]>(() => normalizeCollagePieces(initialGameSave?.collagePieces));
+    const [playerLevel, setPlayerLevel] = useState(
+        Math.max(initialGameSave?.playerLevel ?? 1, 1),
+    );
+    const [mergeCount, setMergeCount] = useState(
+        Math.max(initialGameSave?.mergeCount ?? 0, 0),
+    );
+    const [openedPacks, setOpenedPacks] = useState<PackReward[]>(() =>
+        normalizePacks(cardsById, initialGameSave?.openedPacks),
+    );
+    const [collagePieces, setCollagePieces] = useState<string[]>(() =>
+        normalizeCollagePieces(initialGameSave?.collagePieces),
+    );
     const [activeCollageIndex, setActiveCollageIndex] = useState(0);
-    const [claimedMissions, setClaimedMissions] = useState<string[]>(() => initialGameSave?.claimedMissions ?? []);
-    const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<string | null>(initialGameSave?.dailyRewardClaimedAt ?? null);
-    const [showDailyReward, setShowDailyReward] = useState(() => canClaimDailyReward(initialGameSave?.dailyRewardClaimedAt));
-    const [pendingPack, setPendingPack] = useState<PackReward | null>(null);
-    const [selectedAlbumCard, setSelectedAlbumCard] = useState<MelodyCard | null>(null);
+    const [claimedMissions, setClaimedMissions] = useState<string[]>(
+        () => initialGameSave?.claimedMissions ?? [],
+    );
+    const [dailyRewardClaimedAt, setDailyRewardClaimedAt] = useState<
+        string | null
+    >(initialGameSave?.dailyRewardClaimedAt ?? null);
+    const [showDailyReward, setShowDailyReward] = useState(() =>
+        canClaimDailyReward(initialGameSave?.dailyRewardClaimedAt),
+    );
+    const [pendingPacks, setPendingPacks] = useState<PackReward[]>([]);
+    const pendingPack = pendingPacks[0] ?? null;
+    const [selectedAlbumCard, setSelectedAlbumCard] =
+        useState<MelodyCard | null>(null);
     const [albumFilter, setAlbumFilter] = useState<CardRarity | 'all'>('all');
     const [isPackOpened, setIsPackOpened] = useState(false);
     const [dismissedPackCards, setDismissedPackCards] = useState(0);
-    const [packCardResults, setPackCardResults] = useState<PackCardResult[]>([]);
+    const [packCardResults, setPackCardResults] = useState<PackCardResult[]>(
+        [],
+    );
     const [assetsReady, setAssetsReady] = useState(false);
     const [showSplash, setShowSplash] = useState(true);
     const [selectedCell, setSelectedCell] = useState<number | null>(null);
@@ -391,15 +511,23 @@ export default function MelodyMergePage({
         y: number;
         item: BoardItem;
     } | null>(null);
-    const [activeTab, setActiveTab] = useState<MelodyTab>(() => normalizeTab(initialGameSave?.activeTab));
-    const [musicPlaying, setMusicPlaying] = useState(() => music.getState().playing);
+    const [activeTab, setActiveTab] = useState<MelodyTab>(() =>
+        normalizeTab(initialGameSave?.activeTab),
+    );
+    const [musicPlaying, setMusicPlaying] = useState(
+        () => music.getState().playing,
+    );
     const [toastMessage, setToastMessage] = useState(
         offlineEnergyGain > 0
-            ? `Recuperaste ${offlineEnergyGain} energia mientras no estabas.`
+            ? `Recuperaste ${offlineEnergyGain} energía mientras no estabas.`
             : getDailyMessage(),
     );
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(null);
+    const [saveStatus, setSaveStatus] = useState<
+        'idle' | 'saving' | 'saved' | 'error'
+    >('idle');
+    const dragStartRef = useRef<{ index: number; x: number; y: number } | null>(
+        null,
+    );
     const didPointerDragRef = useRef(false);
     const didMountSaveRef = useRef(offlineEnergyGain > 0);
     const saveTimerRef = useRef<number | null>(null);
@@ -415,77 +543,100 @@ export default function MelodyMergePage({
         () => mergeItemPool.filter((item) => item.isActive).slice(0, 8),
         [mergeItemPool],
     );
-    const createMemoryDeck = useCallback(() => shuffle(memorySource.flatMap((item) => [
-        {
-            id: nanoid(),
-            pairId: `memory-${item.level}`,
-            item,
-            isMatched: false,
-        },
-        {
-            id: nanoid(),
-            pairId: `memory-${item.level}`,
-            item,
-            isMatched: false,
-        },
-    ])), [memorySource]);
-    const [memoryDeck, setMemoryDeck] = useState<MemoryCard[]>(() => createMemoryDeck());
+    const createMemoryDeck = useCallback(
+        () =>
+            shuffle(
+                memorySource.flatMap((item) => [
+                    {
+                        id: nanoid(),
+                        pairId: `memory-${item.level}`,
+                        item,
+                        isMatched: false,
+                    },
+                    {
+                        id: nanoid(),
+                        pairId: `memory-${item.level}`,
+                        item,
+                        isMatched: false,
+                    },
+                ]),
+            ),
+        [memorySource],
+    );
+    const [memoryDeck, setMemoryDeck] = useState<MemoryCard[]>(() =>
+        createMemoryDeck(),
+    );
     const [flippedMemoryCards, setFlippedMemoryCards] = useState<string[]>([]);
     const [memoryMatches, setMemoryMatches] = useState(0);
     const [memoryMoves, setMemoryMoves] = useState(0);
     const [memoryLocked, setMemoryLocked] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [showLevelUpFlash, setShowLevelUpFlash] = useState(false);
-    const [loveLetterIndex, setLoveLetterIndex] = useState(() => Math.floor(Math.random() * loveLetterMessages.length));
+    const [loveLetterIndex, setLoveLetterIndex] = useState(() =>
+        Math.floor(Math.random() * loveLetterMessages.length),
+    );
     const [dailyStreak, setDailyStreak] = useState(() => readStreak().count);
-    const [sparklePosition, setSparklePosition] = useState<{ x: number; y: number } | null>(null);
+    const [sparklePosition, setSparklePosition] = useState<{
+        x: number;
+        y: number;
+    } | null>(null);
     const [justMergedCell, setJustMergedCell] = useState<number | null>(null);
 
     const notify = useCallback((message: string) => {
         setToastMessage(message);
     }, []);
 
-    const postSave = useCallback((state: MelodyGameSave, keepalive = false) => {
-        const body = JSON.stringify({ state, _token: csrfToken() });
+    const postSave = useCallback(
+        (state: MelodyGameSave, keepalive = false) => {
+            const body = JSON.stringify({ state, _token: csrfToken() });
 
-        setSaveStatus('saving');
+            setSaveStatus('saving');
 
-        return fetch('/melody/save', {
-            method: keepalive ? 'POST' : 'PUT',
-            keepalive,
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken(),
-            },
-            body,
-        }).then((response) => {
-            if (!response.ok) {
-                throw new Error('Save failed');
+            return fetch('/melody/save', {
+                method: keepalive ? 'POST' : 'PUT',
+                keepalive,
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('Save failed');
+                    }
+
+                    setSaveStatus('saved');
+                    window.setTimeout(() => setSaveStatus('idle'), 1200);
+                })
+                .catch(() => {
+                    setSaveStatus('error');
+                    notify(
+                        'No se pudo guardar la partida. Revisa tu conexión.',
+                    );
+                });
+        },
+        [notify],
+    );
+
+    const beaconSave = useCallback(
+        (state: MelodyGameSave) => {
+            if (!navigator.sendBeacon) {
+                void postSave(state, true);
+
+                return;
             }
 
-            setSaveStatus('saved');
-            window.setTimeout(() => setSaveStatus('idle'), 1200);
-        }).catch(() => {
-            setSaveStatus('error');
-            notify('No se pudo guardar la partida. Revisa tu conexion.');
-        });
-    }, [notify]);
+            const body = JSON.stringify({ state, _token: csrfToken() });
+            const blob = new Blob([body], { type: 'application/json' });
 
-    const beaconSave = useCallback((state: MelodyGameSave) => {
-        if (!navigator.sendBeacon) {
-            void postSave(state, true);
-
-            return;
-        }
-
-        const body = JSON.stringify({ state, _token: csrfToken() });
-        const blob = new Blob([body], { type: 'application/json' });
-
-        if (!navigator.sendBeacon('/melody/save', blob)) {
-            void postSave(state, true);
-        }
-    }, [postSave]);
+            if (!navigator.sendBeacon('/melody/save', blob)) {
+                void postSave(state, true);
+            }
+        },
+        [postSave],
+    );
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -495,35 +646,20 @@ export default function MelodyMergePage({
         return () => window.clearInterval(timer);
     }, [maxEnergy]);
 
-    useEffect(() => {
-        if (memoryTimerRef.current) {
-            window.clearTimeout(memoryTimerRef.current);
-            memoryTimerRef.current = null;
-        }
+    useEffect(
+        () => () => {
+            if (memoryTimerRef.current) {
+                window.clearTimeout(memoryTimerRef.current);
+                memoryTimerRef.current = null;
+            }
 
-        if (memoryResetTimerRef.current) {
-            window.clearTimeout(memoryResetTimerRef.current);
-            memoryResetTimerRef.current = null;
-        }
-
-        setMemoryDeck(createMemoryDeck());
-        setFlippedMemoryCards([]);
-        setMemoryMatches(0);
-        setMemoryMoves(0);
-        setMemoryLocked(false);
-    }, [createMemoryDeck]);
-
-    useEffect(() => () => {
-        if (memoryTimerRef.current) {
-            window.clearTimeout(memoryTimerRef.current);
-            memoryTimerRef.current = null;
-        }
-
-        if (memoryResetTimerRef.current) {
-            window.clearTimeout(memoryResetTimerRef.current);
-            memoryResetTimerRef.current = null;
-        }
-    }, []);
+            if (memoryResetTimerRef.current) {
+                window.clearTimeout(memoryResetTimerRef.current);
+                memoryResetTimerRef.current = null;
+            }
+        },
+        [],
+    );
 
     useEffect(() => {
         if (!toastMessage) return;
@@ -534,14 +670,19 @@ export default function MelodyMergePage({
     }, [toastMessage]);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => setShowSplash(false), assetsReady ? 1300 : 2400);
+        const timer = window.setTimeout(
+            () => setShowSplash(false),
+            assetsReady ? 1300 : 2400,
+        );
 
         return () => window.clearTimeout(timer);
     }, [assetsReady]);
 
     useEffect(() => {
         void music.init(musicTracks);
-        const unsub = music.subscribe((state) => setMusicPlaying(state.playing));
+        const unsub = music.subscribe((state) =>
+            setMusicPlaying(state.playing),
+        );
 
         return unsub;
     }, [musicTracks]);
@@ -579,31 +720,51 @@ export default function MelodyMergePage({
 
     const collectedCards = useMemo(() => {
         const unique = new Map<string, MelodyCard>();
-        openedPacks.forEach((pack) => pack.cards.forEach((card) => unique.set(card.id, card)));
+        openedPacks.forEach((pack) =>
+            pack.cards.forEach((card) => unique.set(card.id, card)),
+        );
 
         return [...unique.values()];
     }, [openedPacks]);
 
     const xpGoal = getPlayerLevel(playerLevel).xpRequired;
-    const albumPercent = cardPool.length > 0 ? Math.round((collectedCards.length / cardPool.length) * 100) : 0;
-    const collectedIds = useMemo(() => new Set(collectedCards.map((card) => card.id)), [collectedCards]);
+    const albumPercent =
+        cardPool.length > 0
+            ? Math.round((collectedCards.length / cardPool.length) * 100)
+            : 0;
+    const collectedIds = useMemo(
+        () => new Set(collectedCards.map((card) => card.id)),
+        [collectedCards],
+    );
     const filteredAlbumCards = useMemo(
-        () => albumFilter === 'all' ? cardPool : cardPool.filter((card) => card.rarity === albumFilter),
+        () =>
+            albumFilter === 'all'
+                ? cardPool
+                : cardPool.filter((card) => card.rarity === albumFilter),
         [albumFilter, cardPool],
     );
     const totalCollagePieces = collagePiecePool.length;
-    const collagePercent = totalCollagePieces > 0 ? Math.round((collagePieces.length / totalCollagePieces) * 100) : 0;
-    const safeActiveCollageIndex = Math.min(activeCollageIndex, Math.max(collagePhotos.length - 1, 0));
+    const collagePercent =
+        totalCollagePieces > 0
+            ? Math.round((collagePieces.length / totalCollagePieces) * 100)
+            : 0;
+    const safeActiveCollageIndex = Math.min(
+        activeCollageIndex,
+        Math.max(collagePhotos.length - 1, 0),
+    );
     const activeCollagePhoto = collagePhotos[safeActiveCollageIndex] ?? null;
     const activeCollageOwnedCount = activeCollagePhoto
-        ? Array.from({ length: activeCollagePhoto.piecesCount }, (_, i) => collagePieces.includes(collagePieceId(activeCollagePhoto.id, i))).filter(Boolean).length
+        ? Array.from({ length: activeCollagePhoto.piecesCount }, (_, i) =>
+              collagePieces.includes(collagePieceId(activeCollagePhoto.id, i)),
+          ).filter(Boolean).length
         : 0;
     const completedPhotoIds = useMemo(() => {
         const completed = new Set<number>();
 
         collagePhotos.forEach((photo) => {
-            const allPiecesOwned = Array.from({ length: photo.piecesCount }, (_, i) =>
-                collagePieces.includes(collagePieceId(photo.id, i)),
+            const allPiecesOwned = Array.from(
+                { length: photo.piecesCount },
+                (_, i) => collagePieces.includes(collagePieceId(photo.id, i)),
             ).every(Boolean);
 
             if (allPiecesOwned && photo.piecesCount > 0) {
@@ -614,23 +775,27 @@ export default function MelodyMergePage({
         return completed;
     }, [collagePieces, collagePhotos]);
     const collageTiles = activeCollagePhoto
-        ? Array.from({ length: activeCollagePhoto.piecesCount }, (_, pieceIndex) => {
-            const row = Math.floor(pieceIndex / collageColumns);
-            const column = pieceIndex % collageColumns;
-            const pieceId = collagePieceId(activeCollagePhoto.id, pieceIndex);
+        ? Array.from(
+              { length: activeCollagePhoto.piecesCount },
+              (_, pieceIndex) => {
+                  const row = Math.floor(pieceIndex / collageColumns);
+                  const column = pieceIndex % collageColumns;
+                  const pieceId = collagePieceId(
+                      activeCollagePhoto.id,
+                      pieceIndex,
+                  );
 
-            return {
-                column,
-                imageUrl: activeCollagePhoto.url,
-                index: pieceIndex,
-                label: activeCollagePhoto.label,
-                owned: collagePieces.includes(pieceId),
-                photoComplete: completedPhotoIds.has(activeCollagePhoto.id),
-                pieceId,
-                photoId: activeCollagePhoto.id,
-                row,
-            };
-        })
+                  return {
+                      column,
+                      imageUrl: activeCollagePhoto.url,
+                      index: pieceIndex,
+                      owned: collagePieces.includes(pieceId),
+                      pieceId,
+                      photoId: activeCollagePhoto.id,
+                      row,
+                  };
+              },
+          )
         : [];
     const rarityStats = useMemo(() => {
         const stats: Record<string, { owned: number; total: number }> = {};
@@ -649,26 +814,42 @@ export default function MelodyMergePage({
 
         return stats;
     }, [cardPool, collectedIds]);
-    const savePayload = useMemo<MelodyGameSave>(() => ({
-        board,
-        energy,
-        hearts,
-        xp,
-        playerLevel,
-        mergeCount,
-        openedPacks: openedPacks
-            .filter((pack) => pack.cards.length > 0)
-            .map((pack) => ({
-                id: pack.id,
-                label: pack.label,
-                cards: pack.cards.map((card) => card.id),
-            })),
-        collagePieces,
-        activeTab,
-        claimedMissions,
-        dailyRewardClaimedAt,
-        lastSeenAt: new Date().toISOString(),
-    }), [activeTab, board, claimedMissions, collagePieces, dailyRewardClaimedAt, energy, hearts, mergeCount, openedPacks, playerLevel, xp]);
+    const savePayload = useMemo<MelodyGameSave>(
+        () => ({
+            board,
+            energy,
+            hearts,
+            xp,
+            playerLevel,
+            mergeCount,
+            openedPacks: openedPacks
+                .filter((pack) => pack.cards.length > 0)
+                .slice(0, maxSavedPackHistory)
+                .map((pack) => ({
+                    id: pack.id,
+                    label: pack.label,
+                    cards: pack.cards.map((card) => card.id),
+                })),
+            collagePieces,
+            activeTab,
+            claimedMissions,
+            dailyRewardClaimedAt,
+            lastSeenAt: new Date().toISOString(),
+        }),
+        [
+            activeTab,
+            board,
+            claimedMissions,
+            collagePieces,
+            dailyRewardClaimedAt,
+            energy,
+            hearts,
+            mergeCount,
+            openedPacks,
+            playerLevel,
+            xp,
+        ],
+    );
 
     useEffect(() => {
         writeLocalSave(localSaveKey, savePayload);
@@ -716,50 +897,73 @@ export default function MelodyMergePage({
 
         return () => {
             window.removeEventListener('pagehide', saveBeforeLeaving);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            );
         };
     }, [beaconSave, localSaveKey, savePayload]);
 
-    const queuePack = useCallback((pack: GamePackDefinition, labelOverride?: string) => {
-        const rewardCount = Math.max(1, Math.min(pack.cardsCount, 3));
-        const packCards: MelodyCard[] = [];
-        const packCollagePieces: CollagePieceReward[] = [];
-        const plannedCollagePieces = [...collagePieces];
+    const queuePack = useCallback(
+        (pack: GamePackDefinition, labelOverride?: string) => {
+            const rewardCount = Math.max(1, Math.min(pack.cardsCount, 3));
+            const packCards: MelodyCard[] = [];
+            const packCollagePieces: CollagePieceReward[] = [];
+            const plannedCollagePieces = [...collagePieces];
 
-        for (let index = 0; index < rewardCount; index += 1) {
-            const cardReward = chooseCard(cardPool);
-            const collageReward = chooseCollagePiece(collagePiecePool, plannedCollagePieces);
-            const preferCollage = Math.random() < 0.5;
+            for (let index = 0; index < rewardCount; index += 1) {
+                const cardReward = chooseCard(cardPool);
+                const collageReward = chooseCollagePiece(
+                    collagePiecePool,
+                    plannedCollagePieces,
+                );
+                const preferCollage = Math.random() < 0.5;
 
-            if ((preferCollage && collageReward) || !cardReward) {
-                if (collageReward) {
-                    packCollagePieces.push(collageReward);
-                    plannedCollagePieces.push(collageReward.id);
+                if ((preferCollage && collageReward) || !cardReward) {
+                    if (collageReward) {
+                        packCollagePieces.push(collageReward);
+                        plannedCollagePieces.push(collageReward.id);
+                    }
+
+                    continue;
                 }
 
-                continue;
+                packCards.push(cardReward);
             }
 
-            packCards.push(cardReward);
-        }
+            if (packCards.length === 0 && packCollagePieces.length === 0) {
+                notify(
+                    'No hay cartas ni piezas de collage disponibles para abrir sobres.',
+                );
 
-        if (packCards.length === 0 && packCollagePieces.length === 0) {
-            notify('No hay cartas ni piezas de collage disponibles para abrir sobres.');
+                return;
+            }
 
-            return;
-        }
+            const reward: PackReward = {
+                id: nanoid(),
+                label: labelOverride ?? pack.label,
+                cards: packCards,
+                collagePieces: packCollagePieces,
+            };
 
-        setPendingPack({
-            id: nanoid(),
-            label: labelOverride ?? pack.label,
-            cards: packCards,
-            collagePieces: packCollagePieces,
-        });
-        setIsPackOpened(false);
-        setDismissedPackCards(0);
-        setPackCardResults([]);
-        notify(assetsReady ? `${labelOverride ?? pack.label}: toca el sobre para abrirlo.` : 'Preparando cartas para el sobre.');
-    }, [assetsReady, cardPool, collagePiecePool, collagePieces, notify]);
+            setPendingPacks((packs) => [...packs, reward]);
+            notify(
+                pendingPack
+                    ? `${reward.label} se guardó en la fila de sobres.`
+                    : assetsReady
+                      ? `${reward.label}: toca el sobre para abrirlo.`
+                      : 'Preparando cartas para el sobre.',
+            );
+        },
+        [
+            assetsReady,
+            cardPool,
+            collagePiecePool,
+            collagePieces,
+            notify,
+            pendingPack,
+        ],
+    );
 
     const revealPendingPack = useCallback(() => {
         if (!pendingPack || isPackOpened) return;
@@ -790,30 +994,50 @@ export default function MelodyMergePage({
         });
 
         if (duplicatedCards.length > 0) {
-            const duplicateHearts = duplicatedCards.reduce((total, card) => total + duplicateHeartRewards[card.rarity], 0);
+            const duplicateHearts = duplicatedCards.reduce(
+                (total, card) => total + duplicateHeartRewards[card.rarity],
+                0,
+            );
             setHearts((value) => value + duplicateHearts);
 
             if (newCards.length > 0 || newCollagePieces.length > 0) {
-                notify(`${newCards.length} carta(s), ${newCollagePieces.length} pieza(s) y duplicadas +${duplicateHearts}.`);
+                notify(
+                    `${newCards.length} carta(s), ${newCollagePieces.length} pieza(s) y duplicadas +${duplicateHearts}.`,
+                );
             } else {
-                notify(`Cartas duplicadas convertidas en +${duplicateHearts} corazones.`);
+                notify(
+                    `Cartas duplicadas convertidas en +${duplicateHearts} corazones.`,
+                );
             }
         } else if (newCollagePieces.length > 0) {
-            notify(`${newCards.length} carta(s) y ${newCollagePieces.length} pieza(s) del recuerdo.`);
+            notify(
+                `${newCards.length} carta(s) y ${newCollagePieces.length} pieza(s) del recuerdo.`,
+            );
         } else {
-            notify(`${newCards.length} cartas nuevas agregadas al album.`);
+            notify(`${newCards.length} cartas nuevas agregadas al álbum.`);
         }
 
         if (newCollagePieces.length > 0) {
-            setCollagePieces((pieces) => [...pieces, ...newCollagePieces.map((piece) => piece.id)]);
+            setCollagePieces((pieces) => [
+                ...pieces,
+                ...newCollagePieces.map((piece) => piece.id),
+            ]);
         }
 
-        setOpenedPacks((packs) => [pendingPack, ...packs]);
+        setOpenedPacks((packs) =>
+            [pendingPack, ...packs].slice(0, maxSavedPackHistory),
+        );
         setPackCardResults(nextResults);
         setIsPackOpened(true);
         setDismissedPackCards(0);
         sfx.cardReveal();
-    }, [collectedCards, duplicateHeartRewards, isPackOpened, notify, pendingPack]);
+    }, [
+        collectedCards,
+        duplicateHeartRewards,
+        isPackOpened,
+        notify,
+        pendingPack,
+    ]);
 
     const claimDailyReward = useCallback(() => {
         const now = new Date().toISOString();
@@ -829,144 +1053,215 @@ export default function MelodyMergePage({
         triggerFeedback();
         sfx.claim();
         queuePack(getPack('daily'));
-        notify(`Recompensa diaria: +${dailyReward.energy} energia y +${dailyReward.hearts} corazones. Racha: ${newStreak} dias.`);
-    }, [dailyReward.energy, dailyReward.hearts, getPack, maxEnergy, notify, queuePack]);
+        notify(
+            `Recompensa diaria: +${dailyReward.energy} energía y +${dailyReward.hearts} corazones. Racha: ${newStreak} días.`,
+        );
+    }, [
+        dailyReward.energy,
+        dailyReward.hearts,
+        getPack,
+        maxEnergy,
+        notify,
+        queuePack,
+    ]);
 
     const advancePackCard = useCallback(() => {
-        const rewardCount = (pendingPack?.cards.length ?? 0) + (pendingPack?.collagePieces?.length ?? 0);
+        const rewardCount =
+            (pendingPack?.cards.length ?? 0) +
+            (pendingPack?.collagePieces?.length ?? 0);
 
-        setDismissedPackCards((value) => Math.min(value + 1, rewardCount || value + 1));
+        setDismissedPackCards((value) =>
+            Math.min(value + 1, rewardCount || value + 1),
+        );
     }, [pendingPack]);
 
-    const addProgress = useCallback((itemLevel: number) => {
-        const item = getMergeLevel(itemLevel);
-        const gainedXp = item.xp;
-        const gainedHearts = item.hearts;
+    const addProgress = useCallback(
+        (itemLevel: number) => {
+            const item = getMergeLevel(itemLevel);
+            const gainedXp = item.xp;
+            const gainedHearts = item.hearts;
 
-        setHearts((value) => value + gainedHearts);
-        setMergeCount((value) => value + 1);
+            setHearts((value) => value + gainedHearts);
+            setMergeCount((value) => value + 1);
 
-        let nextXp = xp + gainedXp;
-        let nextLevel = playerLevel;
-        let levelsGained = 0;
-        let gainedEnergy = 0;
-        let rewardPackTrigger: GamePackDefinition['triggerKey'] | null = null;
+            let nextXp = xp + gainedXp;
+            let nextLevel = playerLevel;
+            let levelsGained = 0;
+            let gainedEnergy = 0;
+            let rewardPackTrigger: GamePackDefinition['triggerKey'] | null =
+                null;
 
-        while (nextXp >= getPlayerLevel(nextLevel).xpRequired) {
-            const levelDefinition = getPlayerLevel(nextLevel);
-            nextXp -= levelDefinition.xpRequired;
-            gainedEnergy += levelDefinition.rewardEnergy;
-            rewardPackTrigger = levelDefinition.rewardPackTrigger ?? rewardPackTrigger;
-            nextLevel += 1;
-            levelsGained += 1;
-        }
+            while (nextXp >= getPlayerLevel(nextLevel).xpRequired) {
+                const levelDefinition = getPlayerLevel(nextLevel);
+                nextXp -= levelDefinition.xpRequired;
+                gainedEnergy += levelDefinition.rewardEnergy;
+                rewardPackTrigger =
+                    levelDefinition.rewardPackTrigger ?? rewardPackTrigger;
+                nextLevel += 1;
+                levelsGained += 1;
+            }
 
-        setXp(nextXp);
+            setXp(nextXp);
 
-        if (levelsGained > 0) {
-            setPlayerLevel(nextLevel);
-            setEnergy((prev) => Math.min(maxEnergy, prev + gainedEnergy));
-            const levelPack = getPack(rewardPackTrigger ?? 'level');
-            queuePack(levelPack, levelsGained > 1 ? `${levelPack.label} x${levelsGained}` : levelPack.label);
-            sfx.levelUp();
-            setShowConfetti(true);
-            setShowLevelUpFlash(true);
-            window.setTimeout(() => setShowConfetti(false), 2600);
-            window.setTimeout(() => setShowLevelUpFlash(false), 800);
-            notify(levelsGained > 1 ? `Subiste ${levelsGained} niveles y ganaste energia.` : 'Subiste de nivel y ganaste energia.');
-        } else {
-            notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
-        }
-    }, [getMergeLevel, getPack, getPlayerLevel, maxEnergy, notify, playerLevel, queuePack, xp]);
+            if (levelsGained > 0) {
+                setPlayerLevel(nextLevel);
+                setEnergy((prev) => Math.min(maxEnergy, prev + gainedEnergy));
+                const levelPack = getPack(rewardPackTrigger ?? 'level');
+                queuePack(
+                    levelPack,
+                    levelsGained > 1
+                        ? `${levelPack.label} x${levelsGained}`
+                        : levelPack.label,
+                );
+                sfx.levelUp();
+                setShowConfetti(true);
+                setShowLevelUpFlash(true);
+                window.setTimeout(() => setShowConfetti(false), 2600);
+                window.setTimeout(() => setShowLevelUpFlash(false), 800);
+                notify(
+                    levelsGained > 1
+                        ? `Subiste ${levelsGained} niveles y ganaste energía.`
+                        : 'Subiste de nivel y ganaste energía.',
+                );
+            } else {
+                notify(`+${gainedXp} XP y +${gainedHearts} corazones.`);
+            }
+        },
+        [
+            getMergeLevel,
+            getPack,
+            getPlayerLevel,
+            maxEnergy,
+            notify,
+            playerLevel,
+            queuePack,
+            xp,
+        ],
+    );
 
-    const mergeCells = useCallback((from: number, to: number) => {
-        if (from === to) return;
+    const mergeCells = useCallback(
+        (from: number, to: number) => {
+            if (from === to) return;
 
-        const origin = board[from];
-        const target = board[to];
+            const origin = board[from];
+            const target = board[to];
 
-        if (!origin) return;
+            if (!origin) return;
 
-        if (!target) {
+            if (!target) {
+                const next = [...board];
+                next[to] = origin;
+                next[from] = null;
+                setBoard(next);
+                notify('Objeto movido.');
+
+                return;
+            }
+
+            if (origin.level !== target.level) {
+                notify('Solo se fusionan objetos iguales.');
+
+                return;
+            }
+
+            const mergedLevel = origin.level;
+
+            if (mergedLevel >= maxMergeItemLevel) {
+                notify('Este objeto ya alcanzó su nivel máximo.');
+
+                return;
+            }
+
+            const newLevel = Math.min(mergedLevel + 1, maxMergeItemLevel);
             const next = [...board];
-            next[to] = origin;
+
+            next[to] = makeItem(newLevel);
             next[from] = null;
             setBoard(next);
-            notify('Objeto movido.');
 
-            return;
-        }
+            triggerFeedback();
+            sfx.merge();
+            addProgress(mergedLevel);
+            setJustMergedCell(to);
+            window.setTimeout(() => setJustMergedCell(null), 420);
 
-        if (origin.level !== target.level) {
-            notify('Solo se fusionan objetos iguales.');
+            const targetCell = document.querySelector(
+                `[data-cell-index="${to}"]`,
+            );
 
-            return;
-        }
+            if (targetCell) {
+                const rect = targetCell.getBoundingClientRect();
+                setSparklePosition({
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2,
+                });
+                window.setTimeout(() => setSparklePosition(null), 750);
+            }
 
-        const mergedLevel = origin.level;
-        const newLevel = Math.min(mergedLevel + 1, maxMergeItemLevel);
-        const next = [...board];
-
-        next[to] = makeItem(newLevel);
-        next[from] = null;
-        setBoard(next);
-
-        triggerFeedback();
-        sfx.merge();
-        addProgress(mergedLevel);
-        setJustMergedCell(to);
-        window.setTimeout(() => setJustMergedCell(null), 420);
-
-        const targetCell = document.querySelector(`[data-cell-index="${to}"]`);
-
-        if (targetCell) {
-            const rect = targetCell.getBoundingClientRect();
-            setSparklePosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-            window.setTimeout(() => setSparklePosition(null), 750);
-        }
-
-        if (newLevel >= rules.mergePackMinLevel && Math.random() * 100 < rules.mergePackChancePercent) {
-            queuePack(getPack('merge'));
-        }
-    }, [addProgress, board, getPack, maxMergeItemLevel, notify, queuePack, rules.mergePackChancePercent, rules.mergePackMinLevel]);
+            if (
+                newLevel >= rules.mergePackMinLevel &&
+                Math.random() * 100 < rules.mergePackChancePercent
+            ) {
+                queuePack(getPack('merge'));
+            }
+        },
+        [
+            addProgress,
+            board,
+            getPack,
+            maxMergeItemLevel,
+            notify,
+            queuePack,
+            rules.mergePackChancePercent,
+            rules.mergePackMinLevel,
+        ],
+    );
 
     const generateItem = useCallback(() => {
         if (energy <= 0) {
-            notify('La caja magica necesita energia.');
+            notify('La caja mágica necesita energía.');
 
             return;
         }
 
-        setBoard((current) => {
-            const firstEmpty = current.findIndex((cell) => !cell);
+        const firstEmpty = board.findIndex((cell) => !cell);
 
-            if (firstEmpty === -1) {
-                notify('El tablero esta lleno. Fusiona para abrir espacio.');
+        if (firstEmpty === -1) {
+            notify('El tablero está lleno. Fusiona para abrir espacio.');
 
-                return current;
-            }
+            return;
+        }
 
-            const next = [...current];
-            const generatedLevel = Math.random() * 100 < rules.magicBoxBonusChancePercent
+        const next = [...board];
+        const generatedLevel =
+            Math.random() * 100 < rules.magicBoxBonusChancePercent
                 ? rules.magicBoxBonusLevel
                 : rules.magicBoxPrimaryLevel;
-            const level = Math.min(Math.max(1, generatedLevel), maxMergeItemLevel);
-            next[firstEmpty] = makeItem(level);
+        const level = Math.min(Math.max(1, generatedLevel), maxMergeItemLevel);
+        next[firstEmpty] = makeItem(level);
 
-            return next;
-        });
-
+        setBoard(next);
         setEnergy((value) => value - 1);
         triggerFeedback();
         sfx.magicBox();
-        notify('La caja magica dejo una semilla.');
-    }, [energy, maxMergeItemLevel, notify, rules.magicBoxBonusChancePercent, rules.magicBoxBonusLevel, rules.magicBoxPrimaryLevel]);
+        notify('La caja mágica dejó una semilla.');
+    }, [
+        board,
+        energy,
+        maxMergeItemLevel,
+        notify,
+        rules.magicBoxBonusChancePercent,
+        rules.magicBoxBonusLevel,
+        rules.magicBoxPrimaryLevel,
+    ]);
 
     const buyPack = useCallback(() => {
         const premiumPack = getPack('premium');
 
         if (hearts < premiumPack.costHearts) {
-            notify(`Necesitas ${premiumPack.costHearts} corazones para comprar un sobre.`);
+            notify(
+                `Necesitas ${premiumPack.costHearts} corazones para comprar un sobre.`,
+            );
 
             return;
         }
@@ -996,179 +1291,266 @@ export default function MelodyMergePage({
         notify('Nuevo tablero de Memoria listo.');
     }, [createMemoryDeck, notify]);
 
-    const handleMemoryCardClick = useCallback((cardId: string) => {
-        if (memoryLocked || flippedMemoryCards.includes(cardId)) {
-            return;
-        }
-
-        const selectedCard = memoryDeck.find((card) => card.id === cardId);
-
-        if (!selectedCard || selectedCard.isMatched || flippedMemoryCards.length >= 2) {
-            return;
-        }
-
-        const nextFlipped = [...flippedMemoryCards, cardId];
-        setFlippedMemoryCards(nextFlipped);
-
-        if (nextFlipped.length < 2) {
-            return;
-        }
-
-        const [firstCard, secondCard] = nextFlipped
-            .map((id) => memoryDeck.find((card) => card.id === id))
-            .filter(Boolean) as MemoryCard[];
-
-        setMemoryLocked(true);
-        setMemoryMoves((value) => value + 1);
-
-        if (memoryTimerRef.current) {
-            window.clearTimeout(memoryTimerRef.current);
-            memoryTimerRef.current = null;
-        }
-
-        memoryTimerRef.current = window.setTimeout(() => {
-            if (firstCard.pairId === secondCard.pairId) {
-                setMemoryDeck((deck) => deck.map((card) => (
-                    card.pairId === firstCard.pairId ? { ...card, isMatched: true } : card
-                )));
-                setMemoryMatches((value) => {
-                    const nextMatches = value + 1;
-
-                    if (nextMatches === memorySource.length) {
-                        const rewardHearts = 60;
-                        const rewardEnergy = 10;
-
-                        setHearts((current) => current + rewardHearts);
-                        setEnergy((current) => Math.min(maxEnergy, current + rewardEnergy));
-                        triggerFeedback();
-                        sfx.memoryComplete();
-                        setShowConfetti(true);
-                        window.setTimeout(() => setShowConfetti(false), 2600);
-                        notify(`Memoria completo: +${rewardHearts} corazones y +${rewardEnergy} energia.`);
-
-                        memoryResetTimerRef.current = window.setTimeout(() => {
-                            setMemoryDeck(createMemoryDeck());
-                            setFlippedMemoryCards([]);
-                            setMemoryMatches(0);
-                            setMemoryMoves(0);
-                            setMemoryLocked(false);
-                            memoryResetTimerRef.current = null;
-                            notify('Nueva ronda de Memoria lista.');
-                        }, 1500);
-                    } else {
-                        sfx.memoryMatch();
-                        notify(`Pareja encontrada: ${firstCard.item.name}.`);
-                    }
-
-                    return nextMatches;
-                });
-            } else {
-                notify('Intenta otra pareja.');
+    const handleMemoryCardClick = useCallback(
+        (cardId: string) => {
+            if (memoryLocked || flippedMemoryCards.includes(cardId)) {
+                return;
             }
 
-            setFlippedMemoryCards([]);
-            setMemoryLocked(false);
-            memoryTimerRef.current = null;
-        }, 520);
-    }, [createMemoryDeck, flippedMemoryCards, maxEnergy, memoryDeck, memoryLocked, memorySource.length, notify]);
+            const selectedCard = memoryDeck.find((card) => card.id === cardId);
 
-    const claimMission = useCallback((missionId: string) => {
-        const mission = missionDefinitions.find((item) => item.id === missionId);
+            if (
+                !selectedCard ||
+                selectedCard.isMatched ||
+                flippedMemoryCards.length >= 2
+            ) {
+                return;
+            }
 
-        if (!mission || claimedMissions.includes(mission.id)) {
-            return;
-        }
+            const nextFlipped = [...flippedMemoryCards, cardId];
+            setFlippedMemoryCards(nextFlipped);
 
-        setClaimedMissions((missions) => [...missions, mission.id]);
-        setHearts((value) => value + mission.reward.hearts);
-        setEnergy((value) => Math.min(maxEnergy, value + mission.reward.energy));
-        triggerFeedback();
-        sfx.claim();
-        notify(`Mision completada: +${mission.reward.hearts} corazones${mission.reward.energy ? ` y +${mission.reward.energy} energia` : ''}.`);
-    }, [claimedMissions, maxEnergy, missionDefinitions, notify]);
+            if (nextFlipped.length < 2) {
+                return;
+            }
 
-    const handleCellClick = useCallback((index: number) => {
-        if (didPointerDragRef.current) {
-            didPointerDragRef.current = false;
+            const [firstCard, secondCard] = nextFlipped
+                .map((id) => memoryDeck.find((card) => card.id === id))
+                .filter(Boolean) as MemoryCard[];
 
-            return;
-        }
+            setMemoryLocked(true);
+            setMemoryMoves((value) => value + 1);
 
-        if (selectedCell === null) {
-            setBoard((current) => {
-                if (current[index]) {
-                    setSelectedCell(index);
+            if (memoryTimerRef.current) {
+                window.clearTimeout(memoryTimerRef.current);
+                memoryTimerRef.current = null;
+            }
+
+            memoryTimerRef.current = window.setTimeout(() => {
+                if (firstCard.pairId === secondCard.pairId) {
+                    setMemoryDeck((deck) =>
+                        deck.map((card) =>
+                            card.pairId === firstCard.pairId
+                                ? { ...card, isMatched: true }
+                                : card,
+                        ),
+                    );
+                    setMemoryMatches((value) => {
+                        const nextMatches = value + 1;
+
+                        if (nextMatches === memorySource.length) {
+                            const rewardHearts = 60;
+                            const rewardEnergy = 10;
+
+                            setHearts((current) => current + rewardHearts);
+                            setEnergy((current) =>
+                                Math.min(maxEnergy, current + rewardEnergy),
+                            );
+                            triggerFeedback();
+                            sfx.memoryComplete();
+                            setShowConfetti(true);
+                            window.setTimeout(
+                                () => setShowConfetti(false),
+                                2600,
+                            );
+                            notify(
+                                `Memoria completado: +${rewardHearts} corazones y +${rewardEnergy} energía.`,
+                            );
+
+                            memoryResetTimerRef.current = window.setTimeout(
+                                () => {
+                                    setMemoryDeck(createMemoryDeck());
+                                    setFlippedMemoryCards([]);
+                                    setMemoryMatches(0);
+                                    setMemoryMoves(0);
+                                    setMemoryLocked(false);
+                                    memoryResetTimerRef.current = null;
+                                    notify('Nueva ronda de Memoria lista.');
+                                },
+                                1500,
+                            );
+                        } else {
+                            sfx.memoryMatch();
+                            notify(
+                                `Pareja encontrada: ${firstCard.item.name}.`,
+                            );
+                        }
+
+                        return nextMatches;
+                    });
+                } else {
+                    notify('Intenta otra pareja.');
                 }
 
-                return current;
-            });
+                setFlippedMemoryCards([]);
+                setMemoryLocked(false);
+                memoryTimerRef.current = null;
+            }, 520);
+        },
+        [
+            createMemoryDeck,
+            flippedMemoryCards,
+            maxEnergy,
+            memoryDeck,
+            memoryLocked,
+            memorySource.length,
+            notify,
+        ],
+    );
 
-            return;
-        }
+    const claimMission = useCallback(
+        (missionId: string) => {
+            const mission = missionDefinitions.find(
+                (item) => item.id === missionId,
+            );
 
-        mergeCells(selectedCell, index);
-        setSelectedCell(null);
-    }, [mergeCells, selectedCell]);
-
-    const handlePointerDown = useCallback((index: number, event: PointerEvent<HTMLButtonElement>) => {
-        const item = board[index];
-
-        if (!item) return;
-
-        dragStartRef.current = {
-            index,
-            x: event.clientX,
-            y: event.clientY,
-        };
-        didPointerDragRef.current = false;
-        event.currentTarget.setPointerCapture(event.pointerId);
-    }, [board]);
-
-    const handlePointerMove = useCallback((event: PointerEvent<HTMLButtonElement>) => {
-        const start = dragStartRef.current;
-
-        if (!start) return;
-
-        const item = board[start.index];
-        const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-
-        if (!item || distance < 8) return;
-
-        didPointerDragRef.current = true;
-        setTouchDrag({
-            index: start.index,
-            x: event.clientX,
-            y: event.clientY,
-            item,
-        });
-    }, [board]);
-
-    const handlePointerEnd = useCallback((event: PointerEvent<HTMLButtonElement>) => {
-        const start = dragStartRef.current;
-
-        if (!start) return;
-
-        if (didPointerDragRef.current) {
-            const dropTarget = document
-                .elementFromPoint(event.clientX, event.clientY)
-                ?.closest<HTMLElement>('[data-cell-index]');
-            const targetIndex = dropTarget ? Number(dropTarget.dataset.cellIndex) : NaN;
-
-            if (Number.isInteger(targetIndex)) {
-                mergeCells(start.index, targetIndex);
-                setSelectedCell(null);
+            if (!mission || claimedMissions.includes(mission.id)) {
+                return;
             }
-        }
 
-        dragStartRef.current = null;
-        setTouchDrag(null);
-    }, [mergeCells]);
+            const progress =
+                mission.progressKey === 'merge_count'
+                    ? mergeCount
+                    : mission.progressKey === 'collected_cards'
+                      ? collectedCards.length
+                      : hearts;
+
+            if (progress < mission.goal) {
+                notify('Completa la misión antes de reclamarla.');
+
+                return;
+            }
+
+            setClaimedMissions((missions) => [...missions, mission.id]);
+            setHearts((value) => value + mission.reward.hearts);
+            setEnergy((value) =>
+                Math.min(maxEnergy, value + mission.reward.energy),
+            );
+            triggerFeedback();
+            sfx.claim();
+            notify(
+                `Misión completada: +${mission.reward.hearts} corazones${mission.reward.energy ? ` y +${mission.reward.energy} energía` : ''}.`,
+            );
+        },
+        [
+            claimedMissions,
+            collectedCards.length,
+            hearts,
+            maxEnergy,
+            mergeCount,
+            missionDefinitions,
+            notify,
+        ],
+    );
+
+    const dismissPendingPack = useCallback(() => {
+        setPendingPacks((packs) => packs.slice(1));
+        setIsPackOpened(false);
+        setDismissedPackCards(0);
+        setPackCardResults([]);
+    }, []);
+
+    const handleCellClick = useCallback(
+        (index: number) => {
+            if (didPointerDragRef.current) {
+                didPointerDragRef.current = false;
+
+                return;
+            }
+
+            if (selectedCell === null) {
+                setBoard((current) => {
+                    if (current[index]) {
+                        setSelectedCell(index);
+                    }
+
+                    return current;
+                });
+
+                return;
+            }
+
+            mergeCells(selectedCell, index);
+            setSelectedCell(null);
+        },
+        [mergeCells, selectedCell],
+    );
+
+    const handlePointerDown = useCallback(
+        (index: number, event: PointerEvent<HTMLButtonElement>) => {
+            const item = board[index];
+
+            if (!item) return;
+
+            dragStartRef.current = {
+                index,
+                x: event.clientX,
+                y: event.clientY,
+            };
+            didPointerDragRef.current = false;
+            event.currentTarget.setPointerCapture(event.pointerId);
+        },
+        [board],
+    );
+
+    const handlePointerMove = useCallback(
+        (event: PointerEvent<HTMLButtonElement>) => {
+            const start = dragStartRef.current;
+
+            if (!start) return;
+
+            const item = board[start.index];
+            const distance = Math.hypot(
+                event.clientX - start.x,
+                event.clientY - start.y,
+            );
+
+            if (!item || distance < 8) return;
+
+            didPointerDragRef.current = true;
+            setTouchDrag({
+                index: start.index,
+                x: event.clientX,
+                y: event.clientY,
+                item,
+            });
+        },
+        [board],
+    );
+
+    const handlePointerEnd = useCallback(
+        (event: PointerEvent<HTMLButtonElement>) => {
+            const start = dragStartRef.current;
+
+            if (!start) return;
+
+            if (didPointerDragRef.current) {
+                const dropTarget = document
+                    .elementFromPoint(event.clientX, event.clientY)
+                    ?.closest<HTMLElement>('[data-cell-index]');
+                const targetIndex = dropTarget
+                    ? Number(dropTarget.dataset.cellIndex)
+                    : NaN;
+
+                if (Number.isInteger(targetIndex)) {
+                    mergeCells(start.index, targetIndex);
+                    setSelectedCell(null);
+                }
+            }
+
+            dragStartRef.current = null;
+            setTouchDrag(null);
+        },
+        [mergeCells],
+    );
 
     const missions = missionDefinitions.map((mission) => {
         const rawValue =
-            mission.progressKey === 'merge_count' ? mergeCount :
-                mission.progressKey === 'collected_cards' ? collectedCards.length :
-                    hearts;
+            mission.progressKey === 'merge_count'
+                ? mergeCount
+                : mission.progressKey === 'collected_cards'
+                  ? collectedCards.length
+                  : hearts;
 
         return {
             ...mission,
@@ -1177,12 +1559,21 @@ export default function MelodyMergePage({
             claimed: claimedMissions.includes(mission.id),
         };
     });
-    const memoryProgress = memorySource.length > 0 ? Math.round((memoryMatches / memorySource.length) * 100) : 0;
+    const memoryProgress =
+        memorySource.length > 0
+            ? Math.round((memoryMatches / memorySource.length) * 100)
+            : 0;
     const packRevealItems = pendingPack
         ? [
-            ...pendingPack.cards.map((card) => ({ type: 'card' as const, card })),
-            ...(pendingPack.collagePieces ?? []).map((piece) => ({ type: 'collage' as const, piece })),
-        ]
+              ...pendingPack.cards.map((card) => ({
+                  type: 'card' as const,
+                  card,
+              })),
+              ...(pendingPack.collagePieces ?? []).map((piece) => ({
+                  type: 'collage' as const,
+                  piece,
+              })),
+          ]
         : [];
 
     return (
@@ -1203,7 +1594,11 @@ export default function MelodyMergePage({
                 {showSplash && (
                     <div className="mm-splash">
                         <div className="mm-splash__icon">
-                            <img alt="My Home" className="mm-splash__logo" src={logoUrl} />
+                            <img
+                                alt="My Home"
+                                className="mm-splash__logo"
+                                src={logoUrl}
+                            />
                         </div>
                         <h1>My Home</h1>
                         <p>{getSplashMessage()}</p>
@@ -1217,7 +1612,11 @@ export default function MelodyMergePage({
                     <header className="mm-header">
                         <div className="mm-brand">
                             <div className="mm-brand__mark">
-                                <img alt="My Home" className="mm-brand__logo" src={logoUrl} />
+                                <img
+                                    alt="My Home"
+                                    className="mm-brand__logo"
+                                    src={logoUrl}
+                                />
                             </div>
                             <div>
                                 <p className="mm-kicker">Juego privado</p>
@@ -1238,22 +1637,62 @@ export default function MelodyMergePage({
                                 <Crown size={15} aria-hidden />
                                 <span>{playerLevel}</span>
                             </div>
-                            <button className={`mm-logout ${musicPlaying ? 'is-playing' : ''}`} onClick={() => music.toggle()} type="button">
+                            <button
+                                aria-label={
+                                    musicPlaying
+                                        ? 'Pausar música'
+                                        : 'Reproducir música'
+                                }
+                                className={`mm-logout ${musicPlaying ? 'is-playing' : ''}`}
+                                onClick={() => music.toggle()}
+                                title={
+                                    musicPlaying
+                                        ? 'Pausar música'
+                                        : 'Reproducir música'
+                                }
+                                type="button"
+                            >
                                 <Music size={15} aria-hidden />
                             </button>
                             {musicPlaying && (
-                                <button className="mm-logout" onClick={() => music.next()} type="button">
+                                <button
+                                    aria-label="Siguiente canción"
+                                    className="mm-logout"
+                                    onClick={() => music.next()}
+                                    title="Siguiente canción"
+                                    type="button"
+                                >
                                     <SkipForward size={15} aria-hidden />
                                 </button>
                             )}
-                            <button className="mm-logout" onClick={() => router.post('/logout')} type="button">
+                            <button
+                                aria-label="Cerrar sesión"
+                                className="mm-logout"
+                                onClick={() => router.post('/logout')}
+                                title="Cerrar sesión"
+                                type="button"
+                            >
                                 <LogOut size={15} aria-hidden />
                             </button>
-                            <button className="mm-logout" onClick={() => router.visit('/settings/profile')} type="button">
+                            <button
+                                aria-label="Configuración"
+                                className="mm-logout"
+                                onClick={() =>
+                                    router.visit('/settings/profile')
+                                }
+                                title="Configuración"
+                                type="button"
+                            >
                                 <Settings size={15} aria-hidden />
                             </button>
                             {auth?.user?.is_admin && (
-                                <button className="mm-logout" onClick={() => router.visit('/admin')} type="button">
+                                <button
+                                    aria-label="Administración"
+                                    className="mm-logout"
+                                    onClick={() => router.visit('/admin')}
+                                    title="Administración"
+                                    type="button"
+                                >
                                     <Crown size={15} aria-hidden />
                                 </button>
                             )}
@@ -1263,12 +1702,21 @@ export default function MelodyMergePage({
                     <div className="mm-progress">
                         <div className="mm-progress__meta">
                             <span>Nivel {playerLevel}</span>
-                            <strong>{xp}/{xpGoal} XP</strong>
+                            <strong>
+                                {xp}/{xpGoal} XP
+                            </strong>
                         </div>
                         <div className="mm-progress__track">
-                            <span style={{ width: `${Math.min(100, (xp / xpGoal) * 100)}%` }} />
+                            <span
+                                style={{
+                                    width: `${Math.min(100, (xp / xpGoal) * 100)}%`,
+                                }}
+                            />
                         </div>
-                        <div className={`mm-save mm-save--${saveStatus}`} role="status">
+                        <div
+                            className={`mm-save mm-save--${saveStatus}`}
+                            role="status"
+                        >
                             <span />
                             {saveStatusLabel}
                         </div>
@@ -1276,9 +1724,14 @@ export default function MelodyMergePage({
 
                     {activeTab === 'merge' && (
                         <section className="mm-stage">
-                            <div className="mm-board" aria-label="Tablero de fusion">
+                            <div
+                                className="mm-board"
+                                aria-label="Tablero de fusión"
+                            >
                                 {board.map((cell, index) => {
-                                    const item = cell ? getMergeLevel(cell.level) : null;
+                                    const item = cell
+                                        ? getMergeLevel(cell.level)
+                                        : null;
 
                                     return (
                                         <button
@@ -1286,26 +1739,53 @@ export default function MelodyMergePage({
                                             data-cell-index={index}
                                             draggable={Boolean(cell)}
                                             key={index}
-                                            onClick={() => handleCellClick(index)}
-                                            onDragStart={() => setDraggedCell(index)}
-                                            onDragOver={(event) => event.preventDefault()}
+                                            aria-label={
+                                                item
+                                                    ? `${item.name}, nivel ${item.level}`
+                                                    : `Casilla vacía ${index + 1}`
+                                            }
+                                            onClick={() =>
+                                                handleCellClick(index)
+                                            }
+                                            onDragStart={() =>
+                                                setDraggedCell(index)
+                                            }
+                                            onDragOver={(event) =>
+                                                event.preventDefault()
+                                            }
                                             onDrop={() => {
                                                 if (draggedCell !== null) {
-                                                    mergeCells(draggedCell, index);
+                                                    mergeCells(
+                                                        draggedCell,
+                                                        index,
+                                                    );
                                                     setDraggedCell(null);
                                                 }
                                             }}
                                             onPointerCancel={handlePointerEnd}
-                                            onPointerDown={(event) => handlePointerDown(index, event)}
+                                            onPointerDown={(event) =>
+                                                handlePointerDown(index, event)
+                                            }
                                             onPointerMove={handlePointerMove}
                                             onPointerUp={handlePointerEnd}
                                             type="button"
                                         >
                                             {item && (
-                                                <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`} style={pieceStyle(item)}>
+                                                <span
+                                                    className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`}
+                                                    style={pieceStyle(item)}
+                                                >
                                                     <span className="mm-piece__shine" />
-                                                    {item.imageUrl && <img alt={item.name} className="mm-piece__image" src={item.imageUrl} />}
-                                                    <span className="mm-piece__name">{item.name}</span>
+                                                    {item.imageUrl && (
+                                                        <img
+                                                            alt={item.name}
+                                                            className="mm-piece__image"
+                                                            src={item.imageUrl}
+                                                        />
+                                                    )}
+                                                    <span className="mm-piece__name">
+                                                        {item.name}
+                                                    </span>
                                                 </span>
                                             )}
                                         </button>
@@ -1322,13 +1802,26 @@ export default function MelodyMergePage({
                                     }}
                                 >
                                     {(() => {
-                                        const item = getMergeLevel(touchDrag.item.level);
+                                        const item = getMergeLevel(
+                                            touchDrag.item.level,
+                                        );
 
                                         return (
-                                            <span className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`} style={pieceStyle(item)}>
+                                            <span
+                                                className={`mm-piece mm-piece--${item.symbol} ${item.imageUrl ? 'has-image' : ''}`}
+                                                style={pieceStyle(item)}
+                                            >
                                                 <span className="mm-piece__shine" />
-                                                {item.imageUrl && <img alt={item.name} className="mm-piece__image" src={item.imageUrl} />}
-                                                <span className="mm-piece__name">{item.name}</span>
+                                                {item.imageUrl && (
+                                                    <img
+                                                        alt={item.name}
+                                                        className="mm-piece__image"
+                                                        src={item.imageUrl}
+                                                    />
+                                                )}
+                                                <span className="mm-piece__name">
+                                                    {item.name}
+                                                </span>
                                             </span>
                                         );
                                     })()}
@@ -1336,13 +1829,18 @@ export default function MelodyMergePage({
                             )}
 
                             <div className="mm-actions">
-                                <button className="mm-magic-box" disabled={energy <= 0} onClick={generateItem} type="button">
+                                <button
+                                    className="mm-magic-box"
+                                    disabled={energy <= 0}
+                                    onClick={generateItem}
+                                    type="button"
+                                >
                                     <span className="mm-magic-box__lid" />
                                     <span className="mm-magic-box__body">
                                         <Wand2 size={22} aria-hidden />
                                     </span>
-                                    <strong>Caja magica</strong>
-                                    <small>-1 energia</small>
+                                    <strong>Caja mágica</strong>
+                                    <small>-1 energía</small>
                                 </button>
                             </div>
                         </section>
@@ -1352,7 +1850,7 @@ export default function MelodyMergePage({
                         <section className="mm-album">
                             <div className="mm-album__summary">
                                 <div>
-                                    <p className="mm-kicker">Coleccion</p>
+                                    <p className="mm-kicker">Colección</p>
                                     <h2>{albumPercent}% completo</h2>
                                 </div>
                                 <button onClick={buyPack} type="button">
@@ -1361,11 +1859,21 @@ export default function MelodyMergePage({
                                 </button>
                             </div>
 
-                            <section className="mm-collage" aria-label="Recuerdo secreto">
+                            <section
+                                className="mm-collage"
+                                aria-label="Recuerdo secreto"
+                            >
                                 <div className="mm-collage__head">
                                     <div>
-                                        <p className="mm-kicker">Recuerdo secreto</p>
-                                        <h2>{activeCollagePhoto ? `${activeCollageOwnedCount}/${activeCollagePhoto.piecesCount}` : `0/${totalCollagePieces}`} piezas</h2>
+                                        <p className="mm-kicker">
+                                            Recuerdo secreto
+                                        </p>
+                                        <h2>
+                                            {activeCollagePhoto
+                                                ? `${activeCollageOwnedCount}/${activeCollagePhoto.piecesCount}`
+                                                : `0/${totalCollagePieces}`}{' '}
+                                            piezas
+                                        </h2>
                                     </div>
                                     <span>{collagePercent}%</span>
                                 </div>
@@ -1373,59 +1881,135 @@ export default function MelodyMergePage({
                                     <div className="mm-collage__nav">
                                         <button
                                             disabled={collagePhotos.length <= 1}
-                                            onClick={() => setActiveCollageIndex((index) => (index - 1 + collagePhotos.length) % collagePhotos.length)}
+                                            onClick={() =>
+                                                setActiveCollageIndex(
+                                                    (index) =>
+                                                        (index -
+                                                            1 +
+                                                            collagePhotos.length) %
+                                                        collagePhotos.length,
+                                                )
+                                            }
                                             type="button"
                                         >
-                                            <ChevronLeft size={16} aria-hidden />
+                                            <ChevronLeft
+                                                size={16}
+                                                aria-hidden
+                                            />
                                         </button>
                                         <div>
-                                            <strong>{activeCollagePhoto.label}</strong>
-                                            <span>{safeActiveCollageIndex + 1}/{collagePhotos.length} · {completedPhotoIds.has(activeCollagePhoto.id) ? 'Completo' : `${activeCollagePhoto.piecesCount - activeCollageOwnedCount} faltantes`}</span>
+                                            <strong>
+                                                {completedPhotoIds.has(
+                                                    activeCollagePhoto.id,
+                                                )
+                                                    ? activeCollagePhoto.label
+                                                    : `Recuerdo secreto ${safeActiveCollageIndex + 1}`}
+                                            </strong>
+                                            <span>
+                                                {safeActiveCollageIndex + 1}/
+                                                {collagePhotos.length} ·{' '}
+                                                {completedPhotoIds.has(
+                                                    activeCollagePhoto.id,
+                                                )
+                                                    ? 'Completo'
+                                                    : `${activeCollagePhoto.piecesCount - activeCollageOwnedCount} faltantes`}
+                                            </span>
                                         </div>
                                         <button
                                             disabled={collagePhotos.length <= 1}
-                                            onClick={() => setActiveCollageIndex((index) => (index + 1) % collagePhotos.length)}
+                                            onClick={() =>
+                                                setActiveCollageIndex(
+                                                    (index) =>
+                                                        (index + 1) %
+                                                        collagePhotos.length,
+                                                )
+                                            }
                                             type="button"
                                         >
-                                            <ChevronRight size={16} aria-hidden />
+                                            <ChevronRight
+                                                size={16}
+                                                aria-hidden
+                                            />
                                         </button>
                                     </div>
                                 )}
                                 <div
                                     className="mm-collage__grid"
-                                    style={{
-                                        '--mm-collage-columns': collageColumns,
-                                        '--mm-collage-rows': collageRowCount,
-                                    } as CSSProperties & Record<'--mm-collage-columns' | '--mm-collage-rows', number>}
+                                    style={
+                                        {
+                                            '--mm-collage-columns':
+                                                collageColumns,
+                                            '--mm-collage-rows':
+                                                collageRowCount,
+                                        } as CSSProperties &
+                                            Record<
+                                                | '--mm-collage-columns'
+                                                | '--mm-collage-rows',
+                                                number
+                                            >
+                                    }
                                 >
-                                    {collageTiles.map(({ column, imageUrl, index, label, owned, photoComplete, pieceId, row }) => (
-                                        <button
-                                            className={`mm-collage__piece ${owned ? 'is-owned' : ''}`}
-                                            disabled={!owned}
-                                            key={pieceId}
-                                            style={{
-                                                '--mm-collage-image': `url("${imageUrl}")`,
-                                                '--mm-collage-x': `${(column / (collageColumns - 1)) * 100}%`,
-                                                '--mm-collage-y': `${(row / (collageRowCount - 1)) * 100}%`,
-                                            } as CSSProperties & Record<'--mm-collage-image' | '--mm-collage-x' | '--mm-collage-y', string>}
-                                            type="button"
-                                        >
-                                            <span>{owned ? index + 1 : '?'}</span>
-                                            {owned && photoComplete && <strong>{label}</strong>}
-                                        </button>
-                                    ))}
+                                    {collageTiles.map(
+                                        ({
+                                            column,
+                                            imageUrl,
+                                            index,
+                                            owned,
+                                            pieceId,
+                                            row,
+                                        }) => (
+                                            <button
+                                                className={`mm-collage__piece ${owned ? 'is-owned' : ''}`}
+                                                disabled={!owned}
+                                                key={pieceId}
+                                                style={
+                                                    {
+                                                        '--mm-collage-image': `url("${imageUrl}")`,
+                                                        '--mm-collage-x': `${(column / (collageColumns - 1)) * 100}%`,
+                                                        '--mm-collage-y': `${(row / (collageRowCount - 1)) * 100}%`,
+                                                    } as CSSProperties &
+                                                        Record<
+                                                            | '--mm-collage-image'
+                                                            | '--mm-collage-x'
+                                                            | '--mm-collage-y',
+                                                            string
+                                                        >
+                                                }
+                                                type="button"
+                                            >
+                                                {!owned && (
+                                                    <span>{index + 1}</span>
+                                                )}
+                                            </button>
+                                        ),
+                                    )}
                                 </div>
                             </section>
 
                             <div className="mm-album__filters">
                                 <button
-                                    className={albumFilter === 'all' ? 'is-active' : ''}
+                                    className={
+                                        albumFilter === 'all' ? 'is-active' : ''
+                                    }
                                     onClick={() => setAlbumFilter('all')}
                                     type="button"
                                 >
-                                    Todas <span>{collectedCards.length}/{cardPool.length}</span>
+                                    Todas{' '}
+                                    <span>
+                                        {collectedCards.length}/
+                                        {cardPool.length}
+                                    </span>
                                 </button>
-                                {(['C', 'R', 'SR', 'SSR', 'UR', 'SECRET'] as const).map((rarity) => {
+                                {(
+                                    [
+                                        'C',
+                                        'R',
+                                        'SR',
+                                        'SSR',
+                                        'UR',
+                                        'SECRET',
+                                    ] as const
+                                ).map((rarity) => {
                                     const stat = rarityStats[rarity];
 
                                     if (!stat) {
@@ -1436,10 +2020,15 @@ export default function MelodyMergePage({
                                         <button
                                             className={`${albumFilter === rarity ? 'is-active' : ''} rarity-${rarity.toLowerCase()}`}
                                             key={rarity}
-                                            onClick={() => setAlbumFilter(rarity)}
+                                            onClick={() =>
+                                                setAlbumFilter(rarity)
+                                            }
                                             type="button"
                                         >
-                                            {rarity} <span>{stat.owned}/{stat.total}</span>
+                                            {rarity}{' '}
+                                            <span>
+                                                {stat.owned}/{stat.total}
+                                            </span>
                                         </button>
                                     );
                                 })}
@@ -1454,18 +2043,27 @@ export default function MelodyMergePage({
                                             className={`mm-card ${owned ? 'is-owned' : ''} rarity-${card.rarity.toLowerCase()}`}
                                             disabled={!owned}
                                             key={card.id}
-                                            onClick={() => setSelectedAlbumCard(card)}
+                                            onClick={() =>
+                                                setSelectedAlbumCard(card)
+                                            }
                                             type="button"
                                         >
                                             <div className="mm-card__thumb">
                                                 {owned ? (
-                                                    <img alt={card.name} src={card.imageUrl} />
+                                                    <img
+                                                        alt={card.name}
+                                                        src={card.imageUrl}
+                                                    />
                                                 ) : (
                                                     <span>?</span>
                                                 )}
                                             </div>
                                             <div>
-                                                <strong>{owned ? card.name : 'Carta oculta'}</strong>
+                                                <strong>
+                                                    {owned
+                                                        ? card.name
+                                                        : 'Carta oculta'}
+                                                </strong>
                                                 <span>{card.collection}</span>
                                             </div>
                                             <small>{card.rarity}</small>
@@ -1490,9 +2088,15 @@ export default function MelodyMergePage({
                                     <span />
                                     <span />
                                 </div>
-                                {collectedCards.length >= 3 && <span className="mm-room__plush" />}
-                                {collectedCards.length >= 6 && <span className="mm-room__poster" />}
-                                {collectedCards.length >= 10 && <span className="mm-room__cat" />}
+                                {collectedCards.length >= 3 && (
+                                    <span className="mm-room__plush" />
+                                )}
+                                {collectedCards.length >= 6 && (
+                                    <span className="mm-room__poster" />
+                                )}
+                                {collectedCards.length >= 10 && (
+                                    <span className="mm-room__cat" />
+                                )}
                             </div>
 
                             <div className="mm-love-letter">
@@ -1501,8 +2105,14 @@ export default function MelodyMergePage({
                                     <h2>Carta para ti</h2>
                                     {dailyStreak > 0 && (
                                         <span className="mm-streak">
-                                            <span className="mm-streak__fire" aria-hidden>&#128293;</span>
-                                            {dailyStreak} dia{dailyStreak !== 1 ? 's' : ''}
+                                            <span
+                                                className="mm-streak__fire"
+                                                aria-hidden
+                                            >
+                                                &#128293;
+                                            </span>
+                                            {dailyStreak} día
+                                            {dailyStreak !== 1 ? 's' : ''}
                                         </span>
                                     )}
                                 </div>
@@ -1510,10 +2120,32 @@ export default function MelodyMergePage({
                                     <p>{loveLetterMessages[loveLetterIndex]}</p>
                                 </div>
                                 <div className="mm-love-letter__nav">
-                                    <button onClick={() => { sfx.loveLetter(); setLoveLetterIndex((i) => (i - 1 + loveLetterMessages.length) % loveLetterMessages.length); }} type="button">
+                                    <button
+                                        onClick={() => {
+                                            sfx.loveLetter();
+                                            setLoveLetterIndex(
+                                                (i) =>
+                                                    (i -
+                                                        1 +
+                                                        loveLetterMessages.length) %
+                                                    loveLetterMessages.length,
+                                            );
+                                        }}
+                                        type="button"
+                                    >
                                         <ChevronLeft size={18} aria-hidden />
                                     </button>
-                                    <button onClick={() => { sfx.loveLetter(); setLoveLetterIndex((i) => (i + 1) % loveLetterMessages.length); }} type="button">
+                                    <button
+                                        onClick={() => {
+                                            sfx.loveLetter();
+                                            setLoveLetterIndex(
+                                                (i) =>
+                                                    (i + 1) %
+                                                    loveLetterMessages.length,
+                                            );
+                                        }}
+                                        type="button"
+                                    >
                                         <ChevronRight size={18} aria-hidden />
                                     </button>
                                 </div>
@@ -1525,21 +2157,39 @@ export default function MelodyMergePage({
                                     <h2>Misiones diarias</h2>
                                 </div>
                                 {missions.map((mission) => (
-                                    <div className="mm-mission" key={mission.label}>
+                                    <div
+                                        className="mm-mission"
+                                        key={mission.label}
+                                    >
                                         <div className="mm-mission__meta">
                                             <span>{mission.label}</span>
-                                            <strong>{mission.value}/{mission.goal}</strong>
+                                            <strong>
+                                                {mission.value}/{mission.goal}
+                                            </strong>
                                         </div>
                                         <div className="mm-mission__track">
-                                            <span style={{ width: `${(mission.value / mission.goal) * 100}%` }} />
+                                            <span
+                                                style={{
+                                                    width: `${(mission.value / mission.goal) * 100}%`,
+                                                }}
+                                            />
                                         </div>
                                         <button
                                             className="mm-mission__claim"
-                                            disabled={!mission.completed || mission.claimed}
-                                            onClick={() => claimMission(mission.id)}
+                                            disabled={
+                                                !mission.completed ||
+                                                mission.claimed
+                                            }
+                                            onClick={() =>
+                                                claimMission(mission.id)
+                                            }
                                             type="button"
                                         >
-                                            {mission.claimed ? 'Reclamada' : mission.completed ? `Reclamar +${mission.reward.hearts}` : `Recompensa +${mission.reward.hearts}`}
+                                            {mission.claimed
+                                                ? 'Reclamada'
+                                                : mission.completed
+                                                  ? `Reclamar +${mission.reward.hearts}`
+                                                  : `Recompensa +${mission.reward.hearts}`}
                                         </button>
                                     </div>
                                 ))}
@@ -1560,26 +2210,51 @@ export default function MelodyMergePage({
                                 </button>
                             </div>
 
-                            <div className="mm-memory__board" aria-label="Tablero de Memoria">
+                            <div
+                                className="mm-memory__board"
+                                aria-label="Tablero de Memoria"
+                            >
                                 {memoryDeck.map((card) => {
-                                    const isFlipped = flippedMemoryCards.includes(card.id) || card.isMatched;
+                                    const isFlipped =
+                                        flippedMemoryCards.includes(card.id) ||
+                                        card.isMatched;
 
                                     return (
                                         <button
                                             className={`mm-memory-card ${isFlipped ? 'is-flipped' : ''} ${card.isMatched ? 'is-matched' : ''}`}
-                                            disabled={memoryLocked || card.isMatched}
+                                            disabled={
+                                                memoryLocked || card.isMatched
+                                            }
                                             key={card.id}
-                                            onClick={() => handleMemoryCardClick(card.id)}
+                                            onClick={() =>
+                                                handleMemoryCardClick(card.id)
+                                            }
                                             type="button"
                                         >
                                             <span className="mm-memory-card__back">
                                                 <Brain size={22} aria-hidden />
                                             </span>
                                             <span className="mm-memory-card__front">
-                                                <span className={`mm-piece mm-piece--${card.item.symbol} ${card.item.imageUrl ? 'has-image' : ''}`} style={pieceStyle(card.item)}>
+                                                <span
+                                                    className={`mm-piece mm-piece--${card.item.symbol} ${card.item.imageUrl ? 'has-image' : ''}`}
+                                                    style={pieceStyle(
+                                                        card.item,
+                                                    )}
+                                                >
                                                     <span className="mm-piece__shine" />
-                                                    {card.item.imageUrl && <img alt={card.item.name} className="mm-piece__image" src={card.item.imageUrl} />}
-                                                    <span className="mm-piece__name">{card.item.name}</span>
+                                                    {card.item.imageUrl && (
+                                                        <img
+                                                            alt={card.item.name}
+                                                            className="mm-piece__image"
+                                                            src={
+                                                                card.item
+                                                                    .imageUrl
+                                                            }
+                                                        />
+                                                    )}
+                                                    <span className="mm-piece__name">
+                                                        {card.item.name}
+                                                    </span>
                                                 </span>
                                             </span>
                                         </button>
@@ -1588,34 +2263,59 @@ export default function MelodyMergePage({
                             </div>
 
                             <div className="mm-memory__rewards">
-                                <span>{memoryMatches}/{memorySource.length} parejas</span>
+                                <span>
+                                    {memoryMatches}/{memorySource.length}{' '}
+                                    parejas
+                                </span>
                                 <span>+60 corazones</span>
-                                <span>+10 energia</span>
+                                <span>+10 energía</span>
                             </div>
 
-                            {memoryMatches === memorySource.length && memorySource.length > 0 && (
-                                <div className="mm-memory-complete">
-                                    <h3>Todas las parejas encontradas</h3>
-                                    <p>Recompensas reclamadas. Preparando nueva ronda...</p>
-                                </div>
-                            )}
+                            {memoryMatches === memorySource.length &&
+                                memorySource.length > 0 && (
+                                    <div className="mm-memory-complete">
+                                        <h3>Todas las parejas encontradas</h3>
+                                        <p>
+                                            Recompensas reclamadas. Preparando
+                                            nueva ronda...
+                                        </p>
+                                    </div>
+                                )}
                         </section>
                     )}
 
                     <nav className="mm-tabs" aria-label="Vistas">
-                        <button className={activeTab === 'merge' ? 'is-active' : ''} onClick={() => setActiveTab('merge')} type="button">
+                        <button
+                            className={activeTab === 'merge' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('merge')}
+                            type="button"
+                        >
                             <Wand2 size={19} aria-hidden />
                             <span>Merge</span>
                         </button>
-                        <button className={activeTab === 'memory' ? 'is-active' : ''} onClick={() => setActiveTab('memory')} type="button">
+                        <button
+                            className={
+                                activeTab === 'memory' ? 'is-active' : ''
+                            }
+                            onClick={() => setActiveTab('memory')}
+                            type="button"
+                        >
                             <Brain size={19} aria-hidden />
                             <span>Memoria</span>
                         </button>
-                        <button className={activeTab === 'album' ? 'is-active' : ''} onClick={() => setActiveTab('album')} type="button">
+                        <button
+                            className={activeTab === 'album' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('album')}
+                            type="button"
+                        >
                             <Album size={19} aria-hidden />
                             <span>Album</span>
                         </button>
-                        <button className={activeTab === 'room' ? 'is-active' : ''} onClick={() => setActiveTab('room')} type="button">
+                        <button
+                            className={activeTab === 'room' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('room')}
+                            type="button"
+                        >
                             <Gift size={19} aria-hidden />
                             <span>Sala</span>
                         </button>
@@ -1629,7 +2329,12 @@ export default function MelodyMergePage({
                     )}
 
                     {showDailyReward && (
-                        <div className="mm-daily-modal" role="dialog" aria-modal="true" aria-label="Recompensa diaria">
+                        <div
+                            className="mm-daily-modal"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Recompensa diaria"
+                        >
                             <div className="mm-daily-modal__panel">
                                 <span className="mm-daily-modal__icon">
                                     <Gift size={28} aria-hidden />
@@ -1638,19 +2343,32 @@ export default function MelodyMergePage({
                                 <h2>Regalo listo</h2>
                                 {dailyStreak > 0 && (
                                     <span className="mm-streak">
-                                        <span className="mm-streak__fire" aria-hidden>&#128293;</span>
-                                        Racha: {dailyStreak} dia{dailyStreak !== 1 ? 's' : ''} seguidos
+                                        <span
+                                            className="mm-streak__fire"
+                                            aria-hidden
+                                        >
+                                            &#128293;
+                                        </span>
+                                        Racha: {dailyStreak} día
+                                        {dailyStreak !== 1 ? 's' : ''} seguidos
                                     </span>
                                 )}
                                 <div className="mm-daily-modal__rewards">
-                                    <span>+{dailyReward.energy} energia</span>
+                                    <span>+{dailyReward.energy} energía</span>
                                     <span>+{dailyReward.hearts} corazones</span>
                                     <span>Sobre diario</span>
                                 </div>
-                                <button onClick={claimDailyReward} type="button">
+                                <button
+                                    onClick={claimDailyReward}
+                                    type="button"
+                                >
                                     Reclamar
                                 </button>
-                                <button className="mm-daily-modal__later" onClick={() => setShowDailyReward(false)} type="button">
+                                <button
+                                    className="mm-daily-modal__later"
+                                    onClick={() => setShowDailyReward(false)}
+                                    type="button"
+                                >
                                     Luego
                                 </button>
                             </div>
@@ -1658,90 +2376,195 @@ export default function MelodyMergePage({
                     )}
 
                     {pendingPack && (
-                        <div className="mm-pack-modal" role="dialog" aria-modal="true" aria-label={pendingPack.label}>
+                        <div
+                            className="mm-pack-modal"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label={pendingPack.label}
+                        >
                             <div className="mm-pack-modal__panel">
                                 {!isPackOpened ? (
                                     <>
-                                        <button className="mm-envelope" disabled={!assetsReady} onClick={revealPendingPack} type="button">
-                                            <img alt={pendingPack.label} src={packImageUrl} />
+                                        <button
+                                            className="mm-envelope"
+                                            disabled={!assetsReady}
+                                            onClick={revealPendingPack}
+                                            type="button"
+                                        >
+                                            <img
+                                                alt={pendingPack.label}
+                                                src={packImageUrl}
+                                            />
                                             <span className="mm-envelope__cut">
-                                                <Scissors size={18} aria-hidden />
+                                                <Scissors
+                                                    size={18}
+                                                    aria-hidden
+                                                />
                                             </span>
                                         </button>
-                                        <p>{assetsReady ? 'Presiona la tijera para cortar el sobre.' : 'Preparando cartas...'}</p>
+                                        <p>
+                                            {assetsReady
+                                                ? 'Presiona la tijera para cortar el sobre.'
+                                                : 'Preparando cartas...'}
+                                        </p>
                                     </>
                                 ) : (
                                     <>
-                                        {dismissedPackCards < packRevealItems.length ? (
-                                            <button className="mm-card-stack" onClick={advancePackCard} type="button">
-                                                {packRevealItems.map((reward, index) => {
-                                                    const revealState = index < dismissedPackCards ? 'is-dismissed' :
-                                                        index === dismissedPackCards ? 'is-active' :
-                                                            'is-waiting';
-                                                    const stackStyle = { '--stack-index': index } as CSSProperties & Record<'--stack-index', number>;
+                                        {dismissedPackCards <
+                                        packRevealItems.length ? (
+                                            <button
+                                                className="mm-card-stack"
+                                                onClick={advancePackCard}
+                                                type="button"
+                                            >
+                                                {packRevealItems.map(
+                                                    (reward, index) => {
+                                                        const revealState =
+                                                            index <
+                                                            dismissedPackCards
+                                                                ? 'is-dismissed'
+                                                                : index ===
+                                                                    dismissedPackCards
+                                                                  ? 'is-active'
+                                                                  : 'is-waiting';
+                                                        const stackStyle = {
+                                                            '--stack-index':
+                                                                index,
+                                                        } as CSSProperties &
+                                                            Record<
+                                                                '--stack-index',
+                                                                number
+                                                            >;
 
-                                                    if (reward.type === 'collage') {
+                                                        if (
+                                                            reward.type ===
+                                                            'collage'
+                                                        ) {
+                                                            return (
+                                                                <span
+                                                                    className={`mm-stack-card mm-stack-card--collage ${revealState}`}
+                                                                    key={`${pendingPack.id}-stack-${reward.piece.id}-${index}`}
+                                                                    style={{
+                                                                        ...stackStyle,
+                                                                        ...collagePieceStyle(
+                                                                            reward.piece,
+                                                                        ),
+                                                                    }}
+                                                                >
+                                                                    <div className="mm-reward-card__piece-bg" />
+                                                                    <small>
+                                                                        Pieza
+                                                                    </small>
+                                                                    <strong>
+                                                                        Pieza
+                                                                        secreta
+                                                                    </strong>
+                                                                </span>
+                                                            );
+                                                        }
+
                                                         return (
                                                             <span
-                                                                className={`mm-stack-card mm-stack-card--collage ${revealState}`}
-                                                                key={`${pendingPack.id}-stack-${reward.piece.id}-${index}`}
-                                                                style={{
-                                                                    ...stackStyle,
-                                                                    ...collagePieceStyle(reward.piece),
-                                                                }}
+                                                                className={`mm-stack-card rarity-${reward.card.rarity.toLowerCase()} ${revealState}`}
+                                                                key={`${pendingPack.id}-stack-${reward.card.id}-${index}`}
+                                                                style={
+                                                                    stackStyle
+                                                                }
                                                             >
-                                                                <div className="mm-reward-card__piece-bg" />
-                                                                <small>Pieza</small>
-                                                                <strong>Recuerdo secreto</strong>
+                                                                <img
+                                                                    alt={
+                                                                        reward
+                                                                            .card
+                                                                            .name
+                                                                    }
+                                                                    src={
+                                                                        reward
+                                                                            .card
+                                                                            .imageUrl
+                                                                    }
+                                                                />
+                                                                <small>
+                                                                    {
+                                                                        reward
+                                                                            .card
+                                                                            .rarity
+                                                                    }
+                                                                </small>
                                                             </span>
                                                         );
-                                                    }
-
-                                                    return (
-                                                        <span
-                                                            className={`mm-stack-card rarity-${reward.card.rarity.toLowerCase()} ${revealState}`}
-                                                            key={`${pendingPack.id}-stack-${reward.card.id}-${index}`}
-                                                            style={stackStyle}
-                                                        >
-                                                            <img alt={reward.card.name} src={reward.card.imageUrl} />
-                                                            <small>{reward.card.rarity}</small>
-                                                        </span>
-                                                    );
-                                                })}
+                                                    },
+                                                )}
                                             </button>
                                         ) : (
                                             <>
                                                 <div className="mm-pack-modal__cards">
-                                                    {pendingPack.cards.map((card, index) => {
-                                                        const result = packCardResults[index];
+                                                    {pendingPack.cards.map(
+                                                        (card, index) => {
+                                                            const result =
+                                                                packCardResults[
+                                                                    index
+                                                                ];
 
-                                                        return (
-                                                            <div className={`mm-reward-card rarity-${card.rarity.toLowerCase()} ${result?.status === 'new' ? 'is-new' : 'is-duplicate'}`} key={`${pendingPack.id}-${card.id}-${index}`}>
-                                                                <img alt={card.name} src={card.imageUrl} />
-                                                                <span>{card.rarity}</span>
-                                                                {result && (
-                                                                    <em>
-                                                                        {result.status === 'new' ? 'Nueva' : `Duplicada +${result.bonusHearts}`}
-                                                                    </em>
-                                                                )}
-                                                                <strong>{card.name}</strong>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {(pendingPack.collagePieces ?? []).map((piece) => (
+                                                            return (
+                                                                <div
+                                                                    className={`mm-reward-card rarity-${card.rarity.toLowerCase()} ${result?.status === 'new' ? 'is-new' : 'is-duplicate'}`}
+                                                                    key={`${pendingPack.id}-${card.id}-${index}`}
+                                                                >
+                                                                    <img
+                                                                        alt={
+                                                                            card.name
+                                                                        }
+                                                                        src={
+                                                                            card.imageUrl
+                                                                        }
+                                                                    />
+                                                                    <span>
+                                                                        {
+                                                                            card.rarity
+                                                                        }
+                                                                    </span>
+                                                                    {result && (
+                                                                        <em>
+                                                                            {result.status ===
+                                                                            'new'
+                                                                                ? 'Nueva'
+                                                                                : `Duplicada +${result.bonusHearts}`}
+                                                                        </em>
+                                                                    )}
+                                                                    <strong>
+                                                                        {
+                                                                            card.name
+                                                                        }
+                                                                    </strong>
+                                                                </div>
+                                                            );
+                                                        },
+                                                    )}
+                                                    {(
+                                                        pendingPack.collagePieces ??
+                                                        []
+                                                    ).map((piece) => (
                                                         <div
                                                             className="mm-reward-card mm-reward-card--collage is-new"
                                                             key={`${pendingPack.id}-${piece.id}`}
-                                                            style={collagePieceStyle(piece)}
+                                                            style={collagePieceStyle(
+                                                                piece,
+                                                            )}
                                                         >
                                                             <div className="mm-reward-card__piece-bg" />
                                                             <span>Pieza</span>
                                                             <em>Nueva</em>
-                                                            <strong>Recuerdo secreto</strong>
+                                                            <strong>
+                                                                Pieza secreta
+                                                            </strong>
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <button className="mm-pack-modal__close" onClick={() => setPendingPack(null)} type="button">
+                                                <button
+                                                    className="mm-pack-modal__close"
+                                                    onClick={dismissPendingPack}
+                                                    type="button"
+                                                >
                                                     Guardar
                                                 </button>
                                             </>
@@ -1753,15 +2576,29 @@ export default function MelodyMergePage({
                     )}
 
                     {selectedAlbumCard && (
-                        <div className="mm-card-viewer" role="dialog" aria-modal="true" aria-label={selectedAlbumCard.name}>
-                            <div className={`mm-card-viewer__panel rarity-${selectedAlbumCard.rarity.toLowerCase()}`}>
-                                <img alt={selectedAlbumCard.name} src={selectedAlbumCard.imageUrl} />
+                        <div
+                            className="mm-card-viewer"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label={selectedAlbumCard.name}
+                        >
+                            <div
+                                className={`mm-card-viewer__panel rarity-${selectedAlbumCard.rarity.toLowerCase()}`}
+                            >
+                                <img
+                                    alt={selectedAlbumCard.name}
+                                    src={selectedAlbumCard.imageUrl}
+                                />
                                 <div className="mm-card-viewer__meta">
                                     <span>{selectedAlbumCard.rarity}</span>
                                     <strong>{selectedAlbumCard.name}</strong>
                                     <p>{selectedAlbumCard.collection}</p>
                                 </div>
-                                <button className="mm-card-viewer__close" onClick={() => setSelectedAlbumCard(null)} type="button">
+                                <button
+                                    className="mm-card-viewer__close"
+                                    onClick={() => setSelectedAlbumCard(null)}
+                                    type="button"
+                                >
                                     Cerrar
                                 </button>
                             </div>
@@ -1777,9 +2614,19 @@ export default function MelodyMergePage({
                     )}
 
                     {sparklePosition && (
-                        <div className="mm-sparkle-burst" aria-hidden style={{ left: sparklePosition.x, top: sparklePosition.y }}>
+                        <div
+                            className="mm-sparkle-burst"
+                            aria-hidden
+                            style={{
+                                left: sparklePosition.x,
+                                top: sparklePosition.y,
+                            }}
+                        >
                             {Array.from({ length: 8 }, (_, i) => (
-                                <span className="mm-sparkle-burst__particle" key={i} />
+                                <span
+                                    className="mm-sparkle-burst__particle"
+                                    key={i}
+                                />
                             ))}
                         </div>
                     )}

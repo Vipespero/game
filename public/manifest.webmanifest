@@ -1,7 +1,7 @@
 {
     "name": "My Home",
     "short_name": "My Home",
-    "description": "Nuestro juego privado de fusion y cartas.",
+    "description": "Nuestro juego privado de fusión y cartas.",
     "id": "/",
     "start_url": "/?source=pwa",
     "scope": "/",

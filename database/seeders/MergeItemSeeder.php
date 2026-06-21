@@ -26,7 +26,7 @@ class MergeItemSeeder extends Seeder
             [14, 'Campana', 'bell', null, 'linear-gradient(145deg, #fff0a6, #ffbd59 52%, #ff7ab6)', '50%', 100, 0, 0, 1278, 320],
             [15, 'Cupcake', 'cupcake', null, 'linear-gradient(145deg, #ffd6e8, #ff8cc6 52%, #b794f4)', '50%', 100, 0, 0, 1680, 420],
             [16, 'Diamante', 'diamond', null, 'linear-gradient(145deg, #9ff3ff, #77a7ff 52%, #d68cff)', '50%', 100, 0, 0, 2182, 546],
-            [17, 'Jardin', 'garden', null, 'linear-gradient(145deg, #c7ffd8, #72d6a4 52%, #ff99cf)', '50%', 100, 0, 0, 2804, 702],
+            [17, 'Jardín', 'garden', null, 'linear-gradient(145deg, #c7ffd8, #72d6a4 52%, #ff99cf)', '50%', 100, 0, 0, 2804, 702],
             [18, 'Sueño', 'dream', null, 'linear-gradient(145deg, #d7c6ff, #8b5cf6 52%, #ff8cc6)', '50%', 100, 0, 0, 3570, 892],
             [19, 'Reino', 'kingdom', null, 'linear-gradient(145deg, #ffe7a8, #ff87c2 48%, #7dd3fc)', '50%', 100, 0, 0, 4508, 1128],
             [20, 'Final', 'final', null, 'linear-gradient(145deg, #fff1a8, #ff78bd 42%, #8b5cf6 72%, #65d7ff)', '50%', 100, 0, 0, 5650, 1412],

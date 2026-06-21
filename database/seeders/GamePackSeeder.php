@@ -13,7 +13,7 @@ class GamePackSeeder extends Seeder
             ['premium', 'Sobre premium', 'premium', 180, 3, 10],
             ['daily', 'Sobre diario', 'daily', 0, 3, 20],
             ['level', 'Sobre de nivel', 'level', 0, 3, 30],
-            ['merge', 'Sobre por fusion', 'merge', 0, 3, 40],
+            ['merge', 'Sobre por fusión', 'merge', 0, 3, 40],
         ];
 
         foreach ($packs as [$id, $label, $trigger, $cost, $cardsCount, $sortOrder]) {

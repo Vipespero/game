@@ -18,7 +18,7 @@ class CardSeeder extends Seeder
             [6, 'Little Twin Stars luna', 'Dulces Suenos', 'SR', 'SR/06_little_twin_stars_luna_sr.png', 70],
             [7, 'Hello Kitty leyendo', 'Hello Kitty Clasica', 'R', 'R/07_hello_kitty_leyendo_r.png', 110],
             [8, 'Hello Kitty en automovil', 'Hello Kitty Aventurera', 'SSR', 'SSR/08_hello_kitty_automovil_ssr.png', 30],
-            [9, 'Pompompurin flor', 'Pompompurin Jardin', 'SSR', 'SSR/11_pompompurin_flor_ssr.png', 30],
+            [9, 'Pompompurin flor', 'Pompompurin Jardín', 'SSR', 'SSR/11_pompompurin_flor_ssr.png', 30],
             [10, 'Pompompurin carro', 'Pompompurin Aventurero', 'SSR', 'SSR/12_pompompurin_carro_ssr.png', 30],
             [11, 'Pompompurin en caja', 'Dulces Suenos', 'SR', 'SR/13_pompompurin_caja_sr.png', 70],
             [12, 'Kuromi flor', 'Kuromi Especial', 'SSR', 'SSR/14_kuromi_flor_ssr.png', 30],
