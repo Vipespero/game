@@ -330,6 +330,7 @@ button {
 .mm-brand h1,
 .mm-album h2,
 .mm-memory h2,
+.mm-blocks h2,
 .mm-section-title h2 {
     margin: 0;
     font-size: 21px;
@@ -478,11 +479,11 @@ button {
 
 .mm-tabs {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3px;
     border-top: 1px solid var(--mm-border);
     background: var(--mm-surface);
-    padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+    padding: 7px 8px max(9px, env(safe-area-inset-bottom));
 }
 
 .mm-tabs button {
@@ -509,7 +510,8 @@ button {
 .mm-stage,
 .mm-album,
 .mm-room,
-.mm-memory {
+.mm-memory,
+.mm-blocks {
     min-height: 0;
     overflow: hidden;
     padding: 0 10px 10px;
@@ -518,14 +520,16 @@ button {
 
 .mm-album,
 .mm-room,
-.mm-memory {
+.mm-memory,
+.mm-blocks {
     overflow-y: auto;
 }
 
 .mm-stage::-webkit-scrollbar,
 .mm-album::-webkit-scrollbar,
 .mm-room::-webkit-scrollbar,
-.mm-memory::-webkit-scrollbar {
+.mm-memory::-webkit-scrollbar,
+.mm-blocks::-webkit-scrollbar {
     display: none;
 }
 
@@ -1755,6 +1759,219 @@ button {
     display: grid;
     align-content: start;
     gap: 10px;
+}
+
+.mm-blocks {
+    display: grid;
+    align-content: start;
+    gap: 9px;
+}
+
+.mm-blocks__summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 42px;
+    align-items: center;
+    gap: 8px;
+}
+
+.mm-blocks__summary button {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--mm-pink), var(--mm-lilac));
+    color: #ffffff;
+    box-shadow: 0 10px 20px rgba(255, 120, 180, 0.2);
+}
+
+.mm-blocks__records {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    color: var(--mm-muted);
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.mm-blocks__board {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 3px;
+    width: min(100%, 350px);
+    aspect-ratio: 1;
+    justify-self: center;
+    border: 3px solid var(--mm-border);
+    border-radius: 20px;
+    background:
+        radial-gradient(
+            circle at 30% 20%,
+            rgba(255, 255, 255, 0.7),
+            transparent 45%
+        ),
+        rgba(255, 255, 255, 0.5);
+    padding: 7px;
+    box-shadow:
+        inset 0 0 0 1px rgba(126, 84, 132, 0.08),
+        0 16px 30px rgba(120, 65, 132, 0.14);
+    touch-action: manipulation;
+}
+
+.mm-blocks__board > button {
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid rgba(126, 84, 132, 0.12);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.58);
+    transition:
+        transform 120ms ease,
+        background 120ms ease,
+        box-shadow 120ms ease;
+}
+
+.mm-blocks__board > button.can-place:not(.is-filled) {
+    background: rgba(159, 230, 208, 0.32);
+}
+
+.mm-blocks__board > button:active:not(.is-filled) {
+    transform: scale(0.88);
+}
+
+.mm-blocks__board .is-filled,
+.mm-blocks__piece-grid .is-filled {
+    border-color: rgba(255, 255, 255, 0.86);
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.36),
+        0 5px 9px rgba(93, 52, 105, 0.16);
+}
+
+.mm-blocks .color-1 {
+    background: linear-gradient(145deg, #ff9aca, #ff5ca9);
+}
+
+.mm-blocks .color-2 {
+    background: linear-gradient(145deg, #c4adff, #8d70ef);
+}
+
+.mm-blocks .color-3 {
+    background: linear-gradient(145deg, #a9eedb, #5acaaa);
+}
+
+.mm-blocks .color-4 {
+    background: linear-gradient(145deg, #ffe194, #f4b846);
+}
+
+.mm-blocks .color-5 {
+    background: linear-gradient(145deg, #b8e6ff, #64bff5);
+}
+
+.mm-blocks__hint {
+    min-height: 30px;
+    margin: 0;
+    color: var(--mm-muted);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.mm-blocks__pieces {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.mm-blocks__pieces > button {
+    display: grid;
+    place-items: center;
+    min-height: 76px;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 8px 18px rgba(120, 65, 132, 0.1);
+}
+
+.mm-blocks__pieces > button.is-selected {
+    border-color: var(--mm-pink);
+    background: rgba(255, 238, 247, 0.94);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(255, 114, 179, 0.24);
+}
+
+.mm-blocks__pieces > button.cannot-fit {
+    filter: grayscale(0.7);
+    opacity: 0.48;
+}
+
+.mm-blocks__piece-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 12px);
+    grid-template-rows: repeat(4, 12px);
+    gap: 2px;
+}
+
+.mm-blocks__piece-grid > span {
+    border-radius: 4px;
+}
+
+.mm-blocks__reward {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 999px;
+    background: rgba(255, 114, 179, 0.1);
+    color: var(--mm-muted);
+    font-size: 10px;
+    font-weight: 900;
+    padding: 7px 10px;
+}
+
+.mm-blocks__reward svg {
+    flex: 0 0 auto;
+    color: var(--mm-pink);
+}
+
+.mm-blocks__game-over {
+    position: absolute;
+    inset: 14px;
+    z-index: 4;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    border-radius: 18px;
+    background: rgba(255, 248, 252, 0.92);
+    color: var(--mm-ink);
+    box-shadow: 0 18px 40px rgba(83, 34, 81, 0.25);
+    backdrop-filter: blur(8px);
+}
+
+.mm-blocks__game-over svg {
+    color: var(--mm-pink);
+}
+
+.mm-blocks__game-over strong {
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.mm-blocks__game-over span {
+    color: var(--mm-muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.mm-blocks__game-over button {
+    min-height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--mm-pink), var(--mm-lilac));
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 900;
+    padding: 0 18px;
 }
 
 .mm-memory__summary {
@@ -4041,6 +4258,7 @@ button {
     .mm-album,
     .mm-room,
     .mm-memory,
+    .mm-blocks,
     .mm-progress {
         margin-right: 12px;
         margin-left: 12px;
@@ -4064,4 +4282,8 @@ button {
     .mm-toast {
         top: 8px;
     }
+}
+
+.dark .mm-blocks__game-over {
+    background: rgba(30, 20, 38, 0.94);
 }

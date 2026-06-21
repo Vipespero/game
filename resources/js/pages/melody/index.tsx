@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import {
     Album,
     Battery,
+    Boxes,
     Brain,
     ChevronLeft,
     ChevronRight,
@@ -44,6 +45,7 @@ import { music } from '@/lib/music';
 import { sfx } from '@/lib/sounds';
 import type {
     BoardItem,
+    BlockPiece,
     CardRarity,
     CollagePieceReward,
     MelodyCard,
@@ -122,6 +124,7 @@ const normalizeTab = (tab?: string) => {
     return tab === 'album' ||
         tab === 'room' ||
         tab === 'memory' ||
+        tab === 'blocks' ||
         tab === 'merge'
         ? tab
         : 'merge';
@@ -142,6 +145,148 @@ const dateKey = (date = new Date()) => date.toISOString().slice(0, 10);
 const collageColumns = 4;
 const collageRowCount = 4;
 const maxSavedPackHistory = 120;
+const blockBoardSide = 8;
+const blockBoardSize = blockBoardSide * blockBoardSide;
+
+const blockShapes = [
+    { id: 'single', cells: [[0, 0]] },
+    {
+        id: 'line-2-h',
+        cells: [
+            [0, 0],
+            [0, 1],
+        ],
+    },
+    {
+        id: 'line-2-v',
+        cells: [
+            [0, 0],
+            [1, 0],
+        ],
+    },
+    {
+        id: 'line-3-h',
+        cells: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+        ],
+    },
+    {
+        id: 'line-3-v',
+        cells: [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+        ],
+    },
+    {
+        id: 'line-4-h',
+        cells: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [0, 3],
+        ],
+    },
+    {
+        id: 'line-4-v',
+        cells: [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+            [3, 0],
+        ],
+    },
+    {
+        id: 'square',
+        cells: [
+            [0, 0],
+            [0, 1],
+            [1, 0],
+            [1, 1],
+        ],
+    },
+    {
+        id: 'corner',
+        cells: [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+        ],
+    },
+    {
+        id: 'corner-flip',
+        cells: [
+            [0, 1],
+            [1, 0],
+            [1, 1],
+        ],
+    },
+    {
+        id: 't',
+        cells: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [1, 1],
+        ],
+    },
+    {
+        id: 'zig',
+        cells: [
+            [0, 0],
+            [0, 1],
+            [1, 1],
+            [1, 2],
+        ],
+    },
+] as const;
+
+const emptyBlockBoard = () => Array.from({ length: blockBoardSize }, () => 0);
+const getBlockShape = (shapeId: string) =>
+    blockShapes.find((shape) => shape.id === shapeId) ?? blockShapes[0];
+const createBlockPieces = (): BlockPiece[] =>
+    Array.from({ length: 3 }, () => ({
+        id: nanoid(),
+        shapeId: blockShapes[Math.floor(Math.random() * blockShapes.length)].id,
+        color: Math.floor(Math.random() * 5) + 1,
+    }));
+const normalizeBlockBoard = (board?: number[]) =>
+    Array.isArray(board) && board.length === blockBoardSize
+        ? board.map((cell) => Math.min(5, Math.max(0, Math.round(cell))))
+        : emptyBlockBoard();
+const normalizeBlockPieces = (pieces?: BlockPiece[]) => {
+    if (!Array.isArray(pieces) || pieces.length === 0) {
+        return createBlockPieces();
+    }
+
+    return pieces.slice(0, 3).map((piece) => ({
+        id: piece.id || nanoid(),
+        shapeId: getBlockShape(piece.shapeId).id,
+        color: Math.min(5, Math.max(1, Math.round(piece.color))),
+    }));
+};
+const blockPlacementIndexes = (piece: BlockPiece, anchor: number) => {
+    const anchorRow = Math.floor(anchor / blockBoardSide);
+    const anchorColumn = anchor % blockBoardSide;
+
+    return getBlockShape(piece.shapeId).cells.map(([row, column]) => {
+        const nextRow = anchorRow + row;
+        const nextColumn = anchorColumn + column;
+
+        return nextRow < blockBoardSide && nextColumn < blockBoardSide
+            ? nextRow * blockBoardSide + nextColumn
+            : -1;
+    });
+};
+const canPlaceBlock = (board: number[], piece: BlockPiece, anchor: number) => {
+    const indexes = blockPlacementIndexes(piece, anchor);
+
+    return indexes.every((index) => index >= 0 && board[index] === 0);
+};
+const canBlockPieceFit = (board: number[], piece: BlockPiece) =>
+    board.some((_, anchor) => canPlaceBlock(board, piece, anchor));
 
 const normalizeCollagePieces = (pieces?: string[]) => {
     if (!Array.isArray(pieces)) {
@@ -570,6 +715,24 @@ export default function MelodyMergePage({
     const [memoryMatches, setMemoryMatches] = useState(0);
     const [memoryMoves, setMemoryMoves] = useState(0);
     const [memoryLocked, setMemoryLocked] = useState(false);
+    const [blockBoard, setBlockBoard] = useState<number[]>(() =>
+        normalizeBlockBoard(initialGameSave?.blockBoard),
+    );
+    const [blockPieces, setBlockPieces] = useState<BlockPiece[]>(() =>
+        normalizeBlockPieces(initialGameSave?.blockPieces),
+    );
+    const [blockScore, setBlockScore] = useState(
+        Math.max(0, initialGameSave?.blockScore ?? 0),
+    );
+    const [blockBest, setBlockBest] = useState(
+        Math.max(0, initialGameSave?.blockBest ?? 0),
+    );
+    const [blockCombo, setBlockCombo] = useState(
+        Math.max(0, initialGameSave?.blockCombo ?? 0),
+    );
+    const [selectedBlockPieceId, setSelectedBlockPieceId] = useState<
+        string | null
+    >(null);
     const [showConfetti, setShowConfetti] = useState(false);
     const [showLevelUpFlash, setShowLevelUpFlash] = useState(false);
     const [loveLetterIndex, setLoveLetterIndex] = useState(() =>
@@ -831,6 +994,11 @@ export default function MelodyMergePage({
                     cards: pack.cards.map((card) => card.id),
                 })),
             collagePieces,
+            blockBoard,
+            blockPieces,
+            blockScore,
+            blockBest,
+            blockCombo,
             activeTab,
             claimedMissions,
             dailyRewardClaimedAt,
@@ -838,6 +1006,11 @@ export default function MelodyMergePage({
         }),
         [
             activeTab,
+            blockBest,
+            blockBoard,
+            blockCombo,
+            blockPieces,
+            blockScore,
             board,
             claimedMissions,
             collagePieces,
@@ -1291,6 +1464,118 @@ export default function MelodyMergePage({
         notify('Nuevo tablero de Memoria listo.');
     }, [createMemoryDeck, notify]);
 
+    const resetBlockGame = useCallback(() => {
+        setBlockBoard(emptyBlockBoard());
+        setBlockPieces(createBlockPieces());
+        setBlockScore(0);
+        setBlockCombo(0);
+        setSelectedBlockPieceId(null);
+        notify('Nuevo tablero de Bloques listo.');
+    }, [notify]);
+
+    const placeBlockPiece = useCallback(
+        (anchor: number) => {
+            const piece = blockPieces.find(
+                (item) => item.id === selectedBlockPieceId,
+            );
+
+            if (!piece) {
+                notify('Elige una figura y luego toca el tablero.');
+
+                return;
+            }
+
+            if (!canPlaceBlock(blockBoard, piece, anchor)) {
+                notify('Esa figura no cabe en ese lugar.');
+
+                return;
+            }
+
+            const placedBoard = [...blockBoard];
+            const placedIndexes = blockPlacementIndexes(piece, anchor);
+            placedIndexes.forEach((index) => {
+                placedBoard[index] = piece.color;
+            });
+
+            const completeRows = Array.from(
+                { length: blockBoardSide },
+                (_, row) => row,
+            ).filter((row) =>
+                Array.from(
+                    { length: blockBoardSide },
+                    (_, column) => placedBoard[row * blockBoardSide + column],
+                ).every((cell) => cell > 0),
+            );
+            const completeColumns = Array.from(
+                { length: blockBoardSide },
+                (_, column) => column,
+            ).filter((column) =>
+                Array.from(
+                    { length: blockBoardSide },
+                    (_, row) => placedBoard[row * blockBoardSide + column],
+                ).every((cell) => cell > 0),
+            );
+            const clearedIndexes = new Set<number>();
+
+            completeRows.forEach((row) => {
+                for (let column = 0; column < blockBoardSide; column += 1) {
+                    clearedIndexes.add(row * blockBoardSide + column);
+                }
+            });
+            completeColumns.forEach((column) => {
+                for (let row = 0; row < blockBoardSide; row += 1) {
+                    clearedIndexes.add(row * blockBoardSide + column);
+                }
+            });
+
+            clearedIndexes.forEach((index) => {
+                placedBoard[index] = 0;
+            });
+
+            const clearedLines = completeRows.length + completeColumns.length;
+            const nextCombo = clearedLines > 0 ? blockCombo + 1 : 0;
+            const pieceCells = getBlockShape(piece.shapeId).cells.length;
+            const gainedScore =
+                pieceCells * 2 + clearedLines * 25 * Math.max(1, nextCombo);
+            const nextScore = blockScore + gainedScore;
+            const remainingPieces = blockPieces.filter(
+                (item) => item.id !== piece.id,
+            );
+
+            setBlockBoard(placedBoard);
+            setBlockPieces(
+                remainingPieces.length > 0
+                    ? remainingPieces
+                    : createBlockPieces(),
+            );
+            setBlockScore(nextScore);
+            setBlockBest((best) => Math.max(best, nextScore));
+            setBlockCombo(nextCombo);
+            setSelectedBlockPieceId(null);
+            triggerFeedback();
+
+            if (clearedLines > 0) {
+                const rewardHearts = clearedLines * 10 * nextCombo;
+                setHearts((value) => value + rewardHearts);
+                sfx.claim();
+                notify(
+                    `${clearedLines} línea${clearedLines === 1 ? '' : 's'} · combo x${nextCombo} · +${rewardHearts} corazones.`,
+                );
+            } else {
+                sfx.merge();
+                notify(`+${gainedScore} puntos.`);
+            }
+        },
+        [
+            blockBoard,
+            blockCombo,
+            blockPieces,
+            blockScore,
+            notify,
+            selectedBlockPieceId,
+        ],
+    );
+
     const handleMemoryCardClick = useCallback(
         (cardId: string) => {
             if (memoryLocked || flippedMemoryCards.includes(cardId)) {
@@ -1563,6 +1848,11 @@ export default function MelodyMergePage({
         memorySource.length > 0
             ? Math.round((memoryMatches / memorySource.length) * 100)
             : 0;
+    const selectedBlockPiece =
+        blockPieces.find((piece) => piece.id === selectedBlockPieceId) ?? null;
+    const blockGameOver =
+        blockPieces.length > 0 &&
+        !blockPieces.some((piece) => canBlockPieceFit(blockBoard, piece));
     const packRevealItems = pendingPack
         ? [
               ...pendingPack.cards.map((card) => ({
@@ -2197,6 +2487,146 @@ export default function MelodyMergePage({
                         </section>
                     )}
 
+                    {activeTab === 'blocks' && (
+                        <section className="mm-blocks">
+                            <div className="mm-blocks__summary">
+                                <div>
+                                    <p className="mm-kicker">Bloques de amor</p>
+                                    <h2>{blockScore} puntos</h2>
+                                </div>
+                                <div className="mm-blocks__records">
+                                    <span>Récord {blockBest}</span>
+                                    <span>
+                                        {blockCombo > 0
+                                            ? `Combo x${blockCombo}`
+                                            : 'Sin combo'}
+                                    </span>
+                                </div>
+                                <button
+                                    aria-label="Reiniciar Bloques"
+                                    onClick={resetBlockGame}
+                                    type="button"
+                                >
+                                    <RotateCcw size={17} aria-hidden />
+                                </button>
+                            </div>
+
+                            <div
+                                className={`mm-blocks__board ${blockGameOver ? 'is-over' : ''}`}
+                                aria-label="Tablero de Bloques"
+                            >
+                                {blockBoard.map((cell, index) => {
+                                    const canUseAnchor =
+                                        selectedBlockPiece &&
+                                        canPlaceBlock(
+                                            blockBoard,
+                                            selectedBlockPiece,
+                                            index,
+                                        );
+
+                                    return (
+                                        <button
+                                            aria-label={`Casilla ${index + 1}${cell ? ' ocupada' : ' vacía'}`}
+                                            className={`${cell ? `is-filled color-${cell}` : ''} ${canUseAnchor ? 'can-place' : ''}`}
+                                            disabled={blockGameOver}
+                                            key={index}
+                                            onClick={() =>
+                                                placeBlockPiece(index)
+                                            }
+                                            type="button"
+                                        />
+                                    );
+                                })}
+                                {blockGameOver && (
+                                    <div className="mm-blocks__game-over">
+                                        <Boxes size={28} aria-hidden />
+                                        <strong>Sin movimientos</strong>
+                                        <span>
+                                            Lograste {blockScore} puntos
+                                        </span>
+                                        <button
+                                            onClick={resetBlockGame}
+                                            type="button"
+                                        >
+                                            Jugar otra vez
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <p className="mm-blocks__hint">
+                                {selectedBlockPiece
+                                    ? 'Ahora toca una casilla donde quieras colocarla.'
+                                    : 'Elige una figura. Completa filas o columnas para limpiarlas.'}
+                            </p>
+
+                            <div
+                                className="mm-blocks__pieces"
+                                aria-label="Figuras disponibles"
+                            >
+                                {blockPieces.map((piece) => {
+                                    const shape = getBlockShape(piece.shapeId);
+                                    const occupied = new Set(
+                                        shape.cells.map(
+                                            ([row, column]) =>
+                                                `${row}:${column}`,
+                                        ),
+                                    );
+
+                                    return (
+                                        <button
+                                            aria-label="Seleccionar figura"
+                                            className={`${selectedBlockPieceId === piece.id ? 'is-selected' : ''} ${canBlockPieceFit(blockBoard, piece) ? '' : 'cannot-fit'}`}
+                                            key={piece.id}
+                                            onClick={() =>
+                                                setSelectedBlockPieceId(
+                                                    piece.id,
+                                                )
+                                            }
+                                            type="button"
+                                        >
+                                            <span className="mm-blocks__piece-grid">
+                                                {Array.from(
+                                                    { length: 16 },
+                                                    (_, cellIndex) => {
+                                                        const row = Math.floor(
+                                                            cellIndex / 4,
+                                                        );
+                                                        const column =
+                                                            cellIndex % 4;
+                                                        const filled =
+                                                            occupied.has(
+                                                                `${row}:${column}`,
+                                                            );
+
+                                                        return (
+                                                            <span
+                                                                className={
+                                                                    filled
+                                                                        ? `is-filled color-${piece.color}`
+                                                                        : ''
+                                                                }
+                                                                key={cellIndex}
+                                                            />
+                                                        );
+                                                    },
+                                                )}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="mm-blocks__reward">
+                                <Heart size={15} aria-hidden />
+                                <span>
+                                    Cada línea entrega corazones; los combos
+                                    multiplican el premio.
+                                </span>
+                            </div>
+                        </section>
+                    )}
+
                     {activeTab === 'memory' && (
                         <section className="mm-memory">
                             <div className="mm-memory__summary">
@@ -2292,6 +2722,16 @@ export default function MelodyMergePage({
                         >
                             <Wand2 size={19} aria-hidden />
                             <span>Merge</span>
+                        </button>
+                        <button
+                            className={
+                                activeTab === 'blocks' ? 'is-active' : ''
+                            }
+                            onClick={() => setActiveTab('blocks')}
+                            type="button"
+                        >
+                            <Boxes size={19} aria-hidden />
+                            <span>Bloques</span>
                         </button>
                         <button
                             className={

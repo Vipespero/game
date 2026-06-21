@@ -103,7 +103,13 @@ export type PlayerLevelDefinition = {
     isActive: boolean;
 };
 
-export type MelodyTab = 'merge' | 'album' | 'room' | 'memory';
+export type MelodyTab = 'merge' | 'blocks' | 'album' | 'room' | 'memory';
+
+export type BlockPiece = {
+    id: string;
+    shapeId: string;
+    color: number;
+};
 
 export type PackReward = {
     id: string;
@@ -139,6 +145,11 @@ export type MelodyGameSave = {
     mergeCount?: number;
     openedPacks?: SavedPackReward[];
     collagePieces?: string[];
+    blockBoard?: number[];
+    blockPieces?: BlockPiece[];
+    blockScore?: number;
+    blockBest?: number;
+    blockCombo?: number;
     activeTab?: MelodyTab;
     claimedMissions?: string[];
     dailyRewardClaimedAt?: string | null;

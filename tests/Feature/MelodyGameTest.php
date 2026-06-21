@@ -179,6 +179,52 @@ class MelodyGameTest extends TestCase
         $this->assertSame('memory', $state['activeTab']);
     }
 
+    public function test_user_can_save_blocks_progress(): void
+    {
+        $user = User::factory()->create();
+        $blockBoard = array_fill(0, 64, 0);
+        $blockBoard[0] = 2;
+
+        $this->actingAs($user)
+            ->putJson(route('melody.save'), [
+                'state' => [
+                    'board' => array_fill(0, 30, null),
+                    'energy' => 80,
+                    'hearts' => 240,
+                    'xp' => 12,
+                    'playerLevel' => 2,
+                    'mergeCount' => 4,
+                    'openedPacks' => [],
+                    'activeTab' => 'blocks',
+                    'claimedMissions' => [],
+                    'collagePieces' => [],
+                    'blockBoard' => $blockBoard,
+                    'blockPieces' => [
+                        ['id' => 'piece-one', 'shapeId' => 'square', 'color' => 3],
+                    ],
+                    'blockScore' => 120,
+                    'blockBest' => 300,
+                    'blockCombo' => 2,
+                    'dailyRewardClaimedAt' => null,
+                    'lastSeenAt' => now()->toISOString(),
+                ],
+            ])
+            ->assertOk()
+            ->assertJson(['saved' => true]);
+
+        $state = $user->gameSave()
+            ->with(['boardItems', 'packs.cards', 'claimedMissions', 'collagePieces'])
+            ->firstOrFail()
+            ->toGameState();
+
+        $this->assertSame('blocks', $state['activeTab']);
+        $this->assertSame(2, $state['blockBoard'][0]);
+        $this->assertSame(120, $state['blockScore']);
+        $this->assertSame(300, $state['blockBest']);
+        $this->assertSame(2, $state['blockCombo']);
+        $this->assertSame('square', $state['blockPieces'][0]['shapeId']);
+    }
+
     public function test_inactive_cards_are_hidden_from_game_catalog(): void
     {
         $user = User::factory()->create();

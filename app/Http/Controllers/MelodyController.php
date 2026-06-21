@@ -30,7 +30,8 @@ class MelodyController extends Controller
     private const MAX_PACK_CARDS = 3;
     private const MAX_PACK_HISTORY = 120;
     private const MAX_COLLAGE_PIECES = 480;
-    private const VALID_TABS = ['merge', 'album', 'room', 'memory'];
+    private const VALID_TABS = ['merge', 'blocks', 'album', 'room', 'memory'];
+    private const BLOCK_BOARD_SIZE = 64;
     public function show(Request $request): Response
     {
         $gameSave = $request->user()
@@ -85,6 +86,15 @@ class MelodyController extends Controller
             'state.claimedMissions.*' => ['string', 'max:40'],
             'state.collagePieces' => ['sometimes', 'array', 'max:'.self::MAX_COLLAGE_PIECES],
             'state.collagePieces.*' => ['string', 'regex:/^[1-9][0-9]*:(0[0-9]|1[0-5])$/'],
+            'state.blockBoard' => ['sometimes', 'array', 'size:'.self::BLOCK_BOARD_SIZE],
+            'state.blockBoard.*' => ['integer', 'min:0', 'max:5'],
+            'state.blockPieces' => ['sometimes', 'array', 'max:3'],
+            'state.blockPieces.*.id' => ['required', 'string', 'max:64'],
+            'state.blockPieces.*.shapeId' => ['required', 'string', 'max:30'],
+            'state.blockPieces.*.color' => ['required', 'integer', 'min:1', 'max:5'],
+            'state.blockScore' => ['sometimes', 'integer', 'min:0', 'max:999999999'],
+            'state.blockBest' => ['sometimes', 'integer', 'min:0', 'max:999999999'],
+            'state.blockCombo' => ['sometimes', 'integer', 'min:0', 'max:9999'],
             'state.dailyRewardClaimedAt' => ['nullable', 'date'],
             'state.lastSeenAt' => ['nullable', 'date'],
         ]);
@@ -101,6 +111,11 @@ class MelodyController extends Controller
                     'player_level' => $state['playerLevel'],
                     'merge_count' => $state['mergeCount'],
                     'active_tab' => $state['activeTab'],
+                    'block_board' => $state['blockBoard'],
+                    'block_pieces' => $state['blockPieces'],
+                    'block_score' => $state['blockScore'],
+                    'block_best' => $state['blockBest'],
+                    'block_combo' => $state['blockCombo'],
                     'daily_reward_claimed_at' => $state['dailyRewardClaimedAt'],
                     'last_seen_at' => now(),
                 ],
@@ -146,6 +161,24 @@ class MelodyController extends Controller
                 ->take(self::MAX_COLLAGE_PIECES)
                 ->values()
                 ->all(),
+            'blockBoard' => collect(Arr::get($state, 'blockBoard', []))
+                ->take(self::BLOCK_BOARD_SIZE)
+                ->map(fn (mixed $cell): int => min(5, max(0, (int) $cell)))
+                ->pad(self::BLOCK_BOARD_SIZE, 0)
+                ->values()
+                ->all(),
+            'blockPieces' => collect(Arr::get($state, 'blockPieces', []))
+                ->take(3)
+                ->map(fn (array $piece): array => [
+                    'id' => (string) $piece['id'],
+                    'shapeId' => (string) $piece['shapeId'],
+                    'color' => min(5, max(1, (int) $piece['color'])),
+                ])
+                ->values()
+                ->all(),
+            'blockScore' => (int) Arr::get($state, 'blockScore', 0),
+            'blockBest' => (int) Arr::get($state, 'blockBest', 0),
+            'blockCombo' => (int) Arr::get($state, 'blockCombo', 0),
             'dailyRewardClaimedAt' => Arr::get($state, 'dailyRewardClaimedAt'),
             'lastSeenAt' => now()->toISOString(),
         ];

@@ -18,6 +18,11 @@ class GameSave extends Model
         'player_level',
         'merge_count',
         'active_tab',
+        'block_board',
+        'block_pieces',
+        'block_score',
+        'block_best',
+        'block_combo',
         'daily_reward_claimed_at',
         'last_seen_at',
     ];
@@ -27,6 +32,11 @@ class GameSave extends Model
         return [
             'daily_reward_claimed_at' => 'datetime',
             'energy' => 'integer',
+            'block_board' => 'array',
+            'block_pieces' => 'array',
+            'block_score' => 'integer',
+            'block_best' => 'integer',
+            'block_combo' => 'integer',
             'hearts' => 'integer',
             'last_seen_at' => 'datetime',
             'merge_count' => 'integer',
@@ -102,6 +112,11 @@ class GameSave extends Model
                 ->pluck('piece_id')
                 ->values()
                 ->all(),
+            'blockBoard' => $this->block_board ?? array_fill(0, 64, 0),
+            'blockPieces' => $this->block_pieces ?? [],
+            'blockScore' => $this->block_score ?? 0,
+            'blockBest' => $this->block_best ?? 0,
+            'blockCombo' => $this->block_combo ?? 0,
             'dailyRewardClaimedAt' => $this->daily_reward_claimed_at?->toISOString(),
             'lastSeenAt' => $this->last_seen_at?->toISOString(),
         ];
