@@ -148,6 +148,7 @@ const collageRowCount = 4;
 const maxSavedPackHistory = 120;
 const blockBoardSide = 8;
 const blockBoardSize = blockBoardSide * blockBoardSide;
+const blockDragLift = 108;
 
 const blockShapes = [
     { id: 'single', cells: [[0, 0]] },
@@ -288,6 +289,36 @@ const canPlaceBlock = (board: number[], piece: BlockPiece, anchor: number) => {
 };
 const canBlockPieceFit = (board: number[], piece: BlockPiece) =>
     board.some((_, anchor) => canPlaceBlock(board, piece, anchor));
+const blockAnchorFromPointer = (
+    piece: BlockPiece,
+    clientX: number,
+    clientY: number,
+) => {
+    const target = document
+        .elementFromPoint(clientX, clientY - blockDragLift)
+        ?.closest<HTMLElement>('[data-block-index]');
+    const hoveredIndex = target
+        ? Number(target.dataset.blockIndex)
+        : Number.NaN;
+
+    if (!Number.isInteger(hoveredIndex)) {
+        return null;
+    }
+
+    const shape = getBlockShape(piece.shapeId);
+    const shapeHeight = Math.max(...shape.cells.map(([row]) => row)) + 1;
+    const shapeWidth = Math.max(...shape.cells.map(([, column]) => column)) + 1;
+    const hoveredRow = Math.floor(hoveredIndex / blockBoardSide);
+    const hoveredColumn = hoveredIndex % blockBoardSide;
+    const anchorRow = hoveredRow - Math.floor((shapeHeight - 1) / 2);
+    const anchorColumn = hoveredColumn - Math.floor((shapeWidth - 1) / 2);
+
+    if (anchorRow < 0 || anchorColumn < 0) {
+        return null;
+    }
+
+    return anchorRow * blockBoardSide + anchorColumn;
+};
 
 const normalizeCollagePieces = (pieces?: string[]) => {
     if (!Array.isArray(pieces)) {
@@ -731,8 +762,6 @@ export default function MelodyMergePage({
     const [blockDrag, setBlockDrag] = useState<{
         anchor: number | null;
         piece: BlockPiece;
-        x: number;
-        y: number;
     } | null>(null);
     const blockDidDragRef = useRef(false);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -1581,10 +1610,12 @@ export default function MelodyMergePage({
             blockDidDragRef.current = false;
             setSelectedBlockPieceId(piece.id);
             setBlockDrag({
-                anchor: null,
+                anchor: blockAnchorFromPointer(
+                    piece,
+                    event.clientX,
+                    event.clientY,
+                ),
                 piece,
-                x: event.clientX,
-                y: event.clientY,
             });
             event.currentTarget.setPointerCapture(event.pointerId);
         },
@@ -1598,20 +1629,17 @@ export default function MelodyMergePage({
             }
 
             blockDidDragRef.current = true;
-            const target = document
-                .elementFromPoint(event.clientX, event.clientY)
-                ?.closest<HTMLElement>('[data-block-index]');
-            const anchor = target
-                ? Number(target.dataset.blockIndex)
-                : Number.NaN;
+            const anchor = blockAnchorFromPointer(
+                blockDrag.piece,
+                event.clientX,
+                event.clientY,
+            );
 
             setBlockDrag((drag) =>
                 drag
                     ? {
                           ...drag,
-                          anchor: Number.isInteger(anchor) ? anchor : null,
-                          x: event.clientX,
-                          y: event.clientY,
+                          anchor,
                       }
                     : null,
             );
@@ -2635,11 +2663,11 @@ export default function MelodyMergePage({
                             <p className="mm-blocks__hint">
                                 {blockDrag
                                     ? blockDragCanPlace
-                                        ? 'Suelta para colocar la figura.'
-                                        : 'Busca una zona iluminada donde pueda caber.'
+                                        ? 'Suelta: la figura caerá en las casillas iluminadas.'
+                                        : 'Mueve el dedo por debajo del tablero hasta encontrar espacio.'
                                     : selectedBlockPiece
                                       ? 'Toca una casilla o arrastra la figura al tablero.'
-                                      : 'Arrastra una figura al tablero. Completa filas o columnas.'}
+                                      : 'Arrastra una figura; tu dedo puede quedarse debajo del tablero.'}
                             </p>
 
                             <div
@@ -2658,7 +2686,7 @@ export default function MelodyMergePage({
                                     return (
                                         <button
                                             aria-label="Seleccionar figura"
-                                            className={`${selectedBlockPieceId === piece.id ? 'is-selected' : ''} ${canBlockPieceFit(blockBoard, piece) ? '' : 'cannot-fit'}`}
+                                            className={`${selectedBlockPieceId === piece.id ? 'is-selected' : ''} ${blockDrag?.piece.id === piece.id ? 'is-dragging' : ''} ${canBlockPieceFit(blockBoard, piece) ? '' : 'cannot-fit'}`}
                                             key={piece.id}
                                             onClick={() => {
                                                 if (blockDidDragRef.current) {

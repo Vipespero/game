@@ -1938,6 +1938,12 @@ button {
     box-shadow: 0 12px 24px rgba(255, 114, 179, 0.24);
 }
 
+.mm-blocks__pieces > button.is-dragging {
+    opacity: 0.34;
+    transform: translateY(-7px) scale(0.84);
+    box-shadow: 0 4px 10px rgba(120, 65, 132, 0.08);
+}
+
 .mm-blocks__pieces > button.cannot-fit {
     filter: grayscale(0.7);
     opacity: 0.48;
