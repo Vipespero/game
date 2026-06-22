@@ -2718,29 +2718,6 @@ export default function MelodyMergePage({
                                 })}
                             </div>
 
-                            {blockDrag && (
-                                <div
-                                    className={`mm-blocks__drag-preview ${blockDragCanPlace ? 'can-drop' : ''}`}
-                                    style={{
-                                        left: blockDrag.x,
-                                        top: blockDrag.y,
-                                    }}
-                                >
-                                    {getBlockShape(
-                                        blockDrag.piece.shapeId,
-                                    ).cells.map(([row, column]) => (
-                                        <span
-                                            className={`is-filled color-${blockDrag.piece.color}`}
-                                            key={`${row}:${column}`}
-                                            style={{
-                                                gridColumn: column + 1,
-                                                gridRow: row + 1,
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-
                             <div className="mm-blocks__reward">
                                 <Heart size={15} aria-hidden />
                                 <span>
