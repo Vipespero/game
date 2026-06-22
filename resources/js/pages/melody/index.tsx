@@ -2624,7 +2624,7 @@ export default function MelodyMergePage({
                                     return (
                                         <button
                                             aria-label={`Casilla ${index + 1}${cell ? ' ocupada' : ' vacía'}`}
-                                            className={`${cell ? `is-filled color-${cell}` : ''} ${blockDragCanPlace && blockDragIndexes.includes(index) ? `is-drop-preview color-${blockDrag?.piece.color ?? 1}` : ''} ${blockDrag?.anchor === index && !blockDragCanPlace ? 'is-invalid-drop' : ''}`}
+                                            className={`${cell ? `is-filled color-${cell}` : ''} ${blockDragCanPlace && blockDragIndexes.includes(index) ? `is-drop-preview color-${blockDrag?.piece.color ?? 1}` : ''}`}
                                             data-block-index={index}
                                             disabled={blockGameOver}
                                             key={index}
@@ -2656,7 +2656,7 @@ export default function MelodyMergePage({
                                 {blockDrag
                                     ? blockDragCanPlace
                                         ? 'Suelta: la figura caerá en las casillas iluminadas.'
-                                        : 'Mueve el dedo por debajo del tablero hasta encontrar espacio.'
+                                        : 'Sigue moviendo el dedo hasta que aparezca la figura.'
                                     : selectedBlockPiece
                                       ? 'Toca una casilla o arrastra la figura al tablero.'
                                       : 'Arrastra una figura; tu dedo puede quedarse debajo del tablero.'}
