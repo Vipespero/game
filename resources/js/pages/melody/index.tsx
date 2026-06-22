@@ -2674,6 +2674,16 @@ export default function MelodyMergePage({
                                                 `${row}:${column}`,
                                         ),
                                     );
+                                    const shapeHeight =
+                                        Math.max(
+                                            ...shape.cells.map(([row]) => row),
+                                        ) + 1;
+                                    const shapeWidth =
+                                        Math.max(
+                                            ...shape.cells.map(
+                                                ([, column]) => column,
+                                            ),
+                                        ) + 1;
 
                                     return (
                                         <button
@@ -2706,15 +2716,36 @@ export default function MelodyMergePage({
                                             onPointerUp={handleBlockPointerEnd}
                                             type="button"
                                         >
-                                            <span className="mm-blocks__piece-grid">
+                                            <span
+                                                className="mm-blocks__piece-grid"
+                                                style={
+                                                    {
+                                                        '--mm-block-piece-columns':
+                                                            shapeWidth,
+                                                        '--mm-block-piece-rows':
+                                                            shapeHeight,
+                                                    } as CSSProperties &
+                                                        Record<
+                                                            | '--mm-block-piece-columns'
+                                                            | '--mm-block-piece-rows',
+                                                            number
+                                                        >
+                                                }
+                                            >
                                                 {Array.from(
-                                                    { length: 16 },
+                                                    {
+                                                        length:
+                                                            shapeWidth *
+                                                            shapeHeight,
+                                                    },
                                                     (_, cellIndex) => {
                                                         const row = Math.floor(
-                                                            cellIndex / 4,
+                                                            cellIndex /
+                                                                shapeWidth,
                                                         );
                                                         const column =
-                                                            cellIndex % 4;
+                                                            cellIndex %
+                                                            shapeWidth;
                                                         const filled =
                                                             occupied.has(
                                                                 `${row}:${column}`,
