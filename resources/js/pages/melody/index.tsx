@@ -2621,18 +2621,10 @@ export default function MelodyMergePage({
                                 aria-label="Tablero de Bloques"
                             >
                                 {blockBoard.map((cell, index) => {
-                                    const canUseAnchor =
-                                        selectedBlockPiece &&
-                                        canPlaceBlock(
-                                            blockBoard,
-                                            selectedBlockPiece,
-                                            index,
-                                        );
-
                                     return (
                                         <button
                                             aria-label={`Casilla ${index + 1}${cell ? ' ocupada' : ' vacía'}`}
-                                            className={`${cell ? `is-filled color-${cell}` : ''} ${canUseAnchor ? 'can-place' : ''} ${blockDragCanPlace && blockDragIndexes.includes(index) ? `is-drop-preview color-${blockDrag?.piece.color ?? 1}` : ''} ${blockDrag?.anchor === index && !blockDragCanPlace ? 'is-invalid-drop' : ''}`}
+                                            className={`${cell ? `is-filled color-${cell}` : ''} ${blockDragCanPlace && blockDragIndexes.includes(index) ? `is-drop-preview color-${blockDrag?.piece.color ?? 1}` : ''} ${blockDrag?.anchor === index && !blockDragCanPlace ? 'is-invalid-drop' : ''}`}
                                             data-block-index={index}
                                             disabled={blockGameOver}
                                             key={index}
